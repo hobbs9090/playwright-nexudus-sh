@@ -43,6 +43,6 @@ npx playwright install firefox
 # Run the node script to run the tests
 npx playwright test
 
-# View thw report
+# View the report
 npx playwright show-report
 ```
