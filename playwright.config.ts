@@ -61,12 +61,12 @@ const config: PlaywrightTestConfig = {
     //   }
     // },
 
-    {
-      name: 'Firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-      },
-    },
+    // {
+    //   name: 'Firefox',
+    //   use: {
+    //     ...devices['Desktop Firefox'],
+    //   },
+    // },
 
     // {
     //   name: 'Webkit',

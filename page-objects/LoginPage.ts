@@ -19,8 +19,8 @@ export class LoginPage extends AbstractPage {
 
   // Define login page methods
   async login(
-    email: string = 'adrian+1004930927@nexudus.com',
-    password: string = '414HHK9dxg--Gj',
+    email: string = 'harry.potter@example.net',
+    password: string = 'Demo1234!!',
     valid: boolean = true
   ) {
     await this.page.goto('')
