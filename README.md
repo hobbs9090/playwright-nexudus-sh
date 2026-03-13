@@ -1,48 +1,96 @@
 # playwright-nexudus
 
-Demonstration of automation test suite for Nexudus using Playwright. The framework is written in TypeScript and uses Mocha as the test runner. It utilises a page object model to abstract the page interactions and make the tests more readable.
+End-to-end Playwright test suite for the Nexudus dashboard.
 
-The tests are run in headed mode by default, but can be run in headless mode by setting the `headless` environment variable to `true` in `playwright.config.ts`. The number of workers can be set by adjusting the `workers` environment variable to the desired number of workers and by default is the number of CPU logical cores on the host machine divided by 2. Screenshots and video are taken for all tests regardless of result and stored in the `test-results` directory.
+This project is written in TypeScript, uses `@playwright/test` as the test runner, and follows a small page object model structure to keep test flows readable.
 
-Reports are stored in the `playwright-report` directory. The reporting format is set to HTML by default but can be changed by setting the `reporter` environment variable to the desired reporter. Where applicable the report contains details of the test product names created as these are unique and contain a timestamp for easy identification. i.e. `TestProduct 1510 0930 hmltk` where `1510` is the date (DDMM) and `0930` is the time (hhmm). The `hmltk` is a random string to ensure uniqueness. An example of report from previous run can be found in the folder `playwright-report-example`.
+## What the suite covers
 
-For the purposes of demonstration, I've just configured the suite to run in Chromium and Firefox browsers, but again, this can be changed in the `playwright.config.ts` file.
+- Invalid login shows a clear error message
+- Valid login reaches the dashboard
+- A product can be created and then removed from the products area
 
-Note that as this is a shared private repository, I have included the email and password of the test user embeded in the code. This is not something I would normally do, but as this is a demonstration, I have done so for convenience.
+## Project structure
+
+```text
+.
+|-- .github/workflows/playwright.yml
+|-- helpers.ts
+|-- page-objects/
+|   |-- AbstractPage.ts
+|   |-- LoginPage.ts
+|   `-- ProductPage.ts
+|-- playwright.config.ts
+|-- tests/
+|   `-- nexudus.spec.ts
+`-- playwright-report-example/
+```
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) and NPM
-- [Playwright](https://playwright.dev/)
+- Node.js 18 or newer
+- npm
 
 ## Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/hobbs901/playwright-nexudus/
-
-# Navigate into the directory
+git clone https://github.com/hobbs9090/playwright-nexudus.git
 cd playwright-nexudus
-
-# Install dependencies
-npm install
-
-# Install Playwright
-npm install playwright
-
-# Install Playwright Chromium
+npm ci
 npx playwright install chromium
-
-# Install Playwright Firefox
-npx playwright install firefox
 ```
 
-## Usage
+## Configuration
+
+The suite supports the following environment variables:
+
+| Variable | Required | Default | Purpose |
+| --- | --- | --- | --- |
+| `NEXUDUS_BASE_URL` | No | `https://dashboard.nexudus.com/` | Base URL used by Playwright navigation |
+| `NEXUDUS_EMAIL` | Recommended | fallback value in code | Username for the valid login flow |
+| `NEXUDUS_PASSWORD` | Recommended | fallback value in code | Password for the valid login flow |
+| `PLAYWRIGHT_HEADLESS` | No | `false` locally, `true` on CI | Forces headless browser execution |
+
+For reliable local runs, set `NEXUDUS_EMAIL` and `NEXUDUS_PASSWORD` to a working test account instead of relying on fallback values.
+
+## Running the tests
 
 ```bash
-# Run the node script to run the tests
-npx playwright test
+# Run the suite
+npm test
 
-# View the report
-npx playwright show-report
+# Run in headed mode
+npm run test:headed
+
+# Open the latest HTML report
+npm run test:report
 ```
+
+By default the active browser project is Chromium. Other browser projects are still present in [playwright.config.ts](playwright.config.ts) but commented out.
+
+## Reports and artifacts
+
+- HTML report output: `playwright-report/`
+- Test artifacts such as screenshots, videos, and traces: `test-results/`
+- A checked-in sample report is available in `playwright-report-example/`
+
+## GitHub Actions
+
+The repository includes a workflow at [.github/workflows/playwright.yml](.github/workflows/playwright.yml) that runs the suite on:
+
+- pushes to `main`
+- pull requests
+- manual dispatches
+
+To use the workflow, configure these GitHub settings:
+
+- Repository secret: `NEXUDUS_EMAIL`
+- Repository secret: `NEXUDUS_PASSWORD`
+- Optional repository variable: `NEXUDUS_BASE_URL`
+
+The workflow installs dependencies, installs the Playwright Chromium browser, runs the test suite, and uploads both the Playwright HTML report and `test-results` as artifacts.
+
+## Notes
+
+- The suite is intentionally small and focused on demonstrating Playwright structure and workflow integration.
+- The product creation flow currently depends on UI timing and may require maintenance if the Nexudus product screens change.
