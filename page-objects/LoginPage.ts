@@ -19,8 +19,8 @@ export class LoginPage extends AbstractPage {
 
   // Define login page methods
   async login(
-    email: string = 'harry.potter@example.net',
-    password: string = 'Demo1234!!',
+    email: string = process.env.NEXUDUS_EMAIL || 'harry.potter@example.net',
+    password: string = process.env.NEXUDUS_PASSWORD || 'Demo1234!!',
     valid: boolean = true
   ) {
     await this.page.goto('')
