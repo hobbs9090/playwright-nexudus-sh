@@ -14,6 +14,7 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 
 ```text
 .
+|-- .circleci/config.yml
 |-- .github/workflows/playwright.yml
 |-- helpers.ts
 |-- page-objects/
@@ -89,6 +90,20 @@ To use the workflow, configure these GitHub settings:
 - Optional repository variable: `NEXUDUS_BASE_URL`
 
 The workflow installs dependencies, installs the Playwright Chromium browser, runs the test suite, and uploads both the Playwright HTML report and `test-results` as artifacts.
+
+## CircleCI
+
+The repository also includes a CircleCI pipeline at [.circleci/config.yml](.circleci/config.yml).
+
+It uses the version-matched Playwright Docker image, runs `npm ci`, executes `npm test`, stores JUnit results from `test-results/results.xml`, and uploads both `playwright-report/` and `test-results/` as CircleCI artifacts.
+
+To use it in CircleCI, add these environment variables in the project settings:
+
+- `NEXUDUS_EMAIL`
+- `NEXUDUS_PASSWORD`
+- Optional: `NEXUDUS_BASE_URL`
+
+The Playwright config automatically switches to a CircleCI-friendly reporter set when `CIRCLECI=true`, so test runs produce line output, JUnit XML, and the HTML report without needing a separate script.
 
 ## Notes
 
