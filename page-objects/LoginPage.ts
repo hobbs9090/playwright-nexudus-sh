@@ -28,7 +28,7 @@ export class LoginPage extends AbstractPage {
     await this.passwordInput.fill(password)
     await this.signInButton.click()
     if (valid) {
-      await expect(this.page).toHaveURL('/dashboards/now')
+      await this.page.waitForURL('**/dashboards/now', { timeout: 30000 })
     } else {
       await this.assertErrorMessage('The email or password is incorrect.')
     }

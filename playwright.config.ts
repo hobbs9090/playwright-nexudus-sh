@@ -2,7 +2,13 @@ import type { PlaywrightTestConfig } from '@playwright/test'
 import { devices } from '@playwright/test'
 
 const isCI = !!process.env.CI
+const isCircleCI = !!process.env.CIRCLECI
 const headless = (process.env.PLAYWRIGHT_HEADLESS || '').toLowerCase() === 'true' || isCI
+const reporter = isCircleCI
+  ? [['line'], ['junit', { outputFile: 'test-results/results.xml' }], ['html', { open: 'never' }]]
+  : isCI
+    ? [['github'], ['html', { open: 'never' }]]
+    : 'html'
 
 /**
  * Read environment variables from file.
@@ -23,7 +29,7 @@ const config: PlaywrightTestConfig = {
      * For example in `await expect(locator).toHaveText();`
      */
     timeout: 5000,
-  },  
+  },
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -33,7 +39,7 @@ const config: PlaywrightTestConfig = {
   /* Opt out of parallel tests on CI. */
   workers: isCI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: isCI ? [['github'], ['html', { open: 'never' }]] : 'html',
+  reporter,
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */

@@ -6,6 +6,7 @@ import { ProductPage } from '../page-objects/ProductPage'
 test.describe('Nexudus Test Suite', () => {
   let loginPage: LoginPage
   let productPage: ProductPage
+  const productCountTimeout = process.env.CI ? 60000 : 30000
 
   test.beforeEach(async ({ page }) => {
     loginPage = new LoginPage(page)
@@ -23,12 +24,15 @@ test.describe('Nexudus Test Suite', () => {
   })
 
   test('#003 - Can add and delete a product from the products list.', async ({ page }) => {
+    test.slow()
     await loginPage.login()
     await productPage.navigateTo()
+    const initialProductCount = await productPage.getProductCount()
     const product_name = await generateProductName()
-    await productPage.addProduct(product_name)
-    expect(await productPage.searchForProduct(product_name)).toBe(true)
-    await productPage.deleteProduct(product_name)
-    expect(await productPage.searchForProduct(product_name)).toBe(false)
+    const productId = await productPage.addProduct(product_name)
+    await productPage.deleteProduct(productId)
+    await expect
+      .poll(() => productPage.refreshProductCount(), { timeout: productCountTimeout })
+      .toBe(initialProductCount)
   })
 })

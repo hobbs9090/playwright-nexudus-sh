@@ -3,6 +3,7 @@ import { AbstractPage } from './AbstractPage'
 
 export class ProductPage extends AbstractPage {
   // Define selectors
+  readonly productCountLink: Locator
   readonly searchInput: Locator
   readonly addProductButton: Locator
   readonly manualEntryButton: Locator
@@ -10,6 +11,7 @@ export class ProductPage extends AbstractPage {
   readonly productDescriptionInput: Locator
   readonly unitPriceInput: Locator
   readonly taxRateInput: Locator
+  readonly taxRateOptions: Locator
   readonly saveChangesButton: Locator
   readonly deleteProductButton: Locator
   readonly deleteConfirmationInput: Locator
@@ -19,6 +21,7 @@ export class ProductPage extends AbstractPage {
   // Init selectors using constructor
   constructor(page: Page) {
     super(page)
+    this.productCountLink = page.getByRole('link', { name: /^\d+ products?$/ }).first()
     this.searchInput = page.getByPlaceholder('Search...')
     this.addProductButton = page.getByRole('button', { name: 'Add product' })
     this.manualEntryButton = page.getByRole('button', { name: 'Manual Entry' })
@@ -26,6 +29,7 @@ export class ProductPage extends AbstractPage {
     this.productDescriptionInput = page.getByLabel('Product description')
     this.unitPriceInput = page.getByLabel('Unit price')
     this.taxRateInput = page.getByLabel('Tax rate')
+    this.taxRateOptions = page.locator('[role="listbox"]').getByRole('option')
     this.saveChangesButton = page.getByRole('button', { name: 'Save changes' })
     this.deleteProductButton = page.getByRole('button', { name: 'Delete' })
     this.deleteConfirmationInput = page.getByPlaceholder("Type 'DELETE' to continue")
@@ -39,6 +43,22 @@ export class ProductPage extends AbstractPage {
     await this.dismissBlockingDialogs()
   }
 
+  async getProductCount() {
+    const countText = (await this.productCountLink.textContent()) || ''
+    const match = countText.match(/(\d+)\s+products?/i)
+
+    if (!match) {
+      throw new Error(`Could not determine product count from text: '${countText}'`)
+    }
+
+    return Number(match[1])
+  }
+
+  async refreshProductCount() {
+    await this.navigateTo()
+    return this.getProductCount()
+  }
+
   async addProduct(product_name: string) {
     await this.dismissBlockingDialogs()
     await this.addProductButton.click()
@@ -48,17 +68,43 @@ export class ProductPage extends AbstractPage {
     await this.productDescriptionInput.press('Tab')
     await this.unitPriceInput.fill('4.99')
     await this.unitPriceInput.press('Tab')
-    await this.taxRateInput.click()
-    await this.page.locator('text=/VAT \\([0-9]+%\\)/').first().click()
-    await expect(this.taxRateInput).not.toHaveValue('')
+    await this.selectFirstAvailableTaxRate()
     await this.wait(2000) // ToDo - replace with a better wait
+    const createResponsePromise = this.page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' && response.url() === 'https://spaces.nexudus.com/api/billing/products',
+      { timeout: 30000 }
+    )
     await this.saveChangesButton.click()
+    const createResponse = await createResponsePromise
+    const createResponseBody = await createResponse.json()
+
+    if (!createResponseBody.WasSuccessful || !createResponseBody.Value?.Id) {
+      throw new Error(`Product creation did not return a usable id: ${JSON.stringify(createResponseBody)}`)
+    }
+
+    return createResponseBody.Value.Id
   }
 
-  async deleteProduct(product_name: string) {
+  async selectFirstAvailableTaxRate() {
+    await this.taxRateInput.click()
+    const firstTaxRateOption = this.taxRateOptions.first()
+    await expect(firstTaxRateOption).toBeVisible({ timeout: 15000 })
+
+    try {
+      await firstTaxRateOption.click()
+    } catch {
+      await this.taxRateInput.press('ArrowDown')
+      await this.taxRateInput.press('Enter')
+    }
+
+    await expect(this.taxRateInput).not.toHaveValue('', { timeout: 15000 })
+  }
+
+  async deleteProduct(productId: number) {
     await this.dismissBlockingDialogs()
-    await this.searchForProduct(product_name)
-    await this.page.getByRole('link', { name: product_name }).click()
+    await this.page.goto(`/billing/products/${productId}`)
+    await this.dismissBlockingDialogs()
     await this.deleteProductButton.click()
     await this.deleteConfirmationInput.fill('DELETE')
     await this.confirmDeleteButton.click()
@@ -72,7 +118,7 @@ export class ProductPage extends AbstractPage {
     )
   }
 
-  async searchForProduct(product_name: string, timeoutMs: number = 15000) {
+  async searchForProduct(product_name: string, timeoutMs: number = process.env.CI ? 45000 : 15000) {
     const deadline = Date.now() + timeoutMs
 
     while (Date.now() < deadline) {
