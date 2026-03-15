@@ -3,6 +3,9 @@ node_modules/
 /playwright-report/
 /playwright-screenshots/
 /playwright/.cache/
+.env
+.env.*
+!.env.example
 
 # General macOS
 .DS_Store

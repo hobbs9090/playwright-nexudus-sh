@@ -1,5 +1,20 @@
 import type { PlaywrightTestConfig } from '@playwright/test'
 import { devices } from '@playwright/test'
+import * as dotenv from 'dotenv'
+
+dotenv.config({ quiet: true })
+
+const requiredEnvVars = ['NEXUDUS_EMAIL', 'NEXUDUS_PASSWORD'] as const
+const missingRequiredEnvVars = requiredEnvVars.filter((name) => !process.env[name]?.trim())
+const viewport = { width: 1280, height: 1200 }
+const headedWindowChromeHeight = 100
+const headedWindowSize = `${viewport.width},${viewport.height + headedWindowChromeHeight}`
+
+if (missingRequiredEnvVars.length > 0) {
+  throw new Error(
+    `Missing required environment variables: ${missingRequiredEnvVars.join(', ')}. Set them before running the Playwright suite.`,
+  )
+}
 
 const isCI = !!process.env.CI
 const isCircleCI = !!process.env.CIRCLECI
@@ -9,12 +24,6 @@ const reporter = isCircleCI
   : isCI
     ? [['github'], ['html', { open: 'never' }]]
     : 'html'
-
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// require('dotenv').config();
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -47,7 +56,8 @@ const config: PlaywrightTestConfig = {
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: process.env.NEXUDUS_BASE_URL || 'https://dashboard.nexudus.com/',
     headless,
-    viewport: { width: 1280, height: 1400 },
+    viewport,
+    screen: viewport,
     video: 'on',
     screenshot: 'on',
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
@@ -60,6 +70,15 @@ const config: PlaywrightTestConfig = {
       name: 'Chromium',
       use: {
         ...devices['Desktop Chrome'],
+        viewport,
+        screen: viewport,
+        ...(headless
+          ? {}
+          : {
+              launchOptions: {
+                args: [`--window-size=${headedWindowSize}`],
+              },
+            }),
       },
     },
 
@@ -106,7 +125,6 @@ const config: PlaywrightTestConfig = {
     //     channel: 'msedge',
     //   },
     // },
-
   ],
 
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
