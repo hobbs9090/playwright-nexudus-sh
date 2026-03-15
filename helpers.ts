@@ -1,7 +1,4 @@
-import { expect } from '@playwright/test'
-import { ProductPage } from './page-objects/ProductPage'
-
-export async function generateProductName() {
+export function generateUniqueName(prefix: string) {
   const today = new Date()
   const day = today.getDate().toString().padStart(2, '0')
   const month = (today.getMonth() + 1).toString().padStart(2, '0')
@@ -17,7 +14,10 @@ export async function generateProductName() {
     const randomIndex = Math.floor(Math.random() * chars.length)
     randomString += chars[randomIndex]
   }
-  const product_name = `TestProduct ${dateStr} ${timeStr} ${randomString}`
-  console.log(product_name)
-  return product_name
+
+  return `${prefix} ${dateStr} ${timeStr} ${randomString}`
+}
+
+export async function generateProductName() {
+  return generateUniqueName('TestProduct')
 }
