@@ -7,6 +7,7 @@ import { LoginPage } from '../page-objects/LoginPage'
 import { ProductPage } from '../page-objects/ProductPage'
 
 const deliveryLabelPath = resolve(__dirname, 'fixtures', 'delivery-label.pdf')
+const collectionSignaturePath = resolve(__dirname, 'fixtures', 'collection-signature.png')
 
 const workflowExpectations = [
   {
@@ -122,6 +123,33 @@ test.describe('Admin panel workflows', () => {
       await deliveryPage.assertAssignedCustomer('Peter Petticrew')
       await deliveryPage.assertDeliveryType('DeliveryType-2')
       await deliveryPage.assertReceivedByCurrentUser()
+    } finally {
+      if (createdDelivery) {
+        await deliveryPage.deleteDelivery(createdDelivery.id)
+      }
+    }
+  })
+
+  test('can add a collection signature to a delivery and mark it as collected @3093', async () => {
+    test.slow()
+    let createdDelivery:
+      | {
+          customerName: string
+          deliveryType: number
+          fileDataFileName: string | null
+          id: number
+          reference: string
+        }
+      | undefined
+
+    try {
+      createdDelivery = await deliveryPage.registerDeliveryForCustomer('Peter Petticrew', 'Parcel')
+      await deliveryPage.openDeliveryDetails(createdDelivery.id)
+      await deliveryPage.uploadCollectionSignature(collectionSignaturePath)
+
+      const collectedDelivery = await deliveryPage.markCurrentDeliveryAsCollected()
+      expect(collectedDelivery.collected).toBe(true)
+      await expect.poll(() => deliveryPage.isPendingDeliveryVisible(createdDelivery.reference), { timeout: 30000 }).toBe(false)
     } finally {
       if (createdDelivery) {
         await deliveryPage.deleteDelivery(createdDelivery.id)
