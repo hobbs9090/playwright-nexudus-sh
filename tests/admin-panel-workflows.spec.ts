@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { generateProductName } from '../helpers'
 import { AdminPanelPage } from '../page-objects/AdminPanelPage'
+import { DeliveryPage } from '../page-objects/DeliveryPage'
 import { LoginPage } from '../page-objects/LoginPage'
 import { ProductPage } from '../page-objects/ProductPage'
 
@@ -58,6 +59,7 @@ const workflowExpectations = [
 
 test.describe('Admin panel workflows', () => {
   let adminPanelPage: AdminPanelPage
+  let deliveryPage: DeliveryPage
   let loginPage: LoginPage
   let productPage: ProductPage
   const productCountTimeout = process.env.CI ? 60000 : 30000
@@ -65,6 +67,7 @@ test.describe('Admin panel workflows', () => {
   test.beforeEach(async ({ page }) => {
     loginPage = new LoginPage(page)
     adminPanelPage = new AdminPanelPage(page)
+    deliveryPage = new DeliveryPage(page)
     productPage = new ProductPage(page)
     await loginPage.login()
   })
@@ -91,5 +94,33 @@ test.describe('Admin panel workflows', () => {
     await expect
       .poll(() => productPage.refreshProductCount(), { timeout: productCountTimeout })
       .toBe(initialProductCount)
+  })
+
+  test('can register a delivery and assign it to a user', async () => {
+    test.slow()
+    let createdDelivery:
+      | {
+          customerName: string
+          deliveryType: number
+          id: number
+          reference: string
+        }
+      | undefined
+
+    try {
+      createdDelivery = await deliveryPage.registerDeliveryForCustomer('Peter Petticrew')
+      expect(createdDelivery.customerName).toBe('Peter Petticrew')
+      expect(createdDelivery.deliveryType).toBe(2)
+      expect(createdDelivery.reference).not.toBe('')
+
+      await deliveryPage.openDeliveryDetails(createdDelivery.id)
+      await deliveryPage.assertAssignedCustomer('Peter Petticrew')
+      await deliveryPage.assertDeliveryType('DeliveryType-2')
+      await deliveryPage.assertReceivedByCurrentUser()
+    } finally {
+      if (createdDelivery) {
+        await deliveryPage.deleteDelivery(createdDelivery.id)
+      }
+    }
   })
 })
