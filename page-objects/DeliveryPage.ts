@@ -1,9 +1,11 @@
+import { basename } from 'node:path'
 import { expect, Locator, Page } from '@playwright/test'
 import { AbstractPage } from './AbstractPage'
 
 type DeliveryRecord = {
   customerName: string
   deliveryType: number
+  fileDataFileName: string | null
   id: number
   reference: string
 }
@@ -16,6 +18,7 @@ export class DeliveryPage extends AbstractPage {
   readonly receivedByInput: Locator
   readonly registerDeliveryButton: Locator
   readonly saveChangesButton: Locator
+  readonly deliveryLabelInput: Locator
   readonly searchCustomerInput: Locator
   readonly deleteButton: Locator
   readonly confirmDeleteButton: Locator
@@ -31,6 +34,7 @@ export class DeliveryPage extends AbstractPage {
     })
     this.receivedByInput = this.formDialog.getByLabel('Received by')
     this.saveChangesButton = this.formDialog.getByRole('button', { name: 'Save changes' })
+    this.deliveryLabelInput = this.formDialog.locator('input[type="file"][name="file"]').first()
     this.deleteButton = page.getByRole('button', { name: 'Delete' })
     this.deleteConfirmationInput = page.getByPlaceholder("Type 'DELETE' to continue")
     this.confirmDeleteButton = page.getByRole('button', { name: 'Yes, do it' })
@@ -47,7 +51,11 @@ export class DeliveryPage extends AbstractPage {
     await expect(this.formDialog).toContainText('Delivery details')
   }
 
-  async registerDeliveryForCustomer(customerName: string, deliveryType: 'Mail' | 'Parcel' | 'Checks' | 'Publicity' = 'Parcel') {
+  async registerDeliveryForCustomer(
+    customerName: string,
+    deliveryType: 'Mail' | 'Parcel' | 'Checks' | 'Publicity' = 'Parcel',
+    deliveryLabelPath?: string
+  ) {
     await this.navigateToList()
     await this.registerDeliveryButton.click()
     await expect(this.formDialog).toContainText('Delivery details')
@@ -63,6 +71,12 @@ export class DeliveryPage extends AbstractPage {
 
     await expect(this.formDialog).toContainText(customerName)
 
+    if (deliveryLabelPath) {
+      const uploadedFileName = basename(deliveryLabelPath)
+      await this.deliveryLabelInput.setInputFiles(deliveryLabelPath)
+      await expect(this.formDialog).toContainText(uploadedFileName, { timeout: 15000 })
+    }
+
     const createResponsePromise = this.page.waitForResponse(
       (response) => response.request().method() === 'POST' && /\/api\/spaces\/coworkerDeliveries$/.test(response.url()),
       { timeout: 30000 }
@@ -76,9 +90,19 @@ export class DeliveryPage extends AbstractPage {
       throw new Error(`Delivery creation did not return a usable record: ${JSON.stringify(createResponseBody)}`)
     }
 
+    if (deliveryLabelPath && createResponseBody.Value.FileDataFileName !== basename(deliveryLabelPath)) {
+      throw new Error(
+        `Delivery label upload was not preserved: ${JSON.stringify({
+          expected: basename(deliveryLabelPath),
+          actual: createResponseBody.Value.FileDataFileName,
+        })}`
+      )
+    }
+
     return {
       customerName: createResponseBody.Value.CoworkerFullName,
       deliveryType: createResponseBody.Value.DeliveryType,
+      fileDataFileName: createResponseBody.Value.FileDataFileName,
       id: createResponseBody.Value.Id,
       reference: createResponseBody.Value.Name,
     } satisfies DeliveryRecord
