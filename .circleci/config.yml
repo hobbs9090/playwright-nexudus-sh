@@ -39,6 +39,7 @@ workflows:
   playwright:
     jobs:
       - playwright-tests:
+          context: nexudus
           filters:
             branches:
               only: /.*/
