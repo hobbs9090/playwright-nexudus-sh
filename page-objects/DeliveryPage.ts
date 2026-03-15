@@ -10,7 +10,13 @@ type DeliveryRecord = {
   reference: string
 }
 
+type CollectedDeliveryRecord = {
+  collected: boolean
+}
+
 export class DeliveryPage extends AbstractPage {
+  readonly collectionSignatureInput: Locator
+  readonly markAsCollectedButton: Locator
   readonly deleteConfirmationInput: Locator
   readonly deliveryTypeSelect: Locator
   readonly formDialog: Locator
@@ -26,6 +32,8 @@ export class DeliveryPage extends AbstractPage {
   constructor(page: Page) {
     super(page)
     this.formDialog = page.locator('[role="dialog"]').filter({ hasText: 'Delivery details' }).first()
+    this.collectionSignatureInput = this.formDialog.locator('#image-field-Signature')
+    this.markAsCollectedButton = this.formDialog.getByRole('button', { name: 'Mark as collected' })
     this.registerDeliveryButton = page.getByRole('button', { name: 'Register delivery' })
     this.manualEntryButton = this.formDialog.getByRole('button', { name: 'Type details manually' })
     this.deliveryTypeSelect = this.formDialog.getByLabel('Delivery type')
@@ -108,6 +116,40 @@ export class DeliveryPage extends AbstractPage {
     } satisfies DeliveryRecord
   }
 
+  async uploadCollectionSignature(signaturePath: string) {
+    const uploadedFileName = basename(signaturePath)
+    await this.collectionSignatureInput.setInputFiles(signaturePath)
+    await expect(this.formDialog).toContainText(uploadedFileName, { timeout: 15000 })
+  }
+
+  async markCurrentDeliveryAsCollected() {
+    const updateResponsePromise = this.page.waitForResponse(
+      (response) => response.request().method() === 'PUT' && /\/api\/spaces\/coworkerDeliveries$/.test(response.url()),
+      { timeout: 30000 }
+    )
+    const runCommandResponsePromise = this.page.waitForResponse(
+      (response) => response.request().method() === 'POST' && /\/api\/spaces\/coworkerDeliveries\/runCommand$/.test(response.url()),
+      { timeout: 30000 }
+    )
+
+    await this.markAsCollectedButton.click()
+
+    const updateResponseBody = await (await updateResponsePromise).json()
+    const runCommandResponseBody = await (await runCommandResponsePromise).json()
+
+    if (!updateResponseBody.WasSuccessful) {
+      throw new Error(`Delivery collect update failed: ${JSON.stringify(updateResponseBody)}`)
+    }
+
+    if (!runCommandResponseBody.WasSuccessful) {
+      throw new Error(`Delivery collect command failed: ${JSON.stringify(runCommandResponseBody)}`)
+    }
+
+    return {
+      collected: true,
+    } satisfies CollectedDeliveryRecord
+  }
+
   async assertAssignedCustomer(customerName: string) {
     await expect(this.formDialog).toContainText(customerName)
   }
@@ -118,6 +160,11 @@ export class DeliveryPage extends AbstractPage {
 
   async assertReceivedByCurrentUser() {
     await expect(this.receivedByInput).toHaveValue(/Harry Potter/i)
+  }
+
+  async isPendingDeliveryVisible(reference: string) {
+    await this.navigateToList()
+    return this.page.getByText(reference, { exact: true }).isVisible().catch(() => false)
   }
 
   async deleteDelivery(id: number) {
