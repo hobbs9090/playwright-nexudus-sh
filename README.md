@@ -10,6 +10,7 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 - Valid login reaches the dashboard
 - A product can be created and then removed from the products area
 - A delivery can be registered, assigned to a user, uploaded with a PDF label, and then removed
+- A delivery can be signed for on collection and marked as collected
 
 ## Project structure
 
@@ -30,6 +31,7 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   |-- admin-panel-overview.spec.ts
 |   |-- admin-panel-workflows.spec.ts
 |   |-- fixtures/
+|   |   |-- collection-signature.png
 |   |   `-- delivery-label.pdf
 |   `-- nexudus.spec.ts
 `-- playwright-report-example/
@@ -56,11 +58,20 @@ The suite supports the following environment variables:
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
 | `NEXUDUS_BASE_URL` | No | `https://dashboard.nexudus.com/` | Base URL used by Playwright navigation |
-| `NEXUDUS_EMAIL` | Recommended | fallback value in code | Username for the valid login flow |
-| `NEXUDUS_PASSWORD` | Recommended | fallback value in code | Password for the valid login flow |
+| `NEXUDUS_EMAIL` | Yes | None | Username for the valid login flow |
+| `NEXUDUS_PASSWORD` | Yes | None | Password for the valid login flow |
 | `PLAYWRIGHT_HEADLESS` | No | `false` locally, `true` on CI | Forces headless browser execution |
 
-For reliable local runs, set `NEXUDUS_EMAIL` and `NEXUDUS_PASSWORD` to a working test account instead of relying on fallback values.
+The suite now fails fast if `NEXUDUS_EMAIL` or `NEXUDUS_PASSWORD` is missing.
+
+The repo root `.env` file is loaded automatically. A tracked template is available in `.env.example`, while `.env` itself is ignored by git.
+
+Example local setup:
+
+```bash
+NEXUDUS_EMAIL='your-test-user@example.com'
+NEXUDUS_PASSWORD='your-test-password'
+```
 
 ## Running the tests
 
@@ -82,6 +93,10 @@ npm run test:report
 ```
 
 By default the active browser project is Chromium. Other browser projects are still present in [playwright.config.ts](playwright.config.ts) but commented out.
+
+## Security
+
+The repository no longer contains fallback Nexudus credentials in code. If you are remediating an older clone or fork, follow the checklist in [docs/security-remediation-checklist.md](docs/security-remediation-checklist.md).
 
 ## Reports and artifacts
 

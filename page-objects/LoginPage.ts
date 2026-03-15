@@ -1,5 +1,6 @@
 import { expect, Locator, Page } from '@playwright/test'
 import { AbstractPage } from './AbstractPage'
+import { requireEnvVar } from '../helpers'
 
 export class LoginPage extends AbstractPage {
   // Define selectors
@@ -19,10 +20,11 @@ export class LoginPage extends AbstractPage {
 
   // Define login page methods
   async login(
-    email: string = process.env.NEXUDUS_EMAIL || 'harry.potter@example.net',
-    password: string = process.env.NEXUDUS_PASSWORD || 'Demo1234!!',
+    email: string = requireEnvVar('NEXUDUS_EMAIL'),
+    password: string = requireEnvVar('NEXUDUS_PASSWORD'),
     valid: boolean = true
   ) {
+    await this.installBlockingDialogSuppression()
     await this.page.goto('')
     await this.emailInput.fill(email)
     await this.passwordInput.fill(password)

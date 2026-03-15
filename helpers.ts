@@ -21,3 +21,13 @@ export function generateUniqueName(prefix: string) {
 export async function generateProductName() {
   return generateUniqueName('TestProduct')
 }
+
+export function requireEnvVar(name: string) {
+  const value = process.env[name]?.trim()
+
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}. See README.md for setup instructions.`)
+  }
+
+  return value
+}
