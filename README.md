@@ -9,6 +9,7 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 - Invalid login shows a clear error message
 - Valid login reaches the dashboard
 - A product can be created and then removed from the products area
+- A delivery can be registered, assigned to a user, uploaded with a PDF label, and then removed
 
 ## Project structure
 
@@ -16,13 +17,20 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 .
 |-- .circleci/config.yml
 |-- .github/workflows/playwright.yml
+|-- docs/
 |-- helpers.ts
 |-- page-objects/
 |   |-- AbstractPage.ts
+|   |-- AdminPanelPage.ts
+|   |-- DeliveryPage.ts
 |   |-- LoginPage.ts
 |   `-- ProductPage.ts
 |-- playwright.config.ts
 |-- tests/
+|   |-- admin-panel-overview.spec.ts
+|   |-- admin-panel-workflows.spec.ts
+|   |-- fixtures/
+|   |   `-- delivery-label.pdf
 |   `-- nexudus.spec.ts
 `-- playwright-report-example/
 ```
@@ -62,6 +70,12 @@ npm test
 
 # Run in headed mode
 npm run test:headed
+
+# Run only the delivery workflow tagged with @3093
+npx playwright test -g @3093
+
+# Run only the delivery workflow tagged with @3093 in headed mode
+npx playwright test --headed -g @3093
 
 # Open the latest HTML report
 npm run test:report

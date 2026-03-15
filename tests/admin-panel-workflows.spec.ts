@@ -1,9 +1,12 @@
+import { resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 import { generateProductName } from '../helpers'
 import { AdminPanelPage } from '../page-objects/AdminPanelPage'
 import { DeliveryPage } from '../page-objects/DeliveryPage'
 import { LoginPage } from '../page-objects/LoginPage'
 import { ProductPage } from '../page-objects/ProductPage'
+
+const deliveryLabelPath = resolve(__dirname, 'fixtures', 'delivery-label.pdf')
 
 const workflowExpectations = [
   {
@@ -96,21 +99,23 @@ test.describe('Admin panel workflows', () => {
       .toBe(initialProductCount)
   })
 
-  test('can register a delivery and assign it to a user', async () => {
+  test('can register a delivery, upload a label PDF, and assign it to a user @3093', async () => {
     test.slow()
     let createdDelivery:
       | {
           customerName: string
           deliveryType: number
+          fileDataFileName: string | null
           id: number
           reference: string
         }
       | undefined
 
     try {
-      createdDelivery = await deliveryPage.registerDeliveryForCustomer('Peter Petticrew')
+      createdDelivery = await deliveryPage.registerDeliveryForCustomer('Peter Petticrew', 'Parcel', deliveryLabelPath)
       expect(createdDelivery.customerName).toBe('Peter Petticrew')
       expect(createdDelivery.deliveryType).toBe(2)
+      expect(createdDelivery.fileDataFileName).toBe('delivery-label.pdf')
       expect(createdDelivery.reference).not.toBe('')
 
       await deliveryPage.openDeliveryDetails(createdDelivery.id)
