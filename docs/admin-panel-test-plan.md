@@ -85,7 +85,7 @@ Observed on March 14, 2026 by logging into the live demo tenant at `https://dash
 
 - `tests/nexudus.spec.ts`: invalid login and valid login baseline coverage.
 - `tests/admin-panel-overview.spec.ts`: section-level capability smoke coverage.
-- `tests/admin-panel-workflows.spec.ts`: core operational list workflows plus strengthened product CRUD.
+- `tests/admin-panel-workflows.spec.ts`: core operational list workflows plus strengthened product CRUD and delivery create/assign/delete coverage.
 
 ## Known gaps and risks
 
