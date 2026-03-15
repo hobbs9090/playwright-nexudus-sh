@@ -38,4 +38,9 @@ jobs:
 workflows:
   playwright:
     jobs:
-      - playwright-tests
+      - playwright-tests:
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              ignore: /.*/

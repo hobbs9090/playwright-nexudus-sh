@@ -126,11 +126,15 @@ The repository also includes a CircleCI pipeline at [.circleci/config.yml](.circ
 
 It uses the version-matched Playwright Docker image, runs `npm ci`, executes `npm test`, stores JUnit results from `test-results/results.xml`, and uploads both `playwright-report/` and `test-results/` as CircleCI artifacts.
 
+The workflow is configured to run on every push to every branch in the repository. Tag-only pushes are ignored.
+
 To use it in CircleCI, add these environment variables in the project settings:
 
 - `NEXUDUS_EMAIL`
 - `NEXUDUS_PASSWORD`
 - Optional: `NEXUDUS_BASE_URL`
+
+You also need to connect the GitHub repository in CircleCI and enable pipelines for the project. Once that is done, each new commit pushed to the repository will trigger the CircleCI workflow automatically.
 
 The Playwright config automatically switches to a CircleCI-friendly reporter set when `CIRCLECI=true`, so test runs produce line output, JUnit XML, and the HTML report without needing a separate script.
 
