@@ -4,9 +4,11 @@
   "description": "Playwright test automation framework for Nexudus",
   "main": "index.js",
   "scripts": {
-    "test": "playwright test",
-    "test:headed": "playwright test --headed",
-    "test:report": "playwright show-report"
+    "test": "node scripts/run-with-dotenv.mjs -- playwright test",
+    "test:headed": "node scripts/run-with-dotenv.mjs -- playwright test --headed",
+    "test:report": "node scripts/run-with-dotenv.mjs -- playwright show-report",
+    "perf:smoke": "node scripts/run-with-dotenv.mjs -- k6 run performance/landing-page.js",
+    "perf:login": "node scripts/run-with-dotenv.mjs -- k6 run performance/admin-login.js"
   },
   "author": "Steven Hobbs",
   "license": "ISC",

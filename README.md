@@ -64,7 +64,7 @@ The suite supports the following environment variables:
 
 The suite now fails fast if `NEXUDUS_EMAIL` or `NEXUDUS_PASSWORD` is missing.
 
-The repo root `.env` file is loaded automatically. A tracked template is available in `.env.example`, while `.env` itself is ignored by git.
+The repo root `.env` file is loaded automatically by the npm scripts in this repository. A tracked template is available in `.env.example`, while `.env` itself is ignored by git.
 
 Example local setup:
 
@@ -72,6 +72,8 @@ Example local setup:
 NEXUDUS_EMAIL='your-test-user@example.com'
 NEXUDUS_PASSWORD='your-test-password'
 ```
+
+That same `.env` file is used for both the Playwright commands and the k6 commands in `package.json`.
 
 ## Running the tests
 
@@ -93,6 +95,52 @@ npm run test:report
 ```
 
 By default the active browser project is Chromium. Other browser projects are still present in [playwright.config.ts](playwright.config.ts) but commented out.
+
+## Running the k6 performance smoke test
+
+This repository also includes a small k6 smoke test for the public Nexudus landing page and its primary static assets.
+
+Prerequisite:
+
+- Install the `k6` CLI locally from https://grafana.com/docs/k6/latest/set-up/install-k6/
+
+Example usage:
+
+```bash
+# Run the default smoke test against the standard Nexudus dashboard URL
+npm run perf:smoke
+
+# Override the target URL or load profile
+NEXUDUS_BASE_URL='https://dashboard.nexudus.com' K6_VUS=10 K6_DURATION=45s npm run perf:smoke
+```
+
+The test uses these environment variables:
+
+- `NEXUDUS_BASE_URL` to choose the target host
+- `K6_VUS` to set the number of virtual users, default `5`
+- `K6_DURATION` to set the test duration, default `30s`
+
+## Running the k6 authenticated login smoke test
+
+There is also a browser-based k6 smoke test for the authenticated admin-panel login flow.
+
+It uses the same credentials as the Playwright suite:
+
+- `NEXUDUS_EMAIL`
+- `NEXUDUS_PASSWORD`
+- Optional `NEXUDUS_BASE_URL`
+
+Example usage:
+
+```bash
+# Run a single authenticated login check
+npm run perf:login
+
+# Override the browser scenario profile
+K6_LOGIN_VUS=1 K6_LOGIN_ITERATIONS=3 K6_LOGIN_MAX_DURATION=3m npm run perf:login
+```
+
+The login test uses a browser scenario, so it is intentionally lightweight by default. It verifies that valid credentials reach `/dashboards/now` and that the Dashboard navigation link becomes visible after sign-in.
 
 ## Security
 
