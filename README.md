@@ -170,6 +170,8 @@ The workflow installs dependencies, installs the Playwright Chromium browser, ru
 
 Each workflow run also adds a Playwright summary directly to the GitHub Actions interface. On pushes to `main`, the workflow publishes the HTML report to GitHub Pages so it can be opened in the browser without downloading the artifact first.
 
+The workflow also runs the k6 landing-page smoke test on every run. The browser-based authenticated k6 login smoke test is manual-only in GitHub Actions and runs only when the workflow is started with `workflow_dispatch` and the repository variable `RUN_K6_BROWSER_LOGIN` is set to `true`.
+
 To use the published HTML report, enable GitHub Pages for the repository and select GitHub Actions as the source.
 
 ## CircleCI

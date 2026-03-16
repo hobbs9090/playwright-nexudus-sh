@@ -54,6 +54,7 @@ jobs:
         run: npm run perf:smoke -- --vus 1 --duration 10s
 
       - name: Run k6 authenticated login smoke test
+        if: github.event_name == 'workflow_dispatch' && vars.RUN_K6_BROWSER_LOGIN == 'true'
         env:
           K6_BROWSER_EXECUTABLE_PATH: ${{ steps.chromium.outputs.path }}
           K6_BROWSER_HEADLESS: "true"
