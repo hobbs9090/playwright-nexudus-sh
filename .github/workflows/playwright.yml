@@ -42,7 +42,9 @@ jobs:
 
       - name: Resolve Playwright Chromium path for k6 browser tests
         id: chromium
-        run: echo "path=$(node -e \"console.log(require('playwright').chromium.executablePath())\")" >> "$GITHUB_OUTPUT"
+        run: |
+          chromium_path=$(node -p "require('playwright').chromium.executablePath()")
+          echo "path=${chromium_path}" >> "$GITHUB_OUTPUT"
 
       - name: Run Playwright tests
         id: playwright
