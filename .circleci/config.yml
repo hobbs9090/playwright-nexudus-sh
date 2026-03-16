@@ -11,6 +11,16 @@ jobs:
       PLAYWRIGHT_HTML_OPEN: "never"
     steps:
       - checkout
+      - run:
+          name: Validate required environment variables
+          command: |
+            for var in NEXUDUS_EMAIL NEXUDUS_PASSWORD; do
+              if [ -z "${!var}" ]; then
+                echo "Missing required CircleCI environment variable: ${var}"
+                exit 1
+              fi
+            done
+            echo "Required CircleCI environment variables are present."
       - restore_cache:
           keys:
             - npm-v1-{{ checksum "package-lock.json" }}

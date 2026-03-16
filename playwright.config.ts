@@ -22,7 +22,7 @@ const headless = (process.env.PLAYWRIGHT_HEADLESS || '').toLowerCase() === 'true
 const reporter = isCircleCI
   ? [['line'], ['junit', { outputFile: 'test-results/results.xml' }], ['html', { open: 'never' }]]
   : isCI
-    ? [['github'], ['html', { open: 'never' }]]
+    ? [['github'], ['junit', { outputFile: 'test-results/results.xml' }], ['html', { open: 'never' }]]
     : 'html'
 
 /**
