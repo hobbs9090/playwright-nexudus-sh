@@ -1,5 +1,5 @@
 {
-  "name": "playwright-nexudus",
+  "name": "playwright-nexudus-sh",
   "version": "1.0.0",
   "description": "Playwright test automation framework for Nexudus",
   "main": "index.js",

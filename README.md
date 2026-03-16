@@ -1,4 +1,4 @@
-# playwright-nexudus
+# playwright-nexudus-sh
 
 End-to-end Playwright test suite for the Nexudus dashboard.
 
@@ -45,8 +45,8 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 ## Installation
 
 ```bash
-git clone https://github.com/hobbs9090/playwright-nexudus.git
-cd playwright-nexudus
+git clone https://github.com/hobbs9090/playwright-nexudus-sh.git
+cd playwright-nexudus-sh
 npm ci
 npx playwright install chromium
 ```
@@ -119,6 +119,10 @@ To use the workflow, configure these GitHub settings:
 - Optional repository variable: `NEXUDUS_BASE_URL`
 
 The workflow installs dependencies, installs the Playwright Chromium browser, runs the test suite, and uploads both the Playwright HTML report and `test-results` as artifacts.
+
+Each workflow run also adds a Playwright summary directly to the GitHub Actions interface. On pushes to `main`, the workflow publishes the HTML report to GitHub Pages so it can be opened in the browser without downloading the artifact first.
+
+To use the published HTML report, enable GitHub Pages for the repository and select GitHub Actions as the source.
 
 ## CircleCI
 
