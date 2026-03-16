@@ -37,9 +37,25 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Set up k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Resolve Playwright Chromium path for k6 browser tests
+        id: chromium
+        run: echo "path=$(node -e \"console.log(require('playwright').chromium.executablePath())\")" >> "$GITHUB_OUTPUT"
+
       - name: Run Playwright tests
         id: playwright
         run: npm test
+
+      - name: Run k6 landing page smoke test
+        run: npm run perf:smoke -- --vus 1 --duration 10s
+
+      - name: Run k6 authenticated login smoke test
+        env:
+          K6_BROWSER_EXECUTABLE_PATH: ${{ steps.chromium.outputs.path }}
+          K6_BROWSER_HEADLESS: "true"
+        run: npm run perf:login
 
       - name: Ensure Playwright report directory exists
         if: always()
