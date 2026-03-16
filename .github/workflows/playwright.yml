@@ -46,19 +46,19 @@ jobs:
         run: |
           if [ ! -f playwright-report/index.html ]; then
             mkdir -p playwright-report
-            cat <<'EOF' > playwright-report/index.html
-            <!doctype html>
-            <html lang="en">
-              <head>
-                <meta charset="utf-8" />
-                <title>Playwright report unavailable</title>
-              </head>
-              <body>
-                <h1>Playwright report unavailable</h1>
-                <p>The Playwright HTML report was not generated for this run.</p>
-              </body>
-            </html>
-            EOF
+            printf '%s\n' \
+              '<!doctype html>' \
+              '<html lang="en">' \
+              '  <head>' \
+              '    <meta charset="utf-8" />' \
+              '    <title>Playwright report unavailable</title>' \
+              '  </head>' \
+              '  <body>' \
+              '    <h1>Playwright report unavailable</h1>' \
+              '    <p>The Playwright HTML report was not generated for this run.</p>' \
+              '  </body>' \
+              '</html>' \
+              > playwright-report/index.html
           fi
 
       - name: Add Playwright summary to GitHub UI
@@ -85,7 +85,7 @@ jobs:
 
   deploy-report:
     name: Publish Playwright report
-    if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.test.result != 'cancelled'
+    if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.test.result != 'cancelled' && vars.PLAYWRIGHT_PUBLISH_REPORT == 'true'
     needs: test
     runs-on: ubuntu-latest
     permissions:
