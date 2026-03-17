@@ -104,7 +104,7 @@ jobs:
 
   deploy-report:
     name: Publish Playwright report
-    if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.test.result != 'cancelled' && vars.PLAYWRIGHT_PUBLISH_REPORT == 'true'
+    if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.test.result != 'cancelled'
     needs: test
     runs-on: ubuntu-latest
     permissions:
