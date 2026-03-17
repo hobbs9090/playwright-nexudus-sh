@@ -70,9 +70,9 @@ The suite supports the following environment variables:
 | `NEXUDUS_AP_BASE_URL` | No | `https://dashboard.nexudus.com/` | Base URL for the AP project |
 | `NEXUDUS_AP_EMAIL` | Yes | None | Username for the AP project |
 | `NEXUDUS_AP_PASSWORD` | Yes | None | Password for the AP project |
-| `NEXUDUS_AP_MEMBER_NAME` | Yes for AP delivery workflows | None | Member name used by AP delivery workflow tests |
-| `NEXUDUS_AP_RECEIVED_BY_NAME` | Yes for AP delivery workflows | None | AP user name expected in the delivery `Received by` field |
-| `NEXUDUS_AP_COURSE_HOST_NAME` | Yes for AP course workflows | None | Host name selected when creating AP courses |
+| `NEXUDUS_AP_MEMBER_NAME` | Yes for AP delivery workflows | `Felicity Ward` via `.env.shared` | Member name used by AP delivery workflow tests |
+| `NEXUDUS_AP_RECEIVED_BY_NAME` | Yes for AP delivery workflows | `Steven Hobbs` via `.env.shared` | AP user name expected in the delivery `Received by` field |
+| `NEXUDUS_AP_COURSE_HOST_NAME` | Yes for AP course workflows | `Jane Appleby` via `.env.shared` | Host name selected when creating AP courses |
 | `NEXUDUS_MP_BASE_URL` | No | `https://dashboard-staging.nexudus.com/` | Base URL for the MP staging project |
 | `NEXUDUS_MP_EMAIL` | Yes | None | Username for the MP staging project |
 | `NEXUDUS_MP_PASSWORD` | Yes | None | Password for the MP staging project |
@@ -80,7 +80,7 @@ The suite supports the following environment variables:
 
 The suite currently runs AP admin coverage on the AP dashboard and MP login coverage on the MP staging dashboard. It fails fast if the credential pair required for the selected project is missing.
 
-The repo root `.env.shared` and `.env` files are loaded automatically by the npm scripts in this repository. `.env.shared` is intended for tracked team-wide non-sensitive values, while `.env` is intended for local secrets and machine-specific overrides. A tracked template is available in `.env.example`, while `.env` itself is ignored by git.
+The repo root `.env.shared` and `.env` files are loaded automatically by the npm scripts in this repository. `.env.shared` is intended for tracked team-wide non-sensitive defaults, while `.env` is intended for local secrets and machine-specific overrides. A tracked template is available in `.env.example`, while `.env` itself is ignored by git.
 
 Example local setup:
 
