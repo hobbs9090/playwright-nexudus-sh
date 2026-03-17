@@ -72,6 +72,7 @@ The suite supports the following environment variables:
 | `NEXUDUS_AP_PASSWORD` | Yes | None | Password for the AP project |
 | `NEXUDUS_AP_MEMBER_NAME` | Yes for AP delivery workflows | None | Member name used by AP delivery workflow tests |
 | `NEXUDUS_AP_RECEIVED_BY_NAME` | Yes for AP delivery workflows | None | AP user name expected in the delivery `Received by` field |
+| `NEXUDUS_AP_COURSE_HOST_NAME` | Yes for AP course workflows | None | Host name selected when creating AP courses |
 | `NEXUDUS_MP_BASE_URL` | No | `https://dashboard-staging.nexudus.com/` | Base URL for the MP staging project |
 | `NEXUDUS_MP_EMAIL` | Yes | None | Username for the MP staging project |
 | `NEXUDUS_MP_PASSWORD` | Yes | None | Password for the MP staging project |
@@ -96,6 +97,7 @@ The committed [.env.shared](/Users/steven/Source/Playwright/playwright-nexudus-s
 
 - `NEXUDUS_AP_MEMBER_NAME=Felicity Ward`
 - `NEXUDUS_AP_RECEIVED_BY_NAME=Steven Hobbs`
+- `NEXUDUS_AP_COURSE_HOST_NAME=Jane Appleby`
 
 Load order is:
 

@@ -27,6 +27,7 @@ export class MPLoginPage extends AbstractPage {
   }
 
   async assertDashboardVisible() {
-    await expect(this.page.getByText('My dashboard')).toBeVisible()
+    await expect(this.page.getByRole('button', { name: /Dashboard/ }).first()).toBeVisible()
+    await expect(this.page.getByRole('heading', { name: /Hello .+,/ }).first()).toBeVisible()
   }
 }
