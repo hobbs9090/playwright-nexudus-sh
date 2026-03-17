@@ -1,9 +1,17 @@
 import type { PlaywrightTestConfig } from '@playwright/test'
 import { devices } from '@playwright/test'
 import * as dotenv from 'dotenv'
+import { existsSync } from 'node:fs'
+import path from 'node:path'
 import { getBaseURL, getRequiredCredentialEnvVars, testEnvironments } from './test-environments'
 
-dotenv.config({ quiet: true })
+for (const envFileName of ['.env.shared', '.env']) {
+  const envFilePath = path.resolve(process.cwd(), envFileName)
+
+  if (existsSync(envFilePath)) {
+    dotenv.config({ path: envFilePath, override: false, quiet: true })
+  }
+}
 
 const requiredEnvVars = getRequiredCredentialEnvVars()
 const missingRequiredEnvVars = requiredEnvVars.filter((name) => !process.env[name]?.trim())

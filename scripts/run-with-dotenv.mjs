@@ -13,10 +13,12 @@ if (commandArgs.length === 0) {
   process.exit(1)
 }
 
-const envPath = path.resolve(process.cwd(), '.env')
+for (const envFileName of ['.env.shared', '.env']) {
+  const envPath = path.resolve(process.cwd(), envFileName)
 
-if (existsSync(envPath)) {
-  dotenv.config({ path: envPath, override: false, quiet: true })
+  if (existsSync(envPath)) {
+    dotenv.config({ path: envPath, override: false, quiet: true })
+  }
 }
 
 const child = spawn(commandArgs[0], commandArgs.slice(1), {

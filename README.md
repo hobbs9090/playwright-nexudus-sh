@@ -80,22 +80,30 @@ The suite supports the following environment variables:
 
 The suite currently runs AP admin coverage on the AP dashboard and MP login coverage on the MP staging dashboard. It fails fast if the credential pair required for the selected project is missing.
 
-The repo root `.env` file is loaded automatically by the npm scripts in this repository. A tracked template is available in `.env.example`, while `.env` itself is ignored by git.
+The repo root `.env.shared` and `.env` files are loaded automatically by the npm scripts in this repository. `.env.shared` is intended for tracked team-wide non-sensitive values, while `.env` is intended for local secrets and machine-specific overrides. A tracked template is available in `.env.example`, while `.env` itself is ignored by git.
 
 Example local setup:
 
 ```bash
 NEXUDUS_AP_EMAIL='your-ap-user@example.com'
 NEXUDUS_AP_PASSWORD='your-ap-password'
-NEXUDUS_AP_MEMBER_NAME='Felicity Ward'
-NEXUDUS_AP_RECEIVED_BY_NAME='Steven Hobbs'
 NEXUDUS_MP_EMAIL='your-mp-staging-user@example.com'
 NEXUDUS_MP_PASSWORD='your-mp-staging-password'
 NEXUDUS_AP_BASE_URL='https://dashboard.nexudus.com/'
 NEXUDUS_MP_BASE_URL='https://dashboard-staging.nexudus.com/'
 ```
 
-That same `.env` file is used for both the Playwright commands and the k6 commands in `package.json`.
+The committed [.env.shared](/Users/steven/Source/Playwright/playwright-nexudus-sh/.env.shared) currently provides:
+
+- `NEXUDUS_AP_MEMBER_NAME=Felicity Ward`
+- `NEXUDUS_AP_RECEIVED_BY_NAME=Steven Hobbs`
+
+Load order is:
+
+- `.env.shared` first
+- `.env` second
+
+That means local `.env` values can override shared defaults when needed. The same load order is used for both the Playwright commands and the k6 commands in `package.json`.
 
 ## Running the tests
 
