@@ -1,5 +1,5 @@
 import { expect, Locator, Page } from '@playwright/test'
-import { AbstractPage } from './AbstractPage'
+import { AbstractPage } from '../shared/AbstractPage'
 
 type WorkflowExpectation = {
   actionButton?: string

@@ -9,6 +9,7 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 - AP login shows a clear error message when invalid credentials are provided
 - AP login succeeds with the configured AP credentials
 - MP staging member-portal login succeeds with the configured MP credentials
+- A flower arranging course can be created in AP
 - A product can be created and then removed from the products area
 - A delivery can be registered, assigned to a user, uploaded with a PDF label, and then removed
 - A delivery can be signed for on collection and marked as collected
@@ -22,20 +23,28 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |-- docs/
 |-- helpers.ts
 |-- page-objects/
-|   |-- AbstractPage.ts
-|   |-- AdminPanelPage.ts
-|   |-- DeliveryPage.ts
-|   |-- LoginPage.ts
-|   `-- ProductPage.ts
+|   |-- ap/
+|   |   |-- AdminPanelPage.ts
+|   |   |-- APLoginPage.ts
+|   |   |-- CoursePage.ts
+|   |   |-- DeliveryPage.ts
+|   |   `-- ProductPage.ts
+|   |-- mp/
+|   |   `-- MPLoginPage.ts
+|   `-- shared/
+|       `-- AbstractPage.ts
 |-- playwright.config.ts
 |-- tests/
-|   |-- ap-login.spec.ts
-|   |-- admin-panel-overview.spec.ts
-|   |-- admin-panel-workflows.spec.ts
+|   |-- ap/
+|   |   |-- ap-login.spec.ts
+|   |   |-- course-workflows.spec.ts
+|   |   |-- admin-panel-overview.spec.ts
+|   |   `-- admin-panel-workflows.spec.ts
 |   |-- fixtures/
 |   |   |-- collection-signature.png
 |   |   `-- delivery-label.pdf
-|   `-- mp-login.spec.ts
+|   `-- mp/
+|       `-- mp-login.spec.ts
 `-- playwright-report-example/
 ```
 
@@ -103,12 +112,14 @@ npx playwright test --headed -g @3093
 npm run test:report
 ```
 
-By default the suite runs two Chromium projects: `AP Chromium` and `MP Staging Chromium`. `AP Chromium` includes the admin overview, admin workflow, and AP login specs against the dashboard application. `MP Staging Chromium` currently runs only the MP member-portal login spec against the spaces staging application. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "MP Staging Chromium"`.
+By default the suite runs two Chromium projects: `AP Chromium` and `MP Staging Chromium`. `AP Chromium` includes the admin overview, admin workflow, AP login, and AP course-creation specs against the dashboard application. `MP Staging Chromium` currently runs only the MP member-portal login spec against the spaces staging application. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "MP Staging Chromium"`.
 
 The environment split is explicit in code:
 
-- [tests/ap-login.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/ap-login.spec.ts), [tests/admin-panel-overview.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/admin-panel-overview.spec.ts), and [tests/admin-panel-workflows.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/admin-panel-workflows.spec.ts) run only on `AP Chromium`.
-- [tests/mp-login.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/mp-login.spec.ts) runs only on `MP Staging Chromium` with `NEXUDUS_MP_EMAIL` and `NEXUDUS_MP_PASSWORD`, opens the member-portal `/login` page, and verifies the authenticated `/home` dashboard.
+- AP-specific page objects live in [page-objects/ap](/Users/steven/Source/Steven/playwright-nexudus-sh/page-objects/ap), while MP-specific page objects live in [page-objects/mp](/Users/steven/Source/Steven/playwright-nexudus-sh/page-objects/mp).
+- Shared low-level behavior stays in [page-objects/shared/AbstractPage.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/page-objects/shared/AbstractPage.ts).
+- Files in [tests/ap](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/ap) run only on `AP Chromium`, including [tests/ap/ap-login.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/ap/ap-login.spec.ts), [tests/ap/course-workflows.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/ap/course-workflows.spec.ts), [tests/ap/admin-panel-overview.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/ap/admin-panel-overview.spec.ts), and [tests/ap/admin-panel-workflows.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/ap/admin-panel-workflows.spec.ts).
+- Files in [tests/mp](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/mp) run only on `MP Staging Chromium`, currently [tests/mp/mp-login.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/mp/mp-login.spec.ts), which opens the member-portal `/login` page and verifies the authenticated `/home` dashboard.
 
 ## Running the k6 performance smoke test
 

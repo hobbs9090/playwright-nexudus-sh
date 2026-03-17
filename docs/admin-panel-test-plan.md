@@ -83,9 +83,10 @@ Observed on March 14, 2026 by logging into the live demo tenant at `https://dash
 
 ## Automated coverage added in this repo
 
-- `tests/nexudus.spec.ts`: invalid login and valid login baseline coverage.
-- `tests/admin-panel-overview.spec.ts`: section-level capability smoke coverage.
-- `tests/admin-panel-workflows.spec.ts`: core operational list workflows plus strengthened product CRUD and delivery create/assign/delete coverage.
+- `tests/ap/ap-login.spec.ts`: invalid login and valid AP login baseline coverage.
+- `tests/ap/admin-panel-overview.spec.ts`: section-level capability smoke coverage for the AP dashboard.
+- `tests/ap/admin-panel-workflows.spec.ts`: core operational list workflows plus strengthened product CRUD and delivery create/assign/delete coverage for the AP dashboard.
+- `tests/mp/mp-login.spec.ts`: MP staging member-portal login coverage.
 
 ## Known gaps and risks
 

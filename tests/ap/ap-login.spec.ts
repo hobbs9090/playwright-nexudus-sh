@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test'
-import { LoginPage } from '../page-objects/LoginPage'
+import { APLoginPage } from '../../page-objects/ap/APLoginPage'
 
 test.describe('AP login', () => {
-  let loginPage: LoginPage
+  let loginPage: APLoginPage
 
   test.beforeEach(async ({ page }) => {
-    loginPage = new LoginPage(page)
+    loginPage = new APLoginPage(page)
   })
 
   test('shows a clear error message when invalid AP details are provided', async () => {

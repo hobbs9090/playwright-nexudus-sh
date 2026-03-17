@@ -1,13 +1,13 @@
 import { resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
-import { generateProductName } from '../helpers'
-import { AdminPanelPage } from '../page-objects/AdminPanelPage'
-import { DeliveryPage } from '../page-objects/DeliveryPage'
-import { LoginPage } from '../page-objects/LoginPage'
-import { ProductPage } from '../page-objects/ProductPage'
+import { generateProductName } from '../../helpers'
+import { AdminPanelPage } from '../../page-objects/ap/AdminPanelPage'
+import { DeliveryPage } from '../../page-objects/ap/DeliveryPage'
+import { APLoginPage } from '../../page-objects/ap/APLoginPage'
+import { ProductPage } from '../../page-objects/ap/ProductPage'
 
-const deliveryLabelPath = resolve(__dirname, 'fixtures', 'delivery-label.pdf')
-const collectionSignaturePath = resolve(__dirname, 'fixtures', 'collection-signature.png')
+const deliveryLabelPath = resolve(__dirname, '..', 'fixtures', 'delivery-label.pdf')
+const collectionSignaturePath = resolve(__dirname, '..', 'fixtures', 'collection-signature.png')
 
 const workflowExpectations = [
   {
@@ -64,12 +64,12 @@ const workflowExpectations = [
 test.describe('Admin panel workflows', () => {
   let adminPanelPage: AdminPanelPage
   let deliveryPage: DeliveryPage
-  let loginPage: LoginPage
+  let loginPage: APLoginPage
   let productPage: ProductPage
   const productCountTimeout = 60000
 
   test.beforeEach(async ({ page }) => {
-    loginPage = new LoginPage(page)
+    loginPage = new APLoginPage(page)
     adminPanelPage = new AdminPanelPage(page)
     deliveryPage = new DeliveryPage(page)
     productPage = new ProductPage(page)

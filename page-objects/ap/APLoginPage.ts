@@ -1,15 +1,13 @@
-import { expect, Locator, Page, test } from '@playwright/test'
-import { AbstractPage } from './AbstractPage'
-import { getCredentialsForProject, getEnvironmentForProject } from '../test-environments'
+import { expect, Locator, Page } from '@playwright/test'
+import { getCredentials } from '../../test-environments'
+import { AbstractPage } from '../shared/AbstractPage'
 
-export class LoginPage extends AbstractPage {
-  // Define selectors
+export class APLoginPage extends AbstractPage {
   readonly emailInput: Locator
   readonly passwordInput: Locator
   readonly signInButton: Locator
   readonly errorMessage: Locator
 
-  // Init selectors using constructor
   constructor(page: Page) {
     super(page)
     this.emailInput = page.getByLabel('Email')
@@ -18,27 +16,23 @@ export class LoginPage extends AbstractPage {
     this.errorMessage = page.locator('.euiText')
   }
 
-  // Define login page methods
-  async login(
-    email?: string,
-    password?: string,
-    valid: boolean = true
-  ) {
-    const environment = getEnvironmentForProject(test.info().project.name)
-    const credentials = getCredentialsForProject(test.info().project.name)
+  async login(email?: string, password?: string, valid: boolean = true) {
+    const credentials = getCredentials('NEXUDUS_AP_EMAIL', 'NEXUDUS_AP_PASSWORD')
     const resolvedEmail = email ?? credentials.email
     const resolvedPassword = password ?? credentials.password
 
     await this.installBlockingDialogSuppression()
-    await this.page.goto(environment.loginPath)
+    await this.page.goto('')
     await this.emailInput.fill(resolvedEmail)
     await this.passwordInput.fill(resolvedPassword)
     await this.signInButton.click()
+
     if (valid) {
-      await this.page.waitForURL(environment.successUrlPattern, { timeout: 30000 })
-    } else {
-      await this.assertErrorMessage('The email or password is incorrect.')
+      await this.page.waitForURL(/\/dashboards\/now(?:\?.*)?$/, { timeout: 30000 })
+      return
     }
+
+    await this.assertErrorMessage('The email or password is incorrect.')
   }
 
   async assertErrorMessage(errorMessage: string) {

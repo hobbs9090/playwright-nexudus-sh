@@ -69,7 +69,6 @@ const config: PlaywrightTestConfig = {
   projects: testEnvironments.map((environment) => ({
     name: environment.projectName,
     testMatch: environment.testMatch,
-    testIgnore: environment.testIgnore,
     use: {
       ...devices['Desktop Chrome'],
       baseURL: getBaseURL(environment),

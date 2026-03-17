@@ -1,6 +1,6 @@
 import { basename } from 'node:path'
 import { expect, Locator, Page } from '@playwright/test'
-import { AbstractPage } from './AbstractPage'
+import { AbstractPage } from '../shared/AbstractPage'
 
 type DeliveryRecord = {
   customerName: string

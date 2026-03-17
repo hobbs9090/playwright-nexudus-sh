@@ -1,16 +1,16 @@
 import { expect, test } from '@playwright/test'
-import { LoginPage } from '../page-objects/LoginPage'
+import { MPLoginPage } from '../../page-objects/mp/MPLoginPage'
 
 test.describe('MP staging login', () => {
-  let loginPage: LoginPage
+  let loginPage: MPLoginPage
 
   test.beforeEach(async ({ page }) => {
-    loginPage = new LoginPage(page)
+    loginPage = new MPLoginPage(page)
   })
 
   test('logs into MP staging with the configured MP credentials', async ({ page }) => {
     await loginPage.login()
     await expect(page).toHaveURL(/\/home(?:\?.*)?$/)
-    await expect(page.getByText('My dashboard')).toBeVisible()
+    await loginPage.assertDashboardVisible()
   })
 })

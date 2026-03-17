@@ -1,6 +1,6 @@
 import { test } from '@playwright/test'
-import { AdminPanelPage } from '../page-objects/AdminPanelPage'
-import { LoginPage } from '../page-objects/LoginPage'
+import { AdminPanelPage } from '../../page-objects/ap/AdminPanelPage'
+import { APLoginPage } from '../../page-objects/ap/APLoginPage'
 
 const sectionExpectations = [
   {
@@ -37,10 +37,10 @@ const sectionExpectations = [
 
 test.describe('Admin panel overview', () => {
   let adminPanelPage: AdminPanelPage
-  let loginPage: LoginPage
+  let loginPage: APLoginPage
 
   test.beforeEach(async ({ page }) => {
-    loginPage = new LoginPage(page)
+    loginPage = new APLoginPage(page)
     adminPanelPage = new AdminPanelPage(page)
     await loginPage.login()
   })
