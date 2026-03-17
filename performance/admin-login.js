@@ -1,15 +1,15 @@
 import { browser } from 'k6/browser'
 import { check, fail } from 'k6'
 
-const baseUrl = (__ENV.NEXUDUS_BASE_URL || 'https://dashboard.nexudus.com/').replace(/\/+$/, '')
-const email = (__ENV.NEXUDUS_EMAIL || '').trim()
-const password = (__ENV.NEXUDUS_PASSWORD || '').trim()
+const baseUrl = (__ENV.NEXUDUS_AP_BASE_URL || 'https://dashboard.nexudus.com/').replace(/\/+$/, '')
+const email = (__ENV.NEXUDUS_AP_EMAIL || '').trim()
+const password = (__ENV.NEXUDUS_AP_PASSWORD || '').trim()
 const iterations = Number.parseInt(__ENV.K6_LOGIN_ITERATIONS || '1', 10)
 const vus = Number.parseInt(__ENV.K6_LOGIN_VUS || '1', 10)
 const maxDuration = __ENV.K6_LOGIN_MAX_DURATION || '2m'
 
 if (!email || !password) {
-  fail('Missing required environment variables: NEXUDUS_EMAIL and NEXUDUS_PASSWORD')
+  fail('Missing required environment variables: NEXUDUS_AP_EMAIL and NEXUDUS_AP_PASSWORD')
 }
 
 export const options = {

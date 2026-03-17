@@ -6,8 +6,9 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 
 ## What the suite covers
 
-- Invalid login shows a clear error message
-- Valid login reaches the dashboard
+- AP login shows a clear error message when invalid credentials are provided
+- AP login succeeds with the configured AP credentials
+- MP staging member-portal login succeeds with the configured MP credentials
 - A product can be created and then removed from the products area
 - A delivery can be registered, assigned to a user, uploaded with a PDF label, and then removed
 - A delivery can be signed for on collection and marked as collected
@@ -28,12 +29,13 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   `-- ProductPage.ts
 |-- playwright.config.ts
 |-- tests/
+|   |-- ap-login.spec.ts
 |   |-- admin-panel-overview.spec.ts
 |   |-- admin-panel-workflows.spec.ts
 |   |-- fixtures/
 |   |   |-- collection-signature.png
 |   |   `-- delivery-label.pdf
-|   `-- nexudus.spec.ts
+|   `-- mp-login.spec.ts
 `-- playwright-report-example/
 ```
 
@@ -57,20 +59,27 @@ The suite supports the following environment variables:
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
-| `NEXUDUS_BASE_URL` | No | `https://dashboard.nexudus.com/` | Base URL used by Playwright navigation |
-| `NEXUDUS_EMAIL` | Yes | None | Username for the valid login flow |
-| `NEXUDUS_PASSWORD` | Yes | None | Password for the valid login flow |
+| `NEXUDUS_AP_BASE_URL` | No | `https://dashboard.nexudus.com/` | Base URL for the AP project |
+| `NEXUDUS_AP_EMAIL` | Yes | None | Username for the AP project |
+| `NEXUDUS_AP_PASSWORD` | Yes | None | Password for the AP project |
+| `NEXUDUS_MP_BASE_URL` | No | `https://dashboard-staging.nexudus.com/` | Base URL for the MP staging project |
+| `NEXUDUS_MP_EMAIL` | Yes | None | Username for the MP staging project |
+| `NEXUDUS_MP_PASSWORD` | Yes | None | Password for the MP staging project |
 | `PLAYWRIGHT_HEADLESS` | No | `false` locally, `true` on CI | Forces headless browser execution |
 
-The suite now fails fast if `NEXUDUS_EMAIL` or `NEXUDUS_PASSWORD` is missing.
+The suite currently runs AP admin coverage on the AP dashboard and MP login coverage on the MP staging dashboard. It fails fast if the credential pair required for the selected project is missing.
 
 The repo root `.env` file is loaded automatically by the npm scripts in this repository. A tracked template is available in `.env.example`, while `.env` itself is ignored by git.
 
 Example local setup:
 
 ```bash
-NEXUDUS_EMAIL='your-test-user@example.com'
-NEXUDUS_PASSWORD='your-test-password'
+NEXUDUS_AP_EMAIL='your-ap-user@example.com'
+NEXUDUS_AP_PASSWORD='your-ap-password'
+NEXUDUS_MP_EMAIL='your-mp-staging-user@example.com'
+NEXUDUS_MP_PASSWORD='your-mp-staging-password'
+NEXUDUS_AP_BASE_URL='https://dashboard.nexudus.com/'
+NEXUDUS_MP_BASE_URL='https://dashboard-staging.nexudus.com/'
 ```
 
 That same `.env` file is used for both the Playwright commands and the k6 commands in `package.json`.
@@ -94,7 +103,12 @@ npx playwright test --headed -g @3093
 npm run test:report
 ```
 
-By default the active browser project is Chromium. Other browser projects are still present in [playwright.config.ts](playwright.config.ts) but commented out.
+By default the suite runs two Chromium projects: `AP Chromium` and `MP Staging Chromium`. `AP Chromium` includes the admin overview, admin workflow, and AP login specs against the dashboard application. `MP Staging Chromium` currently runs only the MP member-portal login spec against the spaces staging application. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "MP Staging Chromium"`.
+
+The environment split is explicit in code:
+
+- [tests/ap-login.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/ap-login.spec.ts), [tests/admin-panel-overview.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/admin-panel-overview.spec.ts), and [tests/admin-panel-workflows.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/admin-panel-workflows.spec.ts) run only on `AP Chromium`.
+- [tests/mp-login.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/mp-login.spec.ts) runs only on `MP Staging Chromium` with `NEXUDUS_MP_EMAIL` and `NEXUDUS_MP_PASSWORD`, opens the member-portal `/login` page, and verifies the authenticated `/home` dashboard.
 
 ## Running the k6 performance smoke test
 
@@ -111,12 +125,12 @@ Example usage:
 npm run perf:smoke
 
 # Override the target URL or load profile
-NEXUDUS_BASE_URL='https://dashboard.nexudus.com' K6_VUS=10 K6_DURATION=45s npm run perf:smoke
+NEXUDUS_AP_BASE_URL='https://dashboard.nexudus.com' K6_VUS=10 K6_DURATION=45s npm run perf:smoke
 ```
 
 The test uses these environment variables:
 
-- `NEXUDUS_BASE_URL` to choose the target host
+- `NEXUDUS_AP_BASE_URL` to choose the target host
 - `K6_VUS` to set the number of virtual users, default `5`
 - `K6_DURATION` to set the test duration, default `30s`
 
@@ -126,9 +140,9 @@ There is also a browser-based k6 smoke test for the authenticated admin-panel lo
 
 It uses the same credentials as the Playwright suite:
 
-- `NEXUDUS_EMAIL`
-- `NEXUDUS_PASSWORD`
-- Optional `NEXUDUS_BASE_URL`
+- `NEXUDUS_AP_EMAIL`
+- `NEXUDUS_AP_PASSWORD`
+- Optional `NEXUDUS_AP_BASE_URL`
 
 Example usage:
 
@@ -162,9 +176,12 @@ The repository includes a workflow at [.github/workflows/playwright.yml](.github
 
 To use the workflow, configure these GitHub settings:
 
-- Repository secret: `NEXUDUS_EMAIL`
-- Repository secret: `NEXUDUS_PASSWORD`
-- Optional repository variable: `NEXUDUS_BASE_URL`
+- Repository secret: `NEXUDUS_AP_EMAIL`
+- Repository secret: `NEXUDUS_AP_PASSWORD`
+- Repository secret: `NEXUDUS_MP_EMAIL`
+- Repository secret: `NEXUDUS_MP_PASSWORD`
+- Optional repository variable: `NEXUDUS_AP_BASE_URL`
+- Optional repository variable: `NEXUDUS_MP_BASE_URL`
 
 The workflow installs dependencies, installs the Playwright Chromium browser, runs the test suite, and uploads both the Playwright HTML report and `test-results` as artifacts.
 
@@ -184,9 +201,12 @@ The workflow is configured to run on every push to every branch in the repositor
 
 To use it in CircleCI, add these environment variables in the project settings:
 
-- `NEXUDUS_EMAIL`
-- `NEXUDUS_PASSWORD`
-- Optional: `NEXUDUS_BASE_URL`
+- `NEXUDUS_AP_EMAIL`
+- `NEXUDUS_AP_PASSWORD`
+- `NEXUDUS_MP_EMAIL`
+- `NEXUDUS_MP_PASSWORD`
+- Optional: `NEXUDUS_AP_BASE_URL`
+- Optional: `NEXUDUS_MP_BASE_URL`
 
 You also need to connect the GitHub repository in CircleCI and enable pipelines for the project. Once that is done, each new commit pushed to the repository will trigger the CircleCI workflow automatically.
 

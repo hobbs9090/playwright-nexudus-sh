@@ -14,7 +14,7 @@ jobs:
       - run:
           name: Validate required environment variables
           command: |
-            for var in NEXUDUS_EMAIL NEXUDUS_PASSWORD; do
+            for var in NEXUDUS_AP_EMAIL NEXUDUS_AP_PASSWORD NEXUDUS_MP_EMAIL NEXUDUS_MP_PASSWORD; do
               if [ -z "${!var}" ]; then
                 echo "Missing required CircleCI environment variable: ${var}"
                 exit 1

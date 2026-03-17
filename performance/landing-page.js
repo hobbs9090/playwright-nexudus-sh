@@ -1,7 +1,7 @@
 import http from 'k6/http'
 import { check, group } from 'k6'
 
-const baseUrl = (__ENV.NEXUDUS_BASE_URL || 'https://dashboard.nexudus.com/').replace(/\/+$/, '')
+const baseUrl = (__ENV.NEXUDUS_AP_BASE_URL || 'https://dashboard.nexudus.com/').replace(/\/+$/, '')
 const vus = Number.parseInt(__ENV.K6_VUS || '5', 10)
 const duration = __ENV.K6_DURATION || '30s'
 

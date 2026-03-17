@@ -1,10 +1,11 @@
 import type { PlaywrightTestConfig } from '@playwright/test'
 import { devices } from '@playwright/test'
 import * as dotenv from 'dotenv'
+import { getBaseURL, getRequiredCredentialEnvVars, testEnvironments } from './test-environments'
 
 dotenv.config({ quiet: true })
 
-const requiredEnvVars = ['NEXUDUS_EMAIL', 'NEXUDUS_PASSWORD'] as const
+const requiredEnvVars = getRequiredCredentialEnvVars()
 const missingRequiredEnvVars = requiredEnvVars.filter((name) => !process.env[name]?.trim())
 const viewport = { width: 1280, height: 1200 }
 const headedWindowChromeHeight = 100
@@ -54,7 +55,7 @@ const config: PlaywrightTestConfig = {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
     actionTimeout: 0,
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: process.env.NEXUDUS_BASE_URL || 'https://dashboard.nexudus.com/',
+    baseURL: getBaseURL(testEnvironments[0]),
     headless,
     viewport,
     screen: viewport,
@@ -65,67 +66,67 @@ const config: PlaywrightTestConfig = {
   },
 
   /* Configure projects for major browsers */
-  projects: [
-    {
-      name: 'Chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-        viewport,
-        screen: viewport,
-        ...(headless
-          ? {}
-          : {
-              launchOptions: {
-                args: [`--window-size=${headedWindowSize}`],
-              },
-            }),
-      },
+  projects: testEnvironments.map((environment) => ({
+    name: environment.projectName,
+    testMatch: environment.testMatch,
+    testIgnore: environment.testIgnore,
+    use: {
+      ...devices['Desktop Chrome'],
+      baseURL: getBaseURL(environment),
+      viewport,
+      screen: viewport,
+      ...(headless
+        ? {}
+        : {
+            launchOptions: {
+              args: [`--window-size=${headedWindowSize}`],
+            },
+          }),
     },
+  })),
+  // {
+  //   name: 'Google Chrome',
+  //   use: {
+  //     channel: 'chrome',
+  //   }
+  // },
 
-    // {
-    //   name: 'Google Chrome',
-    //   use: {
-    //     channel: 'chrome',
-    //   }
-    // },
+  // {
+  //   name: 'Firefox',
+  //   use: {
+  //     ...devices['Desktop Firefox'],
+  //   },
+  // },
 
-    // {
-    //   name: 'Firefox',
-    //   use: {
-    //     ...devices['Desktop Firefox'],
-    //   },
-    // },
+  // {
+  //   name: 'Webkit',
+  //   use: {
+  //     ...devices['Desktop Safari'],
+  //   },
+  // },
 
-    // {
-    //   name: 'Webkit',
-    //   use: {
-    //     ...devices['Desktop Safari'],
-    //   },
-    // },
+  // /* Test against mobile viewports. */
+  // {
+  //   name: 'Mobile Chrome',
+  //   use: {
+  //     ...devices['Pixel 5'],
+  //   },
+  // },
 
-    // /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: {
-    //     ...devices['Pixel 5'],
-    //   },
-    // },
+  // {
+  //   name: 'Mobile Safari',
+  //   use: {
+  //     ...devices['iPhone 12'],
+  //   },
+  // },
 
-    // {
-    //   name: 'Mobile Safari',
-    //   use: {
-    //     ...devices['iPhone 12'],
-    //   },
-    // },
-
-    // /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: {
-    //     channel: 'msedge',
-    //   },
-    // },
-  ],
+  // /* Test against branded browsers. */
+  // {
+  //   name: 'Microsoft Edge',
+  //   use: {
+  //     channel: 'msedge',
+  //   },
+  // },
 
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
   outputDir: 'test-results/',

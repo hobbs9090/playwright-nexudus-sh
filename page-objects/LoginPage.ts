@@ -1,6 +1,6 @@
-import { expect, Locator, Page } from '@playwright/test'
+import { expect, Locator, Page, test } from '@playwright/test'
 import { AbstractPage } from './AbstractPage'
-import { requireEnvVar } from '../helpers'
+import { getCredentialsForProject, getEnvironmentForProject } from '../test-environments'
 
 export class LoginPage extends AbstractPage {
   // Define selectors
@@ -20,17 +20,22 @@ export class LoginPage extends AbstractPage {
 
   // Define login page methods
   async login(
-    email: string = requireEnvVar('NEXUDUS_EMAIL'),
-    password: string = requireEnvVar('NEXUDUS_PASSWORD'),
+    email?: string,
+    password?: string,
     valid: boolean = true
   ) {
+    const environment = getEnvironmentForProject(test.info().project.name)
+    const credentials = getCredentialsForProject(test.info().project.name)
+    const resolvedEmail = email ?? credentials.email
+    const resolvedPassword = password ?? credentials.password
+
     await this.installBlockingDialogSuppression()
-    await this.page.goto('')
-    await this.emailInput.fill(email)
-    await this.passwordInput.fill(password)
+    await this.page.goto(environment.loginPath)
+    await this.emailInput.fill(resolvedEmail)
+    await this.passwordInput.fill(resolvedPassword)
     await this.signInButton.click()
     if (valid) {
-      await this.page.waitForURL('**/dashboards/now', { timeout: 30000 })
+      await this.page.waitForURL(environment.successUrlPattern, { timeout: 30000 })
     } else {
       await this.assertErrorMessage('The email or password is incorrect.')
     }
