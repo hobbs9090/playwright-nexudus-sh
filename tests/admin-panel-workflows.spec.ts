@@ -84,7 +84,6 @@ test.describe('Admin panel workflows', () => {
 
   test('can add and delete a product from inventory', async () => {
     test.slow()
-    test.retries(2)
     await productPage.navigateTo()
     const initialProductCount = await productPage.getProductCount()
     const productName = await generateProductName()
@@ -103,7 +102,6 @@ test.describe('Admin panel workflows', () => {
 
   test('can register a delivery, upload a label PDF, and assign it to a user @3093', async () => {
     test.slow()
-    test.retries(2)
     let createdDelivery:
       | {
           customerName: string
@@ -134,7 +132,6 @@ test.describe('Admin panel workflows', () => {
 
   test('can add a collection signature to a delivery and mark it as collected @3093', async () => {
     test.slow()
-    test.retries(2)
     let createdDelivery:
       | {
           customerName: string
