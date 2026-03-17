@@ -5,7 +5,7 @@ export class CoursePage extends AbstractPage {
   readonly addCourseButton: Locator
   readonly courseSummaryInput: Locator
   readonly fullCourseDescriptionInput: Locator
-  readonly overviewInput: Locator
+  readonly overviewToggle: Locator
   readonly saveChangesButton: Locator
   readonly titleInput: Locator
 
@@ -15,7 +15,7 @@ export class CoursePage extends AbstractPage {
     this.titleInput = page.getByLabel('Title')
     this.courseSummaryInput = page.getByLabel('Course summary')
     this.fullCourseDescriptionInput = page.locator('textarea').nth(1)
-    this.overviewInput = page.getByLabel('Overview')
+    this.overviewToggle = page.getByLabel('Overview')
     this.saveChangesButton = page.getByRole('button', { name: 'Save changes' })
   }
 
@@ -35,7 +35,10 @@ export class CoursePage extends AbstractPage {
     await this.fullCourseDescriptionInput.fill(
       'Learn the basics of flower arranging with hands-on bouquet design, vase composition, and care tips.',
     )
-    await this.overviewInput.fill('Build confidence arranging fresh flowers into elegant displays.')
+
+    if ((await this.overviewToggle.getAttribute('aria-checked')) !== 'true') {
+      await this.overviewToggle.click()
+    }
 
     const saveResponsePromise = this.page
       .waitForResponse(
