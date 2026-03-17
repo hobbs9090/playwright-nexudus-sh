@@ -158,8 +158,8 @@ export class DeliveryPage extends AbstractPage {
     await expect(this.deliveryTypeSelect).toHaveValue(value)
   }
 
-  async assertReceivedByCurrentUser() {
-    await expect(this.receivedByInput).toHaveValue(/Harry Potter/i)
+  async assertReceivedByUser(userName: string) {
+    await expect(this.receivedByInput).toHaveValue(new RegExp(userName, 'i'))
   }
 
   async isPendingDeliveryVisible(reference: string) {

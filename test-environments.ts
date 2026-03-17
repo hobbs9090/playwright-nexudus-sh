@@ -42,3 +42,7 @@ export function getCredentials(emailEnvVar: string, passwordEnvVar: string) {
     password: requireEnvVar(passwordEnvVar),
   }
 }
+
+export function getConfiguredMemberName(memberEnvVar: string) {
+  return requireEnvVar(memberEnvVar)
+}

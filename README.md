@@ -71,6 +71,8 @@ The suite supports the following environment variables:
 | `NEXUDUS_AP_BASE_URL` | No | `https://dashboard.nexudus.com/` | Base URL for the AP project |
 | `NEXUDUS_AP_EMAIL` | Yes | None | Username for the AP project |
 | `NEXUDUS_AP_PASSWORD` | Yes | None | Password for the AP project |
+| `NEXUDUS_AP_MEMBER_NAME` | Yes for AP delivery workflows | None | Member name used by AP delivery workflow tests |
+| `NEXUDUS_AP_RECEIVED_BY_NAME` | Yes for AP delivery workflows | None | AP user name expected in the delivery `Received by` field |
 | `NEXUDUS_MP_BASE_URL` | No | `https://dashboard-staging.nexudus.com/` | Base URL for the MP staging project |
 | `NEXUDUS_MP_EMAIL` | Yes | None | Username for the MP staging project |
 | `NEXUDUS_MP_PASSWORD` | Yes | None | Password for the MP staging project |
@@ -85,6 +87,8 @@ Example local setup:
 ```bash
 NEXUDUS_AP_EMAIL='your-ap-user@example.com'
 NEXUDUS_AP_PASSWORD='your-ap-password'
+NEXUDUS_AP_MEMBER_NAME='Felicity Ward'
+NEXUDUS_AP_RECEIVED_BY_NAME='Steven Hobbs'
 NEXUDUS_MP_EMAIL='your-mp-staging-user@example.com'
 NEXUDUS_MP_PASSWORD='your-mp-staging-password'
 NEXUDUS_AP_BASE_URL='https://dashboard.nexudus.com/'

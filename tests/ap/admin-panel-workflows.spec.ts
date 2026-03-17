@@ -5,9 +5,12 @@ import { AdminPanelPage } from '../../page-objects/ap/AdminPanelPage'
 import { DeliveryPage } from '../../page-objects/ap/DeliveryPage'
 import { APLoginPage } from '../../page-objects/ap/APLoginPage'
 import { ProductPage } from '../../page-objects/ap/ProductPage'
+import { getConfiguredMemberName } from '../../test-environments'
 
 const deliveryLabelPath = resolve(__dirname, '..', 'fixtures', 'delivery-label.pdf')
 const collectionSignaturePath = resolve(__dirname, '..', 'fixtures', 'collection-signature.png')
+const apDeliveryMember = getConfiguredMemberName('NEXUDUS_AP_MEMBER_NAME')
+const apDeliveryReceivedBy = getConfiguredMemberName('NEXUDUS_AP_RECEIVED_BY_NAME')
 
 const workflowExpectations = [
   {
@@ -113,16 +116,16 @@ test.describe('Admin panel workflows', () => {
       | undefined
 
     try {
-      createdDelivery = await deliveryPage.registerDeliveryForCustomer('Peter Petticrew', 'Parcel', deliveryLabelPath)
-      expect(createdDelivery.customerName).toBe('Peter Petticrew')
+      createdDelivery = await deliveryPage.registerDeliveryForCustomer(apDeliveryMember, 'Parcel', deliveryLabelPath)
+      expect(createdDelivery.customerName).toBe(apDeliveryMember)
       expect(createdDelivery.deliveryType).toBe(2)
       expect(createdDelivery.fileDataFileName).toBe('delivery-label.pdf')
       expect(createdDelivery.reference).not.toBe('')
 
       await deliveryPage.openDeliveryDetails(createdDelivery.id)
-      await deliveryPage.assertAssignedCustomer('Peter Petticrew')
+      await deliveryPage.assertAssignedCustomer(apDeliveryMember)
       await deliveryPage.assertDeliveryType('DeliveryType-2')
-      await deliveryPage.assertReceivedByCurrentUser()
+      await deliveryPage.assertReceivedByUser(apDeliveryReceivedBy)
     } finally {
       if (createdDelivery) {
         await deliveryPage.deleteDelivery(createdDelivery.id)
@@ -143,7 +146,7 @@ test.describe('Admin panel workflows', () => {
       | undefined
 
     try {
-      createdDelivery = await deliveryPage.registerDeliveryForCustomer('Peter Petticrew', 'Parcel')
+      createdDelivery = await deliveryPage.registerDeliveryForCustomer(apDeliveryMember, 'Parcel')
       await deliveryPage.openDeliveryDetails(createdDelivery.id)
       await deliveryPage.uploadCollectionSignature(collectionSignaturePath)
 
