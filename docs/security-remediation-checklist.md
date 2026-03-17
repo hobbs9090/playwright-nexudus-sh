@@ -11,8 +11,7 @@ Use this checklist if the previously committed Nexudus test credential may have 
 ## CI and automation updates
 
 1. Update the `NEXUDUS_AP_EMAIL` and `NEXUDUS_AP_PASSWORD` repository secrets in GitHub Actions.
-2. Update the matching environment variables in CircleCI project settings.
-3. Update any local shell profiles, password managers, `.env` files, or secret stores used by developers.
+2. Update any local shell profiles, password managers, `.env` files, or secret stores used by developers.
 
 ## Repository cleanup
 

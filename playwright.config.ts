@@ -26,13 +26,10 @@ if (missingRequiredEnvVars.length > 0) {
 }
 
 const isCI = !!process.env.CI
-const isCircleCI = !!process.env.CIRCLECI
 const headless = (process.env.PLAYWRIGHT_HEADLESS || '').toLowerCase() === 'true' || isCI
-const reporter = isCircleCI
-  ? [['line'], ['junit', { outputFile: 'test-results/results.xml' }], ['html', { open: 'never' }]]
-  : isCI
-    ? [['github'], ['junit', { outputFile: 'test-results/results.xml' }], ['html', { open: 'never' }]]
-    : 'html'
+const reporter = isCI
+  ? [['github'], ['junit', { outputFile: 'test-results/results.xml' }], ['html', { open: 'never' }]]
+  : 'html'
 
 /**
  * See https://playwright.dev/docs/test-configuration.

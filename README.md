@@ -18,7 +18,6 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 
 ```text
 .
-|-- .circleci/config.yml
 |-- .github/workflows/playwright.yml
 |-- docs/
 |-- helpers.ts
@@ -179,10 +178,6 @@ K6_LOGIN_VUS=1 K6_LOGIN_ITERATIONS=3 K6_LOGIN_MAX_DURATION=3m npm run perf:login
 
 The login test uses a browser scenario, so it is intentionally lightweight by default. It verifies that valid credentials reach `/dashboards/now` and that the Dashboard navigation link becomes visible after sign-in.
 
-## Security
-
-The repository no longer contains fallback Nexudus credentials in code. If you are remediating an older clone or fork, follow the checklist in [docs/security-remediation-checklist.md](docs/security-remediation-checklist.md).
-
 ## Reports and artifacts
 
 - HTML report output: `playwright-report/`
@@ -213,27 +208,6 @@ Each workflow run also adds a Playwright summary directly to the GitHub Actions 
 The workflow also runs the k6 landing-page smoke test on every run. The browser-based authenticated k6 login smoke test is manual-only in GitHub Actions and runs only when the workflow is started with `workflow_dispatch` and the repository variable `RUN_K6_BROWSER_LOGIN` is set to `true`.
 
 To use the published HTML report, enable GitHub Pages for the repository and select GitHub Actions as the source.
-
-## CircleCI
-
-The repository also includes a CircleCI pipeline at [.circleci/config.yml](.circleci/config.yml).
-
-It uses the version-matched Playwright Docker image, runs `npm ci`, executes `npm test`, stores JUnit results from `test-results/results.xml`, and uploads both `playwright-report/` and `test-results/` as CircleCI artifacts.
-
-The workflow is configured to run on every push to every branch in the repository. Tag-only pushes are ignored.
-
-To use it in CircleCI, add these environment variables in the project settings:
-
-- `NEXUDUS_AP_EMAIL`
-- `NEXUDUS_AP_PASSWORD`
-- `NEXUDUS_MP_EMAIL`
-- `NEXUDUS_MP_PASSWORD`
-- Optional: `NEXUDUS_AP_BASE_URL`
-- Optional: `NEXUDUS_MP_BASE_URL`
-
-You also need to connect the GitHub repository in CircleCI and enable pipelines for the project. Once that is done, each new commit pushed to the repository will trigger the CircleCI workflow automatically.
-
-The Playwright config automatically switches to a CircleCI-friendly reporter set when `CIRCLECI=true`, so test runs produce line output, JUnit XML, and the HTML report without needing a separate script.
 
 ## Notes
 
