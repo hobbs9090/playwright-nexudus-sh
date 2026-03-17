@@ -69,7 +69,6 @@ export class ProductPage extends AbstractPage {
     await this.unitPriceInput.fill('4.99')
     await this.unitPriceInput.press('Tab')
     await this.selectFirstAvailableTaxRate()
-    await this.wait(2000) // ToDo - replace with a better wait
     const createResponsePromise = this.page.waitForResponse(
       (response) =>
         response.request().method() === 'POST' && response.url() === 'https://spaces.nexudus.com/api/billing/products',
@@ -118,34 +117,25 @@ export class ProductPage extends AbstractPage {
     )
   }
 
-  async searchForProduct(product_name: string, timeoutMs: number = process.env.CI ? 45000 : 15000) {
-    const deadline = Date.now() + timeoutMs
-
-    while (Date.now() < deadline) {
-      await this.page.goto('/billing/products')
-      await this.dismissBlockingDialogs()
-      await this.searchInput.fill(product_name)
-      await this.searchInput.press('ArrowDown')
-      await this.searchInput.press('Enter')
+  async searchForProduct(product_name: string) {
+    await this.page.goto('/billing/products')
+    await this.dismissBlockingDialogs()
+    await this.searchInput.fill(product_name)
+    await this.searchInput.press('ArrowDown')
+    await this.searchInput.press('Enter')
+    await this.wait(1000)
+    await this.dismissBlockingDialogs()
+    if (await this.showAllLocationsButton.isVisible().catch(() => false)) {
+      await this.showAllLocationsButton.click()
       await this.wait(1000)
-      await this.dismissBlockingDialogs()
-      if (await this.showAllLocationsButton.isVisible().catch(() => false)) {
-        await this.showAllLocationsButton.click()
-        await this.wait(1000)
-      }
-      await this.dismissBlockingDialogs()
-      await this.wait(1000) // ToDo - replace with a better wait
-      if (await this.showAllLocationsButton.isVisible().catch(() => false)) {
-        await this.showAllLocationsButton.click()
-        await this.wait(1000)
-      }
-      await this.searchInput.press('Escape').catch(() => {})
-      if (await this.page.getByRole('link', { name: product_name }).isVisible().catch(() => false)) {
-        return true
-      }
-      await this.wait(2000)
     }
-
-    return false
+    await this.dismissBlockingDialogs()
+    await this.wait(1000) // ToDo - replace with a better wait
+    if (await this.showAllLocationsButton.isVisible().catch(() => false)) {
+      await this.showAllLocationsButton.click()
+      await this.wait(1000)
+    }
+    await this.searchInput.press('Escape').catch(() => {})
+    return await this.page.getByRole('link', { name: product_name }).isVisible().catch(() => false)
   }
 }
