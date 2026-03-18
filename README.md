@@ -109,7 +109,7 @@ Load order is:
 - `.env.shared` first
 - `.env` second
 
-That means local `.env` values can override shared defaults when needed. The same load order is used for both the Playwright commands and the k6 commands in `package.json`.
+That means local `.env` values can override shared defaults when needed. The same load order is used for both the Playwright commands and the local k6 commands in `package.json`.
 
 For CRUD-style create flows, the suite builds names from a base label plus a shared random seed. This applies to AP products, AP courses, and AP events. When `CRUD_APPEND_RANDOM_SEED=true`, the test appends a seed in the form `ddmm hhmm <initials><random>`. `ddmm` is the current day and month, `hhmm` is the current 24-hour time, `<initials>` comes from the contributor when available, and `<random>` is a five-letter lowercase string. For example, `Astronomy Night 1803 1430 shabcde`. Set `CRUD_APPEND_RANDOM_SEED=false` to use the base names exactly as provided.
 
@@ -153,6 +153,8 @@ The environment split is explicit in code:
 
 This repository also includes a small k6 smoke test for the public Nexudus landing page and its primary static assets.
 
+These k6 checks are intended for local execution only and are not run in GitHub Actions.
+
 Prerequisite:
 
 - Install the `k6` CLI locally from https://grafana.com/docs/k6/latest/set-up/install-k6/
@@ -176,6 +178,8 @@ The test uses these environment variables:
 ## Running the k6 authenticated login smoke test
 
 There is also a browser-based k6 smoke test for the authenticated admin-panel login flow.
+
+This k6 login check is local-only and is not run in GitHub Actions.
 
 It uses the same credentials as the Playwright suite:
 
@@ -218,11 +222,11 @@ To use the workflow, configure these GitHub settings:
 - Optional repository variable: `NEXUDUS_AP_BASE_URL`
 - Optional repository variable: `NEXUDUS_MP_BASE_URL`
 
-The workflow installs dependencies, installs the Playwright Chromium browser, and runs the Playwright suite across 5 parallel GitHub-hosted runners using Playwright sharding. After all shards finish, the workflow merges the shard outputs into a single Playwright HTML report and a single JUnit result file, then uploads both `playwright-report` and `test-results` as artifacts.
+The workflow installs dependencies, installs the Playwright Chromium browser, and runs the Playwright `@smoke` suite in GitHub Actions. It then merges the Playwright blob output into a single HTML report and a single JUnit result file, then uploads both `playwright-report` and `test-results` as artifacts.
 
 Each workflow run also adds a Playwright summary directly to the GitHub Actions interface. On pushes to `main`, the workflow automatically publishes the HTML report to GitHub Pages so it can be opened in the browser without downloading the artifact first.
 
-The workflow also includes a separate `k6` job. It runs the k6 landing-page smoke test on every run. The browser-based authenticated k6 login smoke test is manual-only in GitHub Actions and runs only when the workflow is started with `workflow_dispatch` and the repository variable `RUN_K6_BROWSER_LOGIN` is set to `true`.
+The `k6` smoke tests are local-only and are not executed by the GitHub Actions workflow.
 
 To use the published HTML report, enable GitHub Pages for the repository and select GitHub Actions as the source.
 
