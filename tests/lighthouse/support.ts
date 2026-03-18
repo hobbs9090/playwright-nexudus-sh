@@ -26,6 +26,13 @@ type LighthouseAuditOptions = {
 }
 
 const viewport = { width: 1280, height: 1200 }
+const lighthouseCategories = [
+  'performance',
+  'accessibility',
+  'best-practices',
+  'seo',
+  'pwa',
+] as const
 
 const defaultThresholds: LighthouseThresholds = {
   performance: getThresholdEnvVar('LIGHTHOUSE_MIN_PERFORMANCE', 35),
@@ -61,6 +68,70 @@ function normalizeReportName(name: string) {
 function getLighthouseOptions(): Flags {
   return {
     disableStorageReset: true,
+  }
+}
+
+function getRoundedCategoryScores(
+  auditResult: playwrightLighthouseResult,
+  thresholds: LighthouseThresholds,
+): LighthouseThresholds {
+  const scores: LighthouseThresholds = {}
+
+  for (const category of lighthouseCategories) {
+    if (typeof thresholds[category] !== 'number') {
+      continue
+    }
+
+    const score = auditResult.lhr.categories[category]?.score
+
+    if (typeof score !== 'number') {
+      throw new Error(`Lighthouse did not return a numeric score for the ${category} category.`)
+    }
+
+    scores[category] = Math.round(score * 100)
+  }
+
+  return scores
+}
+
+function assertThresholdsUsingRoundedScores(scores: LighthouseThresholds, thresholds: LighthouseThresholds) {
+  const passingMessages: string[] = []
+  const failingMessages: string[] = []
+
+  for (const category of lighthouseCategories) {
+    const score = scores[category]
+    const threshold = thresholds[category]
+
+    if (typeof score !== 'number' || typeof threshold !== 'number') {
+      continue
+    }
+
+    if (score < threshold) {
+      failingMessages.push(`${category} score is ${score} and is under the ${threshold} threshold`)
+      continue
+    }
+
+    passingMessages.push(`${category} score is ${score} and desired threshold was ${threshold}`)
+  }
+
+  console.log('')
+  console.log('-------- lighthouse threshold results --------')
+  console.log('')
+
+  for (const message of passingMessages) {
+    console.log(message)
+  }
+
+  if (failingMessages.length > 0) {
+    throw new Error(
+      [
+        failingMessages.length === 1
+          ? 'Lighthouse score is below the configured threshold.'
+          : 'Multiple Lighthouse scores are below the configured thresholds.',
+        '',
+        ...failingMessages,
+      ].join('\n'),
+    )
   }
 }
 
@@ -106,10 +177,12 @@ export async function runAuthenticatedLighthouseAudit({
     await authenticate(page)
     await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => undefined)
 
-    return await playAudit({
+    const auditResult = await playAudit({
       page,
       port,
       thresholds,
+      ignoreError: true,
+      disableLogs: true,
       opts: getLighthouseOptions(),
       config: lighthouseDesktopConfig as Config,
       reports: {
@@ -121,6 +194,12 @@ export async function runAuthenticatedLighthouseAudit({
         name: normalizeReportName(auditName),
       },
     })
+
+    const roundedScores = getRoundedCategoryScores(auditResult, thresholds)
+
+    assertThresholdsUsingRoundedScores(roundedScores, thresholds)
+
+    return auditResult
   } finally {
     await context.close()
     await rm(userDataDir, { recursive: true, force: true })

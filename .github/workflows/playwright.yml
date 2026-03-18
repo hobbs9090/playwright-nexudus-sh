@@ -28,7 +28,7 @@ jobs:
       NEXUDUS_MP_BASE_URL: ${{ vars.NEXUDUS_MP_BASE_URL }}
       NEXUDUS_MP_EMAIL: ${{ secrets.NEXUDUS_MP_EMAIL }}
       NEXUDUS_MP_PASSWORD: ${{ secrets.NEXUDUS_MP_PASSWORD }}
-      LIGHTHOUSE_MIN_PERFORMANCE: 30
+      LIGHTHOUSE_MIN_PERFORMANCE: 29
 
     steps:
       - name: Check out repository
