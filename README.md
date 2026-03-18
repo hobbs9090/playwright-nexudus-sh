@@ -231,7 +231,7 @@ npm run test:lighthouse:mp
 npm run test:lighthouse:report
 ```
 
-The Lighthouse suite signs into the authenticated dashboard for each target, runs a desktop Lighthouse audit, and writes JSON plus HTML Lighthouse reports under `test-results/lighthouse/`.
+The Lighthouse suite signs into the authenticated dashboard for each target, runs a desktop Lighthouse audit, and writes JSON plus HTML Lighthouse reports under `test-results/lighthouse/`. `npm run test:lighthouse:report` then builds a browsable native Lighthouse report bundle under `lighthouse-report/`.
 
 ## Running the k6 performance smoke test
 
@@ -285,7 +285,7 @@ The login test uses a browser scenario, so it is intentionally lightweight by de
 
 ## Reports and artifacts
 
-- Dedicated Lighthouse Playwright HTML report output: `playwright-report/lighthouse/`
+- Native Lighthouse HTML bundle output: `lighthouse-report/`
 - Lighthouse JSON and HTML audit output: `test-results/lighthouse/`
 - A checked-in sample report is available in `playwright-report-example/`
 
@@ -306,11 +306,11 @@ To use the workflow, configure these GitHub settings:
 - Optional repository variable: `NEXUDUS_AP_BASE_URL`
 - Optional repository variable: `NEXUDUS_MP_BASE_URL`
 
-The workflow installs dependencies, installs the Playwright Chromium browser, and runs the authenticated AP and MP Lighthouse audits. It uploads the Lighthouse Playwright report and the Lighthouse result artifacts for each run.
+The workflow installs dependencies, installs the Playwright Chromium browser, and runs the authenticated AP and MP Lighthouse audits. It then builds and uploads the native Lighthouse HTML report bundle plus the raw Lighthouse result artifacts for each run.
 
 The GitHub Actions job sets `LIGHTHOUSE_MIN_PERFORMANCE=30` to account for the lower and noisier performance scores on GitHub-hosted runners. Local runs still use the repo defaults unless you override them in your environment.
 
-On non-PR pushes and manual runs, the workflow also publishes the Lighthouse HTML report to GitHub Pages and adds the published link to the GitHub Actions job summary so it can be opened in the browser without downloading the artifact.
+On non-PR pushes and manual runs, the workflow also publishes the native Lighthouse HTML bundle to GitHub Pages and adds the published link to the GitHub Actions job summary so it can be opened in the browser without downloading the artifact.
 
 The `k6` smoke tests are local-only and are not executed by the GitHub Actions workflow.
 

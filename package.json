@@ -13,7 +13,8 @@
     "test:lighthouse": "node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.lighthouse.config.ts",
     "test:lighthouse:ap": "node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.lighthouse.config.ts --project \"AP Lighthouse\"",
     "test:lighthouse:mp": "node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.lighthouse.config.ts --project \"MP Lighthouse\"",
-    "test:lighthouse:report": "node scripts/run-with-dotenv.mjs -- npx playwright show-report playwright-report/lighthouse",
+    "test:lighthouse:report": "node scripts/build-lighthouse-report-index.mjs",
+    "test:lighthouse:playwright-report": "node scripts/run-with-dotenv.mjs -- npx playwright show-report playwright-report/lighthouse",
     "perf:smoke": "node scripts/run-with-dotenv.mjs -- k6 run performance/landing-page.js",
     "perf:login": "node scripts/run-with-dotenv.mjs -- k6 run performance/admin-login.js"
   },

@@ -49,32 +49,16 @@ jobs:
       - name: Run Lighthouse audits
         run: npm run test:lighthouse
 
-      - name: Ensure Lighthouse report directory exists
+      - name: Build Lighthouse report bundle
         if: always()
-        run: |
-          if [ ! -f playwright-report/lighthouse/index.html ]; then
-            mkdir -p playwright-report/lighthouse
-            printf '%s\n' \
-              '<!doctype html>' \
-              '<html lang="en">' \
-              '  <head>' \
-              '    <meta charset="utf-8" />' \
-              '    <title>Lighthouse report unavailable</title>' \
-              '  </head>' \
-              '  <body>' \
-              '    <h1>Lighthouse report unavailable</h1>' \
-              '    <p>The Lighthouse Playwright HTML report was not generated for this run.</p>' \
-              '  </body>' \
-              '</html>' \
-              > playwright-report/lighthouse/index.html
-          fi
+        run: node scripts/build-lighthouse-report-index.mjs
 
       - name: Upload Lighthouse report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: lighthouse-playwright-report
-          path: playwright-report/lighthouse/
+          name: lighthouse-html-report
+          path: lighthouse-report/
           retention-days: 14
 
       - name: Upload Lighthouse test results
@@ -103,8 +87,8 @@ jobs:
       - name: Download Lighthouse report artifact
         uses: actions/download-artifact@v4
         with:
-          name: lighthouse-playwright-report
-          path: playwright-report/lighthouse
+          name: lighthouse-html-report
+          path: lighthouse-report
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -112,7 +96,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: playwright-report/lighthouse
+          path: lighthouse-report
 
       - name: Deploy report to GitHub Pages
         id: deployment
