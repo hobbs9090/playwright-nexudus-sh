@@ -99,6 +99,8 @@ Create a new AP Playwright test that adds a booking for next Tuesday at 10:00 AM
 Use the existing AP page object pattern, put the spec under tests/ap, add any new page-object methods under page-objects/ap, reuse shared config where possible, run the new test locally, and update the README if new configuration is needed.
 ```
 
+I have not tried that exact example above, but in practice Codex should usually be able to work across the site, add the necessary page objects, run the tests locally, fix issues, and rerun until things pass before anything goes up to CI, including in parts of AP or MP it has not previously visited. In practice it is not always quite that simple, but it does seem to be getting better. The main practical warning is to make sure you have plenty of tokens available, because it can get through a ChatGPT Pro allowance surprisingly quickly.
+
 ## Configuration
 
 The suite supports the following environment variables:
