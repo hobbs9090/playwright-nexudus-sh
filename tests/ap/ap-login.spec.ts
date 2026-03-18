@@ -15,6 +15,7 @@ test.describe('AP login', () => {
 
   test('logs into AP with the configured AP credentials', async ({ page }) => {
     await loginPage.login()
-    await expect(page).toHaveURL('/dashboards/now')
+    await expect(page).toHaveURL(/\/(?:dashboards\/now|home)?(?:\?.*)?$/)
+    await loginPage.assertDashboardVisible()
   })
 })

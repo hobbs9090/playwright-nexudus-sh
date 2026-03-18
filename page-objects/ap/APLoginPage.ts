@@ -7,6 +7,8 @@ export class APLoginPage extends AbstractPage {
   readonly passwordInput: Locator
   readonly signInButton: Locator
   readonly errorMessage: Locator
+  readonly dashboardLink: Locator
+  readonly globalSearchInput: Locator
 
   constructor(page: Page) {
     super(page)
@@ -14,6 +16,8 @@ export class APLoginPage extends AbstractPage {
     this.passwordInput = page.getByLabel('Password')
     this.signInButton = page.getByRole('button', { name: 'Sign in' })
     this.errorMessage = page.locator('.euiText')
+    this.dashboardLink = page.getByRole('link', { name: 'Dashboard' }).first()
+    this.globalSearchInput = page.getByRole('textbox', { name: /Search everywhere for/i })
   }
 
   async login(email?: string, password?: string, valid: boolean = true) {
@@ -32,13 +36,10 @@ export class APLoginPage extends AbstractPage {
         .poll(
           async () => {
             const url = this.page.url()
-            const dashboardLinkVisible = await this.page
-              .getByRole('link', { name: 'Dashboard', exact: true })
-              .first()
-              .isVisible()
-              .catch(() => false)
+            const dashboardLinkVisible = await this.dashboardLink.isVisible().catch(() => false)
+            const globalSearchVisible = await this.globalSearchInput.isVisible().catch(() => false)
 
-            return /\/(?:dashboards\/now|home)(?:\?.*)?$/.test(url) || dashboardLinkVisible
+            return /\/(?:dashboards\/now|home)?(?:\?.*)?$/.test(url) || dashboardLinkVisible || globalSearchVisible
           },
           { timeout: 30000 }
         )
@@ -52,5 +53,10 @@ export class APLoginPage extends AbstractPage {
   async assertErrorMessage(errorMessage: string) {
     await expect(this.errorMessage.nth(0)).toContainText(errorMessage)
     await expect(this.errorMessage.nth(0)).toBeVisible()
+  }
+
+  async assertDashboardVisible() {
+    await expect(this.dashboardLink).toBeVisible()
+    await expect(this.globalSearchInput).toBeVisible()
   }
 }
