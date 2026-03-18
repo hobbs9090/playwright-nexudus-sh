@@ -187,9 +187,11 @@ jobs:
           if-no-files-found: warn
 
   deploy-report:
-    name: Publish Lighthouse report
-    if: always() && github.event_name != 'pull_request' && needs.lighthouse.result != 'cancelled'
-    needs: lighthouse
+    name: Publish CI reports
+    if: always() && github.event_name != 'pull_request' && needs.report.result != 'cancelled' && needs.lighthouse.result != 'cancelled'
+    needs:
+      - report
+      - lighthouse
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -200,11 +202,23 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download Playwright report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+
       - name: Download Lighthouse report artifact
         uses: actions/download-artifact@v4
         with:
           name: lighthouse-html-report
           path: lighthouse-report
+
+      - name: Build published CI report site
+        run: node scripts/build-pages-report-site.mjs
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -212,16 +226,24 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: lighthouse-report
+          path: pages-report
 
-      - name: Deploy report to GitHub Pages
+      - name: Deploy reports to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Add published report link to GitHub UI
+      - name: Add published report links to GitHub UI
         run: |
+          base_url="${{ steps.deployment.outputs.page_url }}"
+          case "$base_url" in
+            */) ;;
+            *) base_url="${base_url}/" ;;
+          esac
+
           {
-            echo '## Lighthouse Report'
+            echo '## Published Reports'
             echo
-            echo "Published HTML report: [Open Lighthouse report](${{ steps.deployment.outputs.page_url }})"
+            echo "Reports index: [Open CI reports](${base_url})"
+            echo "Playwright report: [Open Playwright report](${base_url}playwright/)"
+            echo "Lighthouse report: [Open Lighthouse report](${base_url}lighthouse/)"
           } >> "$GITHUB_STEP_SUMMARY"
