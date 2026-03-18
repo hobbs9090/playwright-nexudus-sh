@@ -1,4 +1,6 @@
-export function generateUniqueName(prefix: string) {
+import { execSync } from 'node:child_process'
+
+export function generateUniqueName(prefix: string, randomStringPrefix: string = '') {
   const today = new Date()
   const day = today.getDate().toString().padStart(2, '0')
   const month = (today.getMonth() + 1).toString().padStart(2, '0')
@@ -15,7 +17,7 @@ export function generateUniqueName(prefix: string) {
     randomString += chars[randomIndex]
   }
 
-  return `${prefix} ${dateStr} ${timeStr} ${randomString}`
+  return `${prefix} ${dateStr} ${timeStr} ${randomStringPrefix}${randomString}`
 }
 
 export async function generateProductName() {
@@ -30,4 +32,34 @@ export function requireEnvVar(name: string) {
   }
 
   return value
+}
+
+export function getContributorInitials() {
+  const configuredInitials = process.env.NEXUDUS_CONTRIBUTOR_INITIALS?.trim()
+
+  if (configuredInitials) {
+    return configuredInitials.toLowerCase()
+  }
+
+  const possibleNames = [process.env.GIT_AUTHOR_NAME, process.env.GIT_COMMITTER_NAME]
+
+  try {
+    possibleNames.push(execSync('git config user.name', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim())
+  } catch {
+    // Fall through to the empty-string fallback below.
+  }
+
+  const contributorName = possibleNames.find((name) => name?.trim())?.trim()
+
+  if (!contributorName) {
+    return ''
+  }
+
+  const initials = contributorName
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0]?.toLowerCase() || '')
+    .join('')
+
+  return initials
 }

@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 import { generateProductName } from '../../helpers'
 import { AdminPanelPage } from '../../page-objects/ap/AdminPanelPage'
 import { DeliveryPage } from '../../page-objects/ap/DeliveryPage'
+import { EventPage } from '../../page-objects/ap/EventPage'
 import { APLoginPage } from '../../page-objects/ap/APLoginPage'
 import { ProductPage } from '../../page-objects/ap/ProductPage'
 import { getConfiguredMemberName } from '../../test-environments'
@@ -67,6 +68,7 @@ const workflowExpectations = [
 test.describe('Admin panel workflows', () => {
   let adminPanelPage: AdminPanelPage
   let deliveryPage: DeliveryPage
+  let eventPage: EventPage
   let loginPage: APLoginPage
   let productPage: ProductPage
   const productCountTimeout = 60000
@@ -75,6 +77,7 @@ test.describe('Admin panel workflows', () => {
     loginPage = new APLoginPage(page)
     adminPanelPage = new AdminPanelPage(page)
     deliveryPage = new DeliveryPage(page)
+    eventPage = new EventPage(page)
     productPage = new ProductPage(page)
     await loginPage.login()
   })
@@ -158,5 +161,10 @@ test.describe('Admin panel workflows', () => {
         await deliveryPage.deleteDelivery(createdDelivery.id)
       }
     }
+  })
+
+  test('can add an Astronomy Night event for the following Saturday', async () => {
+    test.slow()
+    await eventPage.createAstronomyNightEvent()
   })
 })
