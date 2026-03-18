@@ -26,6 +26,9 @@ jobs:
       NEXUDUS_AP_EMAIL: ${{ secrets.NEXUDUS_AP_EMAIL }}
       NEXUDUS_AP_MEMBER_NAME: ${{ vars.NEXUDUS_AP_MEMBER_NAME }}
       NEXUDUS_AP_PASSWORD: ${{ secrets.NEXUDUS_AP_PASSWORD }}
+      NEXUDUS_MP_BASE_URL: ${{ vars.NEXUDUS_MP_BASE_URL }}
+      NEXUDUS_MP_EMAIL: ${{ secrets.NEXUDUS_MP_EMAIL }}
+      NEXUDUS_MP_PASSWORD: ${{ secrets.NEXUDUS_MP_PASSWORD }}
 
     steps:
       - name: Check out repository
@@ -52,6 +55,7 @@ jobs:
         with:
           name: playwright-blob-report
           path: blob-report/
+          if-no-files-found: warn
           retention-days: 14
 
   report:
@@ -83,6 +87,7 @@ jobs:
           merge-multiple: true
 
       - name: Merge Playwright reports
+        if: ${{ hashFiles('all-blob-reports/**') != '' }}
         run: npx playwright merge-reports --reporter=html,junit ./all-blob-reports
 
       - name: Ensure Playwright report directory exists
