@@ -222,7 +222,7 @@ To use the workflow, configure these GitHub settings:
 - Optional repository variable: `NEXUDUS_AP_BASE_URL`
 - Optional repository variable: `NEXUDUS_MP_BASE_URL`
 
-The workflow installs dependencies, installs the Playwright Chromium browser, and runs the Playwright `@smoke` suite in GitHub Actions. It then merges the Playwright blob output into a single HTML report and a single JUnit result file, then uploads both `playwright-report` and `test-results` as artifacts.
+The workflow installs dependencies, installs the Playwright Chromium browser, and runs the full Playwright AP and MP suite in GitHub Actions. It then merges the Playwright blob output into a single HTML report and a single JUnit result file, then uploads both `playwright-report` and `test-results` as artifacts.
 
 Each workflow run also adds a Playwright summary directly to the GitHub Actions interface. On pushes to `main`, the workflow automatically publishes the HTML report to GitHub Pages so it can be opened in the browser without downloading the artifact first.
 
