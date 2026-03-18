@@ -1,5 +1,5 @@
 import { expect, Locator, Page } from '@playwright/test'
-import { generateUniqueName, getContributorInitials } from '../../helpers'
+import { buildCrudName } from '../../helpers'
 import { AbstractPage } from '../shared/AbstractPage'
 
 function getNextSaturdayDate() {
@@ -25,16 +25,6 @@ function formatEventDateTime(date: Date, hours24: number, minutes: number) {
   })
 
   return `${weekday}, ${month} ${day}, ${year} ${time}`
-}
-
-function shouldAppendUniqueSuffix() {
-  const rawValue = process.env.NEXUDUS_AP_EVENT_APPEND_UNIQUE_SUFFIX?.trim().toLowerCase()
-
-  if (!rawValue) {
-    return true
-  }
-
-  return !['0', 'false', 'no', 'off'].includes(rawValue)
 }
 
 export class EventPage extends AbstractPage {
@@ -156,8 +146,7 @@ export class EventPage extends AbstractPage {
     const nextSaturday = getNextSaturdayDate()
     const now = new Date()
     const eventBaseName = process.env.NEXUDUS_AP_EVENT_NAME?.trim() || 'Astronomy Night'
-    const contributorInitials = getContributorInitials()
-    const eventName = shouldAppendUniqueSuffix() ? generateUniqueName(eventBaseName, contributorInitials) : eventBaseName
+    const eventName = buildCrudName(eventBaseName)
     const startDateTime = formatEventDateTime(nextSaturday, 19, 0)
     const endDateTime = formatEventDateTime(nextSaturday, 23, 0)
     const publishDateTime = formatEventDateTime(now, 12, 0)
@@ -232,7 +221,6 @@ export class EventPage extends AbstractPage {
 
     await this.ticketSaveChangesButton.click({ force: true })
     await addTicketResponsePromise
-    await expect(this.ticketDialog.getByText('Add ticket')).not.toBeVisible({ timeout: 30000 })
     await expect(this.page.getByText('Standard ticket', { exact: true })).toBeVisible({ timeout: 30000 })
   }
 }

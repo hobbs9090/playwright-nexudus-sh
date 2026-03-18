@@ -20,8 +20,26 @@ export function generateUniqueName(prefix: string, randomStringPrefix: string = 
   return `${prefix} ${dateStr} ${timeStr} ${randomStringPrefix}${randomString}`
 }
 
+export function shouldAppendCrudRandomSeed() {
+  const rawValue = process.env.CRUD_APPEND_RANDOM_SEED?.trim().toLowerCase()
+
+  if (!rawValue) {
+    return true
+  }
+
+  return !['0', 'false', 'no', 'off'].includes(rawValue)
+}
+
+export function buildCrudName(baseName: string) {
+  if (!shouldAppendCrudRandomSeed()) {
+    return baseName
+  }
+
+  return generateUniqueName(baseName, getContributorInitials())
+}
+
 export async function generateProductName() {
-  return generateUniqueName('TestProduct')
+  return buildCrudName('TestProduct')
 }
 
 export function requireEnvVar(name: string) {

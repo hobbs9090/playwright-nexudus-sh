@@ -73,9 +73,9 @@ The suite supports the following environment variables:
 | `NEXUDUS_AP_MEMBER_NAME` | Yes for AP delivery workflows | `Felicity Ward` via `.env.shared` | Member name used by AP delivery workflow tests |
 | `NEXUDUS_AP_RECEIVED_BY_NAME` | Yes for AP delivery workflows | `Steven Hobbs` via `.env.shared` | AP user name expected in the delivery `Received by` field |
 | `NEXUDUS_AP_COURSE_HOST_NAME` | Yes for AP course workflows | `Jane Appleby` via `.env.shared` | Host name selected when creating AP courses |
-| `NEXUDUS_AP_EVENT_NAME` | No | `Astronomy Night` via `.env.shared` | Base name used when generating unique AP event titles |
-| `NEXUDUS_AP_EVENT_APPEND_UNIQUE_SUFFIX` | No | `true` via `.env.shared` | Appends the standard random test suffix to `NEXUDUS_AP_EVENT_NAME` when creating AP events |
-| `NEXUDUS_CONTRIBUTOR_INITIALS` | No | Derived from Git user name when available | Prefix applied to the random event-name suffix, for example `shabcde` |
+| `CRUD_APPEND_RANDOM_SEED` | No | `true` via `.env.shared` | Appends the shared CRUD random seed to created course, product, and event names |
+| `NEXUDUS_AP_EVENT_NAME` | No | `Astronomy Night` via `.env.shared` | Base name used when generating AP event titles |
+| `NEXUDUS_CONTRIBUTOR_INITIALS` | No | Derived from Git user name when available | Prefix applied to the CRUD random seed, for example `shabcde` |
 | `NEXUDUS_MP_BASE_URL` | No | `https://dashboard-staging.nexudus.com/` | Base URL for the MP staging project |
 | `NEXUDUS_MP_EMAIL` | Yes | None | Username for the MP staging project |
 | `NEXUDUS_MP_PASSWORD` | Yes | None | Password for the MP staging project |
@@ -101,8 +101,8 @@ The committed [.env.shared](/Users/steven/Source/Playwright/playwright-nexudus-s
 - `NEXUDUS_AP_MEMBER_NAME=Felicity Ward`
 - `NEXUDUS_AP_RECEIVED_BY_NAME=Steven Hobbs`
 - `NEXUDUS_AP_COURSE_HOST_NAME=Jane Appleby`
+- `CRUD_APPEND_RANDOM_SEED=true`
 - `NEXUDUS_AP_EVENT_NAME=Astronomy Night`
-- `NEXUDUS_AP_EVENT_APPEND_UNIQUE_SUFFIX=true`
 
 Load order is:
 
@@ -111,7 +111,7 @@ Load order is:
 
 That means local `.env` values can override shared defaults when needed. The same load order is used for both the Playwright commands and the k6 commands in `package.json`.
 
-For AP event creation, the final event title is built from `NEXUDUS_AP_EVENT_NAME`. When `NEXUDUS_AP_EVENT_APPEND_UNIQUE_SUFFIX=true`, the test appends the same generated suffix pattern used by other create-workflow tests, but with contributor initials prefixed to the random part. For example, `Astronomy Night 1803 1430 shabcde`. Set `NEXUDUS_AP_EVENT_APPEND_UNIQUE_SUFFIX=false` to use the base event name exactly as provided.
+For CRUD-style create flows, the suite builds names from a base label plus a shared random seed. This applies to AP products, AP courses, and AP events. When `CRUD_APPEND_RANDOM_SEED=true`, the test appends a seed in the form `ddmm hhmm <initials><random>`. `ddmm` is the current day and month, `hhmm` is the current 24-hour time, `<initials>` comes from the contributor when available, and `<random>` is a five-letter lowercase string. For example, `Astronomy Night 1803 1430 shabcde`. Set `CRUD_APPEND_RANDOM_SEED=false` to use the base names exactly as provided.
 
 Contributor initials are resolved in this order:
 
@@ -119,7 +119,7 @@ Contributor initials are resolved in this order:
 - `GIT_AUTHOR_NAME` / `GIT_COMMITTER_NAME`, if present
 - `git config user.name`, if available
 
-If initials cannot be resolved, the event still gets the standard random suffix without initials.
+If initials cannot be resolved, the CRUD flows still get the standard random seed without initials.
 
 ## Running the tests
 

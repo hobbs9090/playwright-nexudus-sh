@@ -1,5 +1,5 @@
 import { test } from '@playwright/test'
-import { generateUniqueName } from '../../helpers'
+import { buildCrudName } from '../../helpers'
 import { APLoginPage } from '../../page-objects/ap/APLoginPage'
 import { CoursePage } from '../../page-objects/ap/CoursePage'
 
@@ -15,7 +15,7 @@ test.describe('Course workflows', () => {
 
   test('can create a flower arranging course in AP', async () => {
     test.slow()
-    const courseTitle = generateUniqueName('Flower Arranging')
+    const courseTitle = buildCrudName('Flower Arranging')
 
     await coursePage.createCourse(courseTitle)
   })

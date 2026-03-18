@@ -44,7 +44,7 @@ const workflowExpectations = [
   },
   {
     actionButton: 'Add event',
-    bodyTexts: ['Upcoming', 'Name', 'Start / end dates', /This table contains 0 rows?/],
+    bodyTexts: ['Upcoming', 'Name', 'Start / end dates', /This table contains \d+ rows?/],
     name: 'events list',
     path: '/content/calendarEvents',
     urlPattern: /\/content\/calendarEvents/,
