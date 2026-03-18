@@ -1,4 +1,4 @@
-name: Lighthouse Tests
+name: Playwright Tests
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -13,6 +13,122 @@ on:
   workflow_dispatch:
 
 jobs:
+  playwright:
+    name: Run Playwright tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      CI: true
+      PLAYWRIGHT_HEADLESS: true
+      NEXUDUS_AP_BASE_URL: ${{ vars.NEXUDUS_AP_BASE_URL }}
+      NEXUDUS_AP_EMAIL: ${{ secrets.NEXUDUS_AP_EMAIL }}
+      NEXUDUS_AP_PASSWORD: ${{ secrets.NEXUDUS_AP_PASSWORD }}
+      NEXUDUS_MP_BASE_URL: ${{ vars.NEXUDUS_MP_BASE_URL }}
+      NEXUDUS_MP_EMAIL: ${{ secrets.NEXUDUS_MP_EMAIL }}
+      NEXUDUS_MP_PASSWORD: ${{ secrets.NEXUDUS_MP_PASSWORD }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        run: npx playwright test --reporter=blob
+
+      - name: Upload Playwright blob report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-blob-report
+          path: blob-report/
+          retention-days: 14
+
+  report:
+    name: Merge Playwright reports
+    if: always() && needs.playwright.result != 'cancelled'
+    needs: playwright
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download Playwright blob reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-blob-report*
+          path: all-blob-reports
+          merge-multiple: true
+
+      - name: Merge Playwright reports
+        run: npx playwright merge-reports --reporter=html,junit ./all-blob-reports
+
+      - name: Ensure Playwright report directory exists
+        if: always()
+        run: |
+          if [ ! -f playwright-report/index.html ]; then
+            mkdir -p playwright-report
+            printf '%s\n' \
+              '<!doctype html>' \
+              '<html lang="en">' \
+              '  <head>' \
+              '    <meta charset="utf-8" />' \
+              '    <title>Playwright report unavailable</title>' \
+              '  </head>' \
+              '  <body>' \
+              '    <h1>Playwright report unavailable</h1>' \
+              '    <p>The Playwright HTML report was not generated for this run.</p>' \
+              '  </body>' \
+              '</html>' \
+              > playwright-report/index.html
+          fi
+
+      - name: Add Playwright summary to GitHub UI
+        if: always()
+        env:
+          PLAYWRIGHT_JUNIT_PATH: test-results/results.xml
+        run: node scripts/write-github-summary.mjs
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload Playwright test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 14
+
   lighthouse:
     name: Run Lighthouse audits
     runs-on: ubuntu-latest

@@ -291,7 +291,7 @@ The login test uses a browser scenario, so it is intentionally lightweight by de
 
 ## GitHub Actions
 
-The repository includes a workflow at [.github/workflows/playwright.yml](.github/workflows/playwright.yml) that currently runs the Lighthouse suite on:
+The repository includes a workflow at [.github/workflows/playwright.yml](.github/workflows/playwright.yml) that runs the normal Playwright suite and the Lighthouse suite on:
 
 - pushes to branches
 - pull requests
@@ -306,11 +306,14 @@ To use the workflow, configure these GitHub settings:
 - Optional repository variable: `NEXUDUS_AP_BASE_URL`
 - Optional repository variable: `NEXUDUS_MP_BASE_URL`
 
-The workflow installs dependencies, installs the Playwright Chromium browser, and runs the authenticated AP and MP Lighthouse audits. It then builds and uploads the native Lighthouse HTML report bundle plus the raw Lighthouse result artifacts for each run.
+The workflow installs dependencies, installs the Playwright Chromium browser, and runs two parallel CI jobs:
+
+- The normal Playwright suite, which uploads a merged Playwright HTML report plus raw `test-results` artifacts
+- The authenticated AP and MP Lighthouse audits, which upload the native Lighthouse HTML bundle plus the raw Lighthouse result artifacts
 
 The GitHub Actions job sets `LIGHTHOUSE_MIN_PERFORMANCE=29` to account for the lower and noisier performance scores on GitHub-hosted runners. The suite also compares the rounded Lighthouse category scores that appear in the HTML report, which avoids failing CI on raw floating-point values such as `28.999999999999996`. Local runs still use the repo defaults unless you override them in your environment.
 
-On non-PR pushes and manual runs, the workflow also publishes the native Lighthouse HTML bundle to GitHub Pages and adds the published link to the GitHub Actions job summary so it can be opened in the browser without downloading the artifact.
+On non-PR pushes and manual runs, the workflow also publishes the native Lighthouse HTML bundle to GitHub Pages and adds the published link to the GitHub Actions job summary so it can be opened in the browser without downloading the artifact. The Playwright HTML report remains available as a workflow artifact.
 
 The `k6` smoke tests are local-only and are not executed by the GitHub Actions workflow.
 
