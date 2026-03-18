@@ -10,8 +10,14 @@ import { getConfiguredMemberName } from '../../test-environments'
 
 const deliveryLabelPath = resolve(__dirname, '..', 'fixtures', 'delivery-label.pdf')
 const collectionSignaturePath = resolve(__dirname, '..', 'fixtures', 'collection-signature.png')
-const apDeliveryMember = getConfiguredMemberName('NEXUDUS_AP_MEMBER_NAME')
-const apDeliveryReceivedBy = getConfiguredMemberName('NEXUDUS_AP_RECEIVED_BY_NAME')
+
+function getApDeliveryMember() {
+  return getConfiguredMemberName('NEXUDUS_AP_MEMBER_NAME')
+}
+
+function getApDeliveryReceivedBy() {
+  return getConfiguredMemberName('NEXUDUS_AP_RECEIVED_BY_NAME')
+}
 
 const workflowExpectations = [
   {
@@ -108,6 +114,8 @@ test.describe('Admin panel workflows', () => {
 
   test('can register a delivery, upload a label PDF, and assign it to a user @3093', async () => {
     test.slow()
+    const apDeliveryMember = getApDeliveryMember()
+    const apDeliveryReceivedBy = getApDeliveryReceivedBy()
     let createdDelivery:
       | {
           customerName: string
@@ -138,6 +146,7 @@ test.describe('Admin panel workflows', () => {
 
   test('can add a collection signature to a delivery and mark it as collected @3093', async () => {
     test.slow()
+    const apDeliveryMember = getApDeliveryMember()
     let createdDelivery:
       | {
           customerName: string
@@ -166,8 +175,8 @@ test.describe('Admin panel workflows', () => {
   test(
     'can add an Astronomy Night event with plan, team, and specific coworker tickets @3424 @2994 @3140 @3352 @astronomy-night-ticket-targeting',
     async () => {
-    test.slow()
-    await eventPage.createAstronomyNightEvent()
+      test.slow()
+      await eventPage.createAstronomyNightEvent()
     },
   )
 })
