@@ -8,7 +8,7 @@ test.describe('MP staging login', () => {
     loginPage = new MPLoginPage(page)
   })
 
-  test('logs into MP staging with the configured MP credentials', async ({ page }) => {
+  test('logs into MP staging with the configured MP credentials @smoke', async ({ page }) => {
     await loginPage.login()
     await expect(page).toHaveURL(/\/(?:dashboards\/now|home)(?:\?.*)?$/)
     await loginPage.assertDashboardVisible()

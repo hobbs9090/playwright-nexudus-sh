@@ -13,7 +13,7 @@ test.describe('AP login', () => {
     await loginPage.assertErrorMessage('The email or password is incorrect.')
   })
 
-  test('logs into AP with the configured AP credentials', async ({ page }) => {
+  test('logs into AP with the configured AP credentials @smoke', async ({ page }) => {
     await loginPage.login()
     await expect(page).toHaveURL(/\/(?:dashboards\/now|home)?(?:\?.*)?$/)
     await loginPage.assertDashboardVisible()
