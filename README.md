@@ -40,6 +40,7 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   `-- shared/
 |       `-- AbstractPage.ts
 |-- playwright.config.ts
+|-- playwright.lighthouse.config.ts
 |-- tests/
 |   |-- ap/
 |   |   |-- ap-login.spec.ts
@@ -49,6 +50,12 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   |-- fixtures/
 |   |   |-- collection-signature.png
 |   |   `-- delivery-label.pdf
+|   |-- lighthouse/
+|   |   |-- ap/
+|   |   |   `-- ap-dashboard-lighthouse.spec.ts
+|   |   |-- mp/
+|   |   |   `-- mp-dashboard-lighthouse.spec.ts
+|   |   `-- support.ts
 |   `-- mp/
 |       `-- mp-login.spec.ts
 `-- playwright-report-example/
@@ -56,7 +63,7 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 
 ## Prerequisites
 
-- Node.js 18 or newer
+- Node.js 18.16 or newer
 - npm
 
 ## Installation
@@ -108,21 +115,24 @@ I have not tried that exact example above, but in practice Codex should usually 
 
 The suite supports the following environment variables:
 
-| Variable | Required | Default | Purpose |
-| --- | --- | --- | --- |
-| `NEXUDUS_AP_BASE_URL` | No | `https://dashboard-staging.nexudus.com/` | Base URL for the AP project |
-| `NEXUDUS_AP_EMAIL` | Yes | None | Username for the AP project |
-| `NEXUDUS_AP_PASSWORD` | Yes | None | Password for the AP project |
-| `NEXUDUS_AP_MEMBER_NAME` | Yes for AP delivery workflows | `Felicity Ward` via `.env.shared` | Member name used by AP delivery workflow tests |
-| `NEXUDUS_AP_RECEIVED_BY_NAME` | Yes for AP delivery workflows | `Steven Hobbs` via `.env.shared` | AP user name expected in the delivery `Received by` field |
-| `NEXUDUS_AP_COURSE_HOST_NAME` | Yes for AP course workflows | `Jane Appleby` via `.env.shared` | Host name selected when creating AP courses |
-| `CRUD_APPEND_RANDOM_SEED` | No | `true` via `.env.shared` | Appends the shared CRUD random seed to created course, product, and event names |
-| `NEXUDUS_AP_EVENT_NAME` | No | `Astronomy Night` via `.env.shared` | Base name used when generating AP event titles |
-| `NEXUDUS_CONTRIBUTOR_INITIALS` | No | Derived from Git user name when available | Prefix applied to the CRUD random seed, for example `shabcde` |
-| `NEXUDUS_MP_BASE_URL` | No | `https://coworkingnetworksteven.spacesstaging.nexudus.com/` | Base URL for the MP staging project |
-| `NEXUDUS_MP_EMAIL` | Yes | None | Username for the MP staging project |
-| `NEXUDUS_MP_PASSWORD` | Yes | None | Password for the MP staging project |
-| `PLAYWRIGHT_HEADLESS` | No | `false` locally, `true` on CI | Forces headless browser execution |
+| Variable                        | Required                      | Default                                                     | Purpose                                                                         |
+| ------------------------------- | ----------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `NEXUDUS_AP_BASE_URL`           | No                            | `https://dashboard-staging.nexudus.com/`                    | Base URL for the AP project                                                     |
+| `NEXUDUS_AP_EMAIL`              | Yes                           | None                                                        | Username for the AP project                                                     |
+| `NEXUDUS_AP_PASSWORD`           | Yes                           | None                                                        | Password for the AP project                                                     |
+| `NEXUDUS_AP_MEMBER_NAME`        | Yes for AP delivery workflows | `Felicity Ward` via `.env.shared`                           | Member name used by AP delivery workflow tests                                  |
+| `NEXUDUS_AP_RECEIVED_BY_NAME`   | Yes for AP delivery workflows | `Steven Hobbs` via `.env.shared`                            | AP user name expected in the delivery `Received by` field                       |
+| `NEXUDUS_AP_COURSE_HOST_NAME`   | Yes for AP course workflows   | `Jane Appleby` via `.env.shared`                            | Host name selected when creating AP courses                                     |
+| `CRUD_APPEND_RANDOM_SEED`       | No                            | `true` via `.env.shared`                                    | Appends the shared CRUD random seed to created course, product, and event names |
+| `NEXUDUS_AP_EVENT_NAME`         | No                            | `Astronomy Night` via `.env.shared`                         | Base name used when generating AP event titles                                  |
+| `NEXUDUS_CONTRIBUTOR_INITIALS`  | No                            | Derived from Git user name when available                   | Prefix applied to the CRUD random seed, for example `shabcde`                   |
+| `NEXUDUS_MP_BASE_URL`           | No                            | `https://coworkingnetworksteven.spacesstaging.nexudus.com/` | Base URL for the MP staging project                                             |
+| `NEXUDUS_MP_EMAIL`              | Yes                           | None                                                        | Username for the MP staging project                                             |
+| `NEXUDUS_MP_PASSWORD`           | Yes                           | None                                                        | Password for the MP staging project                                             |
+| `PLAYWRIGHT_HEADLESS`           | No                            | `false` locally, `true` on CI                               | Forces headless browser execution                                               |
+| `LIGHTHOUSE_MIN_PERFORMANCE`    | No                            | `35`                                                        | Minimum Lighthouse performance score for the AP and MP dashboard audits         |
+| `LIGHTHOUSE_MIN_ACCESSIBILITY`  | No                            | `60`                                                        | Minimum Lighthouse accessibility score for the AP and MP dashboard audits       |
+| `LIGHTHOUSE_MIN_BEST_PRACTICES` | No                            | `50`                                                        | Minimum Lighthouse best-practices score for the AP and MP dashboard audits      |
 
 The suite currently runs AP admin coverage on the AP dashboard and MP login coverage on the MP staging dashboard. It fails fast if the credential pair required for the selected project is missing.
 
@@ -201,6 +211,28 @@ The environment split is explicit in code:
 
 - [mp-login.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/mp/mp-login.spec.ts) opens the member-portal `/login` page and verifies the authenticated dashboard
 
+## Running the Lighthouse audits
+
+The repository also includes authenticated Lighthouse checks for both AP and MP. These audits run through a separate Playwright config so the regular functional suite stays focused on end-to-end behavior.
+
+The Lighthouse audits can be run locally and also run as a separate GitHub Actions job.
+
+Example usage:
+
+```bash
+# Run both authenticated Lighthouse audits
+npm run test:lighthouse
+
+# Run only the AP or MP audit
+npm run test:lighthouse:ap
+npm run test:lighthouse:mp
+
+# Open the dedicated Playwright report for the Lighthouse suite
+npm run test:lighthouse:report
+```
+
+The Lighthouse suite signs into the authenticated dashboard for each target, runs a desktop Lighthouse audit, and writes JSON plus HTML Lighthouse reports under `test-results/lighthouse/`.
+
 ## Running the k6 performance smoke test
 
 This repository also includes a small k6 smoke test for the public Nexudus landing page and its primary static assets.
@@ -254,14 +286,16 @@ The login test uses a browser scenario, so it is intentionally lightweight by de
 ## Reports and artifacts
 
 - HTML report output: `playwright-report/`
+- Dedicated Lighthouse Playwright HTML report output: `playwright-report/lighthouse/`
 - Test artifacts such as screenshots, videos, and traces: `test-results/`
+- Lighthouse JSON and HTML audit output: `test-results/lighthouse/`
 - A checked-in sample report is available in `playwright-report-example/`
 
 ## GitHub Actions
 
 The repository includes a workflow at [.github/workflows/playwright.yml](.github/workflows/playwright.yml) that runs the suite on:
 
-- pushes to `main`
+- pushes to branches
 - pull requests
 - manual dispatches
 
@@ -274,9 +308,9 @@ To use the workflow, configure these GitHub settings:
 - Optional repository variable: `NEXUDUS_AP_BASE_URL`
 - Optional repository variable: `NEXUDUS_MP_BASE_URL`
 
-The workflow installs dependencies, installs the Playwright Chromium browser, and runs the full Playwright AP and MP suite in GitHub Actions. It then merges the Playwright blob output into a single HTML report and a single JUnit result file, then uploads both `playwright-report` and `test-results` as artifacts.
+The workflow installs dependencies, installs the Playwright Chromium browser, and runs the full Playwright AP and MP suite in GitHub Actions. A separate job also runs the authenticated AP and MP Lighthouse audits. The Playwright job then merges its blob output into a single HTML report and a single JUnit result file, then uploads both `playwright-report` and `test-results` as artifacts.
 
-Each workflow run also adds a Playwright summary directly to the GitHub Actions interface. On pushes to `main`, the workflow automatically publishes the HTML report to GitHub Pages so it can be opened in the browser without downloading the artifact first.
+Each workflow run also uploads the Lighthouse Playwright report and Lighthouse result artifacts. The Playwright report job adds a summary directly to the GitHub Actions interface. On pushes to `main`, the workflow automatically publishes the main Playwright HTML report to GitHub Pages so it can be opened in the browser without downloading the artifact first.
 
 The `k6` smoke tests are local-only and are not executed by the GitHub Actions workflow.
 

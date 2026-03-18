@@ -3,10 +3,17 @@
   "version": "1.0.0",
   "description": "Playwright test automation framework for Nexudus",
   "main": "index.js",
+  "engines": {
+    "node": ">=18.16"
+  },
   "scripts": {
     "test": "node scripts/run-with-dotenv.mjs -- npx playwright test",
     "test:headed": "node scripts/run-with-dotenv.mjs -- npx playwright test --headed",
     "test:report": "node scripts/run-with-dotenv.mjs -- npx playwright show-report",
+    "test:lighthouse": "node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.lighthouse.config.ts",
+    "test:lighthouse:ap": "node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.lighthouse.config.ts --project \"AP Lighthouse\"",
+    "test:lighthouse:mp": "node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.lighthouse.config.ts --project \"MP Lighthouse\"",
+    "test:lighthouse:report": "node scripts/run-with-dotenv.mjs -- npx playwright show-report playwright-report/lighthouse",
     "perf:smoke": "node scripts/run-with-dotenv.mjs -- k6 run performance/landing-page.js",
     "perf:login": "node scripts/run-with-dotenv.mjs -- k6 run performance/admin-login.js"
   },
@@ -17,5 +24,9 @@
     "@types/mocha": "^10.0.1",
     "dotenv": "^17.3.1",
     "playwright": "^1.58.2"
+  },
+  "devDependencies": {
+    "lighthouse": "^12.8.2",
+    "playwright-lighthouse": "^4.0.0"
   }
 }

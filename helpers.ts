@@ -1,4 +1,9 @@
 import { execSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import path from 'node:path'
+import * as dotenv from 'dotenv'
+
+const defaultEnvFileNames = ['.env.shared', '.env']
 
 export function generateUniqueName(prefix: string, randomStringPrefix: string = '') {
   const today = new Date()
@@ -18,6 +23,22 @@ export function generateUniqueName(prefix: string, randomStringPrefix: string = 
   }
 
   return `${prefix} ${dateStr} ${timeStr} ${randomStringPrefix}${randomString}`
+}
+
+export function loadEnvironmentFiles(envFileNames: string[] = defaultEnvFileNames) {
+  for (const envFileName of envFileNames) {
+    const envFilePath = path.resolve(process.cwd(), envFileName)
+
+    if (existsSync(envFilePath)) {
+      dotenv.config({ path: envFilePath, override: false, quiet: true })
+    }
+  }
+}
+
+export function shouldUseHeadlessBrowser() {
+  const rawValue = (process.env.PLAYWRIGHT_HEADLESS || '').trim().toLowerCase()
+
+  return rawValue === 'true' || !!process.env.CI
 }
 
 export function shouldAppendCrudRandomSeed() {
@@ -62,7 +83,9 @@ export function getContributorInitials() {
   const possibleNames = [process.env.GIT_AUTHOR_NAME, process.env.GIT_COMMITTER_NAME]
 
   try {
-    possibleNames.push(execSync('git config user.name', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim())
+    possibleNames.push(
+      execSync('git config user.name', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(),
+    )
   } catch {
     // Fall through to the empty-string fallback below.
   }

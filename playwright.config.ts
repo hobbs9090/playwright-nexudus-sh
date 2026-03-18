@@ -1,17 +1,9 @@
 import type { PlaywrightTestConfig } from '@playwright/test'
 import { devices } from '@playwright/test'
-import * as dotenv from 'dotenv'
-import { existsSync } from 'node:fs'
-import path from 'node:path'
+import { loadEnvironmentFiles, shouldUseHeadlessBrowser } from './helpers'
 import { getBaseURL, getRequiredCredentialEnvVars, testEnvironments } from './test-environments'
 
-for (const envFileName of ['.env.shared', '.env']) {
-  const envFilePath = path.resolve(process.cwd(), envFileName)
-
-  if (existsSync(envFilePath)) {
-    dotenv.config({ path: envFilePath, override: false, quiet: true })
-  }
-}
+loadEnvironmentFiles()
 
 const requiredEnvVars = getRequiredCredentialEnvVars()
 const missingRequiredEnvVars = requiredEnvVars.filter((name) => !process.env[name]?.trim())
@@ -26,7 +18,7 @@ if (missingRequiredEnvVars.length > 0) {
 }
 
 const isCI = !!process.env.CI
-const headless = (process.env.PLAYWRIGHT_HEADLESS || '').toLowerCase() === 'true' || isCI
+const headless = shouldUseHeadlessBrowser()
 const reporter = isCI
   ? [['github'], ['junit', { outputFile: 'test-results/results.xml' }], ['html', { open: 'never' }]]
   : 'html'
