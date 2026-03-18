@@ -285,15 +285,13 @@ The login test uses a browser scenario, so it is intentionally lightweight by de
 
 ## Reports and artifacts
 
-- HTML report output: `playwright-report/`
 - Dedicated Lighthouse Playwright HTML report output: `playwright-report/lighthouse/`
-- Test artifacts such as screenshots, videos, and traces: `test-results/`
 - Lighthouse JSON and HTML audit output: `test-results/lighthouse/`
 - A checked-in sample report is available in `playwright-report-example/`
 
 ## GitHub Actions
 
-The repository includes a workflow at [.github/workflows/playwright.yml](.github/workflows/playwright.yml) that runs the suite on:
+The repository includes a workflow at [.github/workflows/playwright.yml](.github/workflows/playwright.yml) that currently runs the Lighthouse suite on:
 
 - pushes to branches
 - pull requests
@@ -308,13 +306,11 @@ To use the workflow, configure these GitHub settings:
 - Optional repository variable: `NEXUDUS_AP_BASE_URL`
 - Optional repository variable: `NEXUDUS_MP_BASE_URL`
 
-The workflow installs dependencies, installs the Playwright Chromium browser, and runs the full Playwright AP and MP suite in GitHub Actions. A separate job also runs the authenticated AP and MP Lighthouse audits. The Playwright job then merges its blob output into a single HTML report and a single JUnit result file, then uploads both `playwright-report` and `test-results` as artifacts.
+The workflow installs dependencies, installs the Playwright Chromium browser, and runs the authenticated AP and MP Lighthouse audits. It uploads the Lighthouse Playwright report and the Lighthouse result artifacts for each run.
 
-Each workflow run also uploads the Lighthouse Playwright report and Lighthouse result artifacts. The Playwright report job adds a summary directly to the GitHub Actions interface. On pushes to `main`, the workflow automatically publishes the main Playwright HTML report to GitHub Pages so it can be opened in the browser without downloading the artifact first.
+The GitHub Actions job sets `LIGHTHOUSE_MIN_PERFORMANCE=30` to account for the lower and noisier performance scores on GitHub-hosted runners. Local runs still use the repo defaults unless you override them in your environment.
 
 The `k6` smoke tests are local-only and are not executed by the GitHub Actions workflow.
-
-To use the published HTML report, enable GitHub Pages for the repository and select GitHub Actions as the source.
 
 ## Notes
 
