@@ -67,7 +67,7 @@ The suite supports the following environment variables:
 
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
-| `NEXUDUS_AP_BASE_URL` | No | `https://dashboard.nexudus.com/` | Base URL for the AP project |
+| `NEXUDUS_AP_BASE_URL` | No | `https://dashboard-staging.nexudus.com/` | Base URL for the AP project |
 | `NEXUDUS_AP_EMAIL` | Yes | None | Username for the AP project |
 | `NEXUDUS_AP_PASSWORD` | Yes | None | Password for the AP project |
 | `NEXUDUS_AP_MEMBER_NAME` | Yes for AP delivery workflows | `Felicity Ward` via `.env.shared` | Member name used by AP delivery workflow tests |
@@ -92,7 +92,7 @@ NEXUDUS_AP_EMAIL='your-ap-user@example.com'
 NEXUDUS_AP_PASSWORD='your-ap-password'
 NEXUDUS_MP_EMAIL='your-mp-staging-user@example.com'
 NEXUDUS_MP_PASSWORD='your-mp-staging-password'
-NEXUDUS_AP_BASE_URL='https://dashboard.nexudus.com/'
+NEXUDUS_AP_BASE_URL='https://dashboard-staging.nexudus.com/'
 NEXUDUS_MP_BASE_URL='https://coworkingnetworksteven.spacesstaging.nexudus.com/'
 ```
 
@@ -166,7 +166,7 @@ Example usage:
 npm run perf:smoke
 
 # Override the target URL or load profile
-NEXUDUS_AP_BASE_URL='https://dashboard.nexudus.com' K6_VUS=10 K6_DURATION=45s npm run perf:smoke
+NEXUDUS_AP_BASE_URL='https://dashboard-staging.nexudus.com' K6_VUS=10 K6_DURATION=45s npm run perf:smoke
 ```
 
 The test uses these environment variables:

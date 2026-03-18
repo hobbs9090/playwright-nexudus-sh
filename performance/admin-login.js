@@ -1,7 +1,7 @@
 import { browser } from 'k6/browser'
 import { check, fail } from 'k6'
 
-const baseUrl = (__ENV.NEXUDUS_AP_BASE_URL || 'https://dashboard.nexudus.com/').replace(/\/+$/, '')
+const baseUrl = (__ENV.NEXUDUS_AP_BASE_URL || 'https://dashboard-staging.nexudus.com/').replace(/\/+$/, '')
 const email = (__ENV.NEXUDUS_AP_EMAIL || '').trim()
 const password = (__ENV.NEXUDUS_AP_PASSWORD || '').trim()
 const iterations = Number.parseInt(__ENV.K6_LOGIN_ITERATIONS || '1', 10)

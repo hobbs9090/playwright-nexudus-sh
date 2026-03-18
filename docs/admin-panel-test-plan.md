@@ -1,6 +1,6 @@
 # Nexudus Admin Panel Test Plan
 
-Observed on March 14, 2026 by logging into the live demo tenant at `https://dashboard.nexudus.com/` and cross-checking the exposed navigation against the Nexudus help manual.
+Observed on March 14, 2026 by logging into the staging dashboard at `https://dashboard-staging.nexudus.com/` and cross-checking the exposed navigation against the Nexudus help manual.
 
 ## Key functionality in the Admin Panel
 

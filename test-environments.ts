@@ -13,7 +13,7 @@ export const testEnvironments: TestEnvironment[] = [
   {
     projectName: 'AP Chromium',
     baseUrlEnvVar: 'NEXUDUS_AP_BASE_URL',
-    defaultBaseURL: 'https://dashboard.nexudus.com/',
+    defaultBaseURL: 'https://dashboard-staging.nexudus.com/',
     emailEnvVar: 'NEXUDUS_AP_EMAIL',
     passwordEnvVar: 'NEXUDUS_AP_PASSWORD',
     testMatch: ['tests/ap/**/*.spec.ts'],
