@@ -1,6 +1,6 @@
 # playwright-nexudus-sh
 
-End-to-end Playwright test suite for the Nexudus dashboard.
+End-to-end Playwright test suite for the Nexudus Admin Panel (AP) dashboard and Nexudus Member Portal (MP).
 
 This project is written in TypeScript, uses `@playwright/test` as the test runner, and follows a small page object model structure to keep test flows readable.
 
@@ -203,11 +203,11 @@ To use the workflow, configure these GitHub settings:
 - Optional repository variable: `NEXUDUS_AP_BASE_URL`
 - Optional repository variable: `NEXUDUS_MP_BASE_URL`
 
-The workflow installs dependencies, installs the Playwright Chromium browser, runs the test suite, and uploads both the Playwright HTML report and `test-results` as artifacts.
+The workflow installs dependencies, installs the Playwright Chromium browser, and runs the Playwright suite across 5 parallel GitHub-hosted runners using Playwright sharding. After all shards finish, the workflow merges the shard outputs into a single Playwright HTML report and a single JUnit result file, then uploads both `playwright-report` and `test-results` as artifacts.
 
 Each workflow run also adds a Playwright summary directly to the GitHub Actions interface. On pushes to `main`, the workflow automatically publishes the HTML report to GitHub Pages so it can be opened in the browser without downloading the artifact first.
 
-The workflow also runs the k6 landing-page smoke test on every run. The browser-based authenticated k6 login smoke test is manual-only in GitHub Actions and runs only when the workflow is started with `workflow_dispatch` and the repository variable `RUN_K6_BROWSER_LOGIN` is set to `true`.
+The workflow also includes a separate `k6` job. It runs the k6 landing-page smoke test on every run. The browser-based authenticated k6 login smoke test is manual-only in GitHub Actions and runs only when the workflow is started with `workflow_dispatch` and the repository variable `RUN_K6_BROWSER_LOGIN` is set to `true`.
 
 To use the published HTML report, enable GitHub Pages for the repository and select GitHub Actions as the source.
 

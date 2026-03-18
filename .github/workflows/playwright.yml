@@ -8,10 +8,57 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    name: Run Playwright suite
+  playwright:
+    name: Run Playwright suite (shard ${{ matrix.shard }}/5)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5]
+    permissions:
+      contents: read
+    env:
+      CI: true
+      PLAYWRIGHT_HEADLESS: true
+      NEXUDUS_AP_BASE_URL: ${{ vars.NEXUDUS_AP_BASE_URL }}
+      NEXUDUS_AP_EMAIL: ${{ secrets.NEXUDUS_AP_EMAIL }}
+      NEXUDUS_AP_PASSWORD: ${{ secrets.NEXUDUS_AP_PASSWORD }}
+      NEXUDUS_MP_BASE_URL: ${{ vars.NEXUDUS_MP_BASE_URL }}
+      NEXUDUS_MP_EMAIL: ${{ secrets.NEXUDUS_MP_EMAIL }}
+      NEXUDUS_MP_PASSWORD: ${{ secrets.NEXUDUS_MP_PASSWORD }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright shard
+        run: npx playwright test --reporter=blob --shard=${{ matrix.shard }}/5
+
+      - name: Upload Playwright blob report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-blob-report-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 14
+
+  k6:
+    name: Run k6 smoke tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     env:
@@ -49,10 +96,6 @@ jobs:
           chromium_path=$(node -p "require('playwright').chromium.executablePath()")
           echo "path=${chromium_path}" >> "$GITHUB_OUTPUT"
 
-      - name: Run Playwright tests
-        id: playwright
-        run: npm test
-
       - name: Run k6 landing page smoke test
         run: npm run perf:smoke -- --vus 1 --duration 10s
 
@@ -62,6 +105,37 @@ jobs:
           K6_BROWSER_EXECUTABLE_PATH: ${{ steps.chromium.outputs.path }}
           K6_BROWSER_HEADLESS: "true"
         run: npm run perf:login
+
+  report:
+    name: Merge Playwright reports
+    if: always() && needs.playwright.result != 'cancelled'
+    needs: playwright
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download Playwright blob reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-blob-report-*
+          path: all-blob-reports
+          merge-multiple: true
+
+      - name: Merge Playwright reports
+        run: npx playwright merge-reports --reporter=html,junit ./all-blob-reports
 
       - name: Ensure Playwright report directory exists
         if: always()
@@ -107,8 +181,8 @@ jobs:
 
   deploy-report:
     name: Publish Playwright report
-    if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.test.result != 'cancelled'
-    needs: test
+    if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.report.result != 'cancelled'
+    needs: report
     runs-on: ubuntu-latest
     permissions:
       contents: read
