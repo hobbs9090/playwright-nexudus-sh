@@ -41,6 +41,11 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |       `-- AbstractPage.ts
 |-- playwright.config.ts
 |-- playwright.lighthouse.config.ts
+|-- scripts/
+|   |-- build-lighthouse-report-index.mjs
+|   |-- build-pages-report-site.mjs
+|   |-- run-with-dotenv.mjs
+|   `-- write-github-summary.mjs
 |-- tests/
 |   |-- ap/
 |   |   |-- ap-login.spec.ts
@@ -213,9 +218,15 @@ The environment split is explicit in code:
 
 ## Running the Lighthouse audits
 
-The repository also includes authenticated Lighthouse checks for both AP and MP. These audits run through a separate Playwright config so the regular functional suite stays focused on end-to-end behavior.
+The repository also includes authenticated Lighthouse checks for both AP and MP. These audits run through [playwright.lighthouse.config.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/playwright.lighthouse.config.ts) so the regular functional suite stays focused on end-to-end behavior while Lighthouse keeps its own config, retries, thresholds, and report output.
 
-The Lighthouse audits can be run locally and also run as a separate GitHub Actions job.
+The Lighthouse specs live in [tests/lighthouse](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/lighthouse):
+
+- [ap-dashboard-lighthouse.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/lighthouse/ap/ap-dashboard-lighthouse.spec.ts) signs into AP and audits the authenticated dashboard
+- [mp-dashboard-lighthouse.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/lighthouse/mp/mp-dashboard-lighthouse.spec.ts) signs into MP and audits the authenticated dashboard
+- [support.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/lighthouse/support.ts) manages the persistent Chromium context, authenticated audit flow, report generation, and threshold checks
+
+The Lighthouse audits can be run locally, and they also run in CI as the `Run Lighthouse audits` job inside the normal Playwright workflow.
 
 Example usage:
 
@@ -227,11 +238,22 @@ npm run test:lighthouse
 npm run test:lighthouse:ap
 npm run test:lighthouse:mp
 
-# Open the dedicated Playwright report for the Lighthouse suite
+# Build the native Lighthouse HTML bundle
 npm run test:lighthouse:report
+
+# Open the dedicated Playwright wrapper report for the Lighthouse suite
+npm run test:lighthouse:playwright-report
 ```
 
 The Lighthouse suite signs into the authenticated dashboard for each target, runs a desktop Lighthouse audit, and writes JSON plus HTML Lighthouse reports under `test-results/lighthouse/`. `npm run test:lighthouse:report` then builds a browsable native Lighthouse report bundle under `lighthouse-report/`.
+
+Local Lighthouse runs use the repo defaults of:
+
+- `LIGHTHOUSE_MIN_PERFORMANCE=35`
+- `LIGHTHOUSE_MIN_ACCESSIBILITY=60`
+- `LIGHTHOUSE_MIN_BEST_PRACTICES=50`
+
+In GitHub Actions, the workflow overrides `LIGHTHOUSE_MIN_PERFORMANCE=29` to account for lower and noisier performance scores on GitHub-hosted runners. The Lighthouse helper also compares the rounded category scores that appear in the HTML report, which avoids failing CI on floating-point values such as `28.999999999999996`.
 
 ## Running the k6 performance smoke test
 
@@ -285,8 +307,11 @@ The login test uses a browser scenario, so it is intentionally lightweight by de
 
 ## Reports and artifacts
 
+- Playwright HTML report output: `playwright-report/`
+- Playwright raw result output: `test-results/`
 - Native Lighthouse HTML bundle output: `lighthouse-report/`
 - Lighthouse JSON and HTML audit output: `test-results/lighthouse/`
+- Combined Pages bundle output: `pages-report/`
 - A checked-in sample report is available in `playwright-report-example/`
 
 ## GitHub Actions
@@ -305,15 +330,17 @@ To use the workflow, configure these GitHub settings:
 - Repository secret: `NEXUDUS_MP_PASSWORD`
 - Optional repository variable: `NEXUDUS_AP_BASE_URL`
 - Optional repository variable: `NEXUDUS_MP_BASE_URL`
+- GitHub Pages configured to deploy from GitHub Actions
+- If the `github-pages` environment has deployment branch rules, allow the branch that should publish reports, usually `main`
 
-The workflow installs dependencies, installs the Playwright Chromium browser, and runs two parallel CI jobs:
+The workflow installs dependencies, installs the Playwright Chromium browser, and runs four CI jobs:
 
-- The normal Playwright suite, which uploads a merged Playwright HTML report plus raw `test-results` artifacts
-- The authenticated AP and MP Lighthouse audits, which upload the native Lighthouse HTML bundle plus the raw Lighthouse result artifacts
+- `Run Playwright tests` runs the normal functional suite and uploads a blob report
+- `Merge Playwright reports` merges the blob report into the Playwright HTML and JUnit outputs, uploads the merged report, and writes a GitHub job summary
+- `Run Lighthouse audits` runs the authenticated AP and MP Lighthouse specs, uploads the native Lighthouse HTML bundle, and uploads the raw Lighthouse result artifacts
+- `Publish CI reports` publishes a combined GitHub Pages site that includes both report types on non-PR pushes and manual runs
 
-The GitHub Actions job sets `LIGHTHOUSE_MIN_PERFORMANCE=29` to account for the lower and noisier performance scores on GitHub-hosted runners. The suite also compares the rounded Lighthouse category scores that appear in the HTML report, which avoids failing CI on raw floating-point values such as `28.999999999999996`. Local runs still use the repo defaults unless you override them in your environment.
-
-On non-PR pushes and manual runs, the workflow also publishes a combined GitHub Pages site that includes:
+On non-PR pushes and manual runs, the published GitHub Pages site includes:
 
 - the merged Playwright HTML report at `/playwright/`
 - the native Lighthouse HTML bundle at `/lighthouse/`
