@@ -163,8 +163,11 @@ test.describe('Admin panel workflows', () => {
     }
   })
 
-  test('can add an Astronomy Night event for the following Saturday', async () => {
+  test(
+    'can add an Astronomy Night event with plan, team, and specific coworker tickets @3424 @2994 @3140 @3352 @astronomy-night-ticket-targeting',
+    async () => {
     test.slow()
     await eventPage.createAstronomyNightEvent()
-  })
+    },
+  )
 })

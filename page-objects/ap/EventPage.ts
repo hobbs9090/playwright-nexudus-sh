@@ -27,6 +27,16 @@ function formatEventDateTime(date: Date, hours24: number, minutes: number) {
   return `${weekday}, ${month} ${day}, ${year} ${time}`
 }
 
+type TicketConfig = {
+  audience?: 'all' | 'contacts' | 'members'
+  description: string
+  name: string
+  notes: string
+  targetPlan?: boolean
+  targetSpecificCoworker?: string
+  targetTeam?: boolean
+}
+
 export class EventPage extends AbstractPage {
   readonly addEventButton: Locator
   readonly allCustomersRadio: Locator
@@ -50,6 +60,11 @@ export class EventPage extends AbstractPage {
   readonly ticketNameInput: Locator
   readonly ticketNotesInput: Locator
   readonly ticketNotesEditor: Locator
+  readonly ticketAvailabilityTab: Locator
+  readonly ticketMembersInAnyPlanInput: Locator
+  readonly ticketMembersOnlyRadio: Locator
+  readonly ticketSpecificCustomersInput: Locator
+  readonly ticketSpecificTeamsInput: Locator
   readonly ticketSaveChangesButton: Locator
 
   constructor(page: Page) {
@@ -70,11 +85,23 @@ export class EventPage extends AbstractPage {
     this.ticketsTab = page.getByRole('tab', { name: 'Tickets' })
     this.ticketsNotesInput = this.eventDialog.locator('textarea').last()
     this.addTicketButton = page.getByRole('button', { name: 'Add ticket' })
-    this.ticketDialog = page.locator('[role="dialog"]').last()
+    this.ticketDialog = page
+      .locator('[role="dialog"]')
+      .filter({ has: page.getByRole('link', { name: 'Learn more' }) })
+      .last()
     this.ticketDescriptionInput = this.ticketDialog.getByLabel('Ticket description')
     this.ticketNameInput = this.ticketDialog.getByLabel('Ticket name')
     this.ticketNotesInput = this.ticketDialog.getByLabel('Ticket notes')
     this.ticketNotesEditor = this.ticketDialog.locator('.fr-element[contenteditable="true"]').first()
+    this.ticketAvailabilityTab = this.ticketDialog.getByRole('tab', { name: 'Availability' })
+    this.ticketMembersInAnyPlanInput = this.ticketDialog.getByRole('combobox', { name: 'Members in any plan.' })
+    this.ticketMembersOnlyRadio = this.ticketDialog.getByRole('radio', { name: /Members/i })
+    this.ticketSpecificCustomersInput = this.ticketDialog.getByRole('combobox', {
+      name: 'This ticket is available to specific customers:',
+    })
+    this.ticketSpecificTeamsInput = this.ticketDialog.getByRole('combobox', {
+      name: 'This ticket is available to specific teams:',
+    })
     this.saveChangesButton = this.eventDialog.getByRole('button', { name: 'Save changes' })
     this.ticketSaveChangesButton = this.ticketDialog.getByRole('button', { name: 'Save changes' })
   }
@@ -142,6 +169,75 @@ export class EventPage extends AbstractPage {
     }, ticketNotes)
   }
 
+  async selectTicketAutocompleteOption(input: Locator, searchText?: string) {
+    await input.click({ force: true })
+
+    if (searchText) {
+      await input.fill(searchText)
+    } else {
+      await input.press('ArrowDown')
+    }
+
+    const options = this.page.locator('[role="option"]')
+    await expect(options.first()).toBeVisible({ timeout: 10000 })
+
+    const option = searchText ? options.filter({ hasText: searchText }).first() : options.first()
+    const hasMatchingOption = (await option.count()) > 0
+    const selectedOption = hasMatchingOption ? option : options.first()
+    const selectedOptionText = (await selectedOption.innerText()).trim()
+
+    await selectedOption.click({ force: true })
+    await expect(options.first()).toBeHidden({ timeout: 10000 }).catch(() => undefined)
+
+    return selectedOptionText
+  }
+
+  async configureTicketAvailability({ audience = 'all', targetPlan, targetSpecificCoworker, targetTeam }: TicketConfig) {
+    if (!targetPlan && !targetTeam && !targetSpecificCoworker && audience === 'all') {
+      return
+    }
+
+    await this.ticketAvailabilityTab.click()
+
+    if (audience === 'members' || targetPlan || targetTeam || targetSpecificCoworker) {
+      await this.ticketMembersOnlyRadio.check({ force: true })
+      await expect(this.ticketMembersInAnyPlanInput).toBeVisible({ timeout: 10000 })
+    }
+
+    if (targetPlan) {
+      await this.selectTicketAutocompleteOption(this.ticketMembersInAnyPlanInput)
+    }
+
+    if (targetTeam) {
+      await this.selectTicketAutocompleteOption(this.ticketSpecificTeamsInput)
+    }
+
+    if (targetSpecificCoworker) {
+      await this.selectTicketAutocompleteOption(this.ticketSpecificCustomersInput, targetSpecificCoworker)
+    }
+  }
+
+  async addTicket(ticket: TicketConfig) {
+    await this.addTicketButton.click()
+    await expect(this.ticketNameInput).toBeVisible({ timeout: 10000 })
+    await this.ticketNameInput.fill(ticket.name)
+    await this.ticketDescriptionInput.fill(ticket.description)
+    await this.ticketNotesEditor.fill(ticket.notes)
+    await this.configureTicketAvailability(ticket)
+
+    const addTicketResponsePromise = this.page
+      .waitForResponse(
+        (response) =>
+          /\/api\/.*ticket/i.test(response.url()) && ['POST', 'PUT'].includes(response.request().method()),
+        { timeout: 30000 },
+      )
+      .catch(() => null)
+
+    await this.ticketSaveChangesButton.click({ force: true })
+    await addTicketResponsePromise
+    await expect(this.page.getByText(ticket.name, { exact: true })).toBeVisible({ timeout: 30000 })
+  }
+
   async createAstronomyNightEvent() {
     const nextSaturday = getNextSaturdayDate()
     const now = new Date()
@@ -155,6 +251,30 @@ export class EventPage extends AbstractPage {
       'Join us for Astronomy Night from 7:00 PM to 11:00 PM to learn the fundamentals of mapping the night sky and tracking celestial objects.'
     const ticketDescription = 'Entry to Astronomy Night with access to the full evening schedule and telescope session.'
     const ticketNotes = 'Bring warm clothes and arrive 15 minutes early for check-in and telescope setup.'
+    const specificCoworker = process.env.NEXUDUS_AP_MEMBER_NAME?.trim() || 'Bob Younger'
+    const tickets: TicketConfig[] = [
+      {
+        audience: 'members',
+        description: `${ticketDescription} Available only to members on a selected plan.`,
+        name: 'Astronomy Night plan-targeted ticket',
+        notes: ticketNotes,
+        targetPlan: true,
+      },
+      {
+        audience: 'members',
+        description: `${ticketDescription} Available only to members in a selected team.`,
+        name: 'Astronomy Night team-targeted ticket',
+        notes: ticketNotes,
+        targetTeam: true,
+      },
+      {
+        audience: 'members',
+        description: `${ticketDescription} Available only to a selected coworker.`,
+        name: 'Astronomy Night specific coworker ticket',
+        notes: ticketNotes,
+        targetSpecificCoworker: specificCoworker,
+      },
+    ]
 
     await this.navigateToList()
     await this.addEventButton.click({ force: true })
@@ -204,23 +324,11 @@ export class EventPage extends AbstractPage {
     await this.saveChangesButton.click({ force: true })
     await updateEventResponsePromise
 
+    await this.dismissBlockingDialogs()
     await this.ticketsTab.click()
-    await this.addTicketButton.click()
-    await this.ticketDialog.getByText('Add ticket').waitFor({ state: 'visible' })
-    await this.ticketNameInput.fill('Standard ticket')
-    await this.ticketDescriptionInput.fill(ticketDescription)
-    await this.ticketNotesEditor.fill(ticketNotes)
 
-    const addTicketResponsePromise = this.page
-      .waitForResponse(
-        (response) =>
-          /\/api\/.*ticket/i.test(response.url()) && ['POST', 'PUT'].includes(response.request().method()),
-        { timeout: 30000 },
-      )
-      .catch(() => null)
-
-    await this.ticketSaveChangesButton.click({ force: true })
-    await addTicketResponsePromise
-    await expect(this.page.getByText('Standard ticket', { exact: true })).toBeVisible({ timeout: 30000 })
+    for (const ticket of tickets) {
+      await this.addTicket(ticket)
+    }
   }
 }

@@ -31,6 +31,18 @@ function buildCard({ title, href, description, available }) {
 }
 
 function buildIndexHtml({ hasPlaywrightReport, hasLighthouseReport }) {
+  let intro =
+    'This published bundle includes both the merged Playwright HTML report for the functional suite and the native Lighthouse HTML reports for the authenticated AP and MP audits.'
+
+  if (hasPlaywrightReport && !hasLighthouseReport) {
+    intro =
+      'This published bundle includes the merged Playwright HTML report for the Astronomy Night ticket-targeting workflow that runs on CI for this branch.'
+  } else if (!hasPlaywrightReport && hasLighthouseReport) {
+    intro = 'This published bundle includes the native Lighthouse HTML reports for the authenticated AP and MP audits.'
+  } else if (!hasPlaywrightReport && !hasLighthouseReport) {
+    intro = 'No HTML reports were published for this run.'
+  }
+
   const cards = [
     buildCard({
       title: 'Playwright Report',
@@ -170,7 +182,7 @@ function buildIndexHtml({ hasPlaywrightReport, hasLighthouseReport }) {
     <main>
       <section class="hero">
         <h1>CI Reports</h1>
-        <p class="intro">This published bundle includes both the merged Playwright HTML report for the functional suite and the native Lighthouse HTML reports for the authenticated AP and MP audits.</p>
+        <p class="intro">${escapeHtml(intro)}</p>
       </section>
       <section class="grid">
         ${cards}
