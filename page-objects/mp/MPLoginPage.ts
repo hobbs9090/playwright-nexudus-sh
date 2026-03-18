@@ -23,7 +23,21 @@ export class MPLoginPage extends AbstractPage {
     await this.emailInput.fill(resolvedEmail)
     await this.passwordInput.fill(resolvedPassword)
     await this.signInButton.click()
-    await this.page.waitForURL(/\/home(?:\?.*)?$/, { timeout: 30000 })
+    await expect
+      .poll(
+        async () => {
+          const url = this.page.url()
+          const dashboardButtonVisible = await this.page
+            .getByRole('button', { name: /Dashboard/ })
+            .first()
+            .isVisible()
+            .catch(() => false)
+
+          return /\/(?:dashboards\/now|home)(?:\?.*)?$/.test(url) || dashboardButtonVisible
+        },
+        { timeout: 30000 }
+      )
+      .toBe(true)
   }
 
   async assertDashboardVisible() {

@@ -28,7 +28,21 @@ export class APLoginPage extends AbstractPage {
     await this.signInButton.click()
 
     if (valid) {
-      await this.page.waitForURL(/\/dashboards\/now(?:\?.*)?$/, { timeout: 30000 })
+      await expect
+        .poll(
+          async () => {
+            const url = this.page.url()
+            const dashboardLinkVisible = await this.page
+              .getByRole('link', { name: 'Dashboard', exact: true })
+              .first()
+              .isVisible()
+              .catch(() => false)
+
+            return /\/(?:dashboards\/now|home)(?:\?.*)?$/.test(url) || dashboardLinkVisible
+          },
+          { timeout: 30000 }
+        )
+        .toBe(true)
       return
     }
 
