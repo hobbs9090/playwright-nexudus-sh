@@ -310,6 +310,8 @@ The workflow installs dependencies, installs the Playwright Chromium browser, an
 
 The GitHub Actions job sets `LIGHTHOUSE_MIN_PERFORMANCE=30` to account for the lower and noisier performance scores on GitHub-hosted runners. Local runs still use the repo defaults unless you override them in your environment.
 
+On non-PR pushes and manual runs, the workflow also publishes the Lighthouse HTML report to GitHub Pages and adds the published link to the GitHub Actions job summary so it can be opened in the browser without downloading the artifact.
+
 The `k6` smoke tests are local-only and are not executed by the GitHub Actions workflow.
 
 ## Notes
