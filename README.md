@@ -6,13 +6,20 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 
 ## What the suite covers
 
+### AP
+
 - AP login shows a clear error message when invalid credentials are provided
 - AP login succeeds with the configured AP credentials
-- MP staging member-portal login succeeds with the configured MP credentials
+- Admin overview sections render expected capability groupings
 - A flower arranging course can be created in AP
 - A product can be created and then removed from the products area
 - A delivery can be registered, assigned to a user, uploaded with a PDF label, and then removed
 - A delivery can be signed for on collection and marked as collected
+- An `Astronomy Night` event can be created for the following Saturday
+
+### MP
+
+- MP staging member-portal login succeeds with the configured MP credentials
 
 ## Project structure
 
@@ -59,6 +66,37 @@ git clone https://github.com/hobbs9090/playwright-nexudus-sh.git
 cd playwright-nexudus-sh
 npm ci
 npx playwright install chromium
+```
+
+## Development setup
+
+If you want to extend the suite, the usual local setup is:
+
+```bash
+git clone https://github.com/hobbs9090/playwright-nexudus-sh.git
+cd playwright-nexudus-sh
+npm ci
+npx playwright install chromium
+cp .env.example .env
+```
+
+Then add your local AP and MP credentials to `.env`. The repo already loads `.env.shared` first and `.env` second, so team defaults remain available while your local secrets override them.
+
+The usual editing setup for this repo is Visual Studio Code with the Codex extension, which works well for creating or extending Playwright tests while staying inside the existing project structure.
+
+If anyone on the team wants help getting set up or adding new tests, I’d be very happy to help.
+
+When adding tests, follow the existing split:
+
+- Put Admin Panel specs in `tests/ap` and page objects in `page-objects/ap`
+- Put Member Portal specs in `tests/mp` and page objects in `page-objects/mp`
+- Keep shared browser helpers in `page-objects/shared`
+
+An effective way to work with Codex is to be explicit about the target area, data to use, and how the new flow should be verified. For example:
+
+```text
+Create a new AP Playwright test that adds a booking for next Tuesday at 10:00 AM.
+Use the existing AP page object pattern, put the spec under tests/ap, add any new page-object methods under page-objects/ap, reuse shared config where possible, run the new test locally, and update the README if new configuration is needed.
 ```
 
 ## Configuration
@@ -144,10 +182,19 @@ By default the suite runs two Chromium projects: `AP Chromium` and `MP Staging C
 
 The environment split is explicit in code:
 
-- AP-specific page objects live in [page-objects/ap](/Users/steven/Source/Steven/playwright-nexudus-sh/page-objects/ap), while MP-specific page objects live in [page-objects/mp](/Users/steven/Source/Steven/playwright-nexudus-sh/page-objects/mp).
-- Shared low-level behavior stays in [page-objects/shared/AbstractPage.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/page-objects/shared/AbstractPage.ts).
-- Files in [tests/ap](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/ap) run only on `AP Chromium`, including [tests/ap/ap-login.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/ap/ap-login.spec.ts), [tests/ap/course-workflows.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/ap/course-workflows.spec.ts), [tests/ap/admin-panel-overview.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/ap/admin-panel-overview.spec.ts), and [tests/ap/admin-panel-workflows.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/ap/admin-panel-workflows.spec.ts).
-- Files in [tests/mp](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/mp) run only on `MP Staging Chromium`, currently [tests/mp/mp-login.spec.ts](/Users/steven/Source/Steven/playwright-nexudus-sh/tests/mp/mp-login.spec.ts), which opens the member-portal `/login` page and verifies the authenticated `/home` dashboard.
+- AP-specific page objects live in [page-objects/ap](/Users/steven/Source/Playwright/playwright-nexudus-sh/page-objects/ap), while MP-specific page objects live in [page-objects/mp](/Users/steven/Source/Playwright/playwright-nexudus-sh/page-objects/mp).
+- Shared low-level behavior stays in [AbstractPage.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/page-objects/shared/AbstractPage.ts).
+
+### AP tests
+
+- [ap-login.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/ap/ap-login.spec.ts) covers invalid and valid AP login
+- [admin-panel-overview.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/ap/admin-panel-overview.spec.ts) checks the main AP sections and capability groups
+- [admin-panel-workflows.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/ap/admin-panel-workflows.spec.ts) covers members, bookings, invoices, events, help-desk, deliveries, products, and event creation
+- [course-workflows.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/ap/course-workflows.spec.ts) covers AP course creation
+
+### MP tests
+
+- [mp-login.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/mp/mp-login.spec.ts) opens the member-portal `/login` page and verifies the authenticated dashboard
 
 ## Running the k6 performance smoke test
 
