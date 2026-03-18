@@ -281,5 +281,6 @@ To use the published HTML report, enable GitHub Pages for the repository and sel
 
 ## Notes
 
+- This project should be judged more on the quality of the implementation than the breadth of coverage, because it is intended as a proof of concept for AI-enabled automation test development.
 - The suite is intentionally small and focused on demonstrating Playwright structure and workflow integration.
 - The product creation flow currently depends on UI timing and may require maintenance if the Nexudus product screens change.
