@@ -220,6 +220,8 @@ The environment split is explicit in code:
 
 The repository also includes authenticated Lighthouse checks for both AP and MP. These audits run through [playwright.lighthouse.config.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/playwright.lighthouse.config.ts) so the regular functional suite stays focused on end-to-end behavior while Lighthouse keeps its own config, retries, thresholds, and report output.
 
+For the underlying audit model, categories, and scoring guidance, see the official Lighthouse documentation from Chrome for Developers: <https://developer.chrome.com/docs/lighthouse/>.
+
 The Lighthouse specs live in [tests/lighthouse](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/lighthouse):
 
 - [ap-dashboard-lighthouse.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/lighthouse/ap/ap-dashboard-lighthouse.spec.ts) signs into AP and audits the authenticated dashboard
