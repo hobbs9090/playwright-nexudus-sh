@@ -76,7 +76,7 @@ The suite supports the following environment variables:
 | `CRUD_APPEND_RANDOM_SEED` | No | `true` via `.env.shared` | Appends the shared CRUD random seed to created course, product, and event names |
 | `NEXUDUS_AP_EVENT_NAME` | No | `Astronomy Night` via `.env.shared` | Base name used when generating AP event titles |
 | `NEXUDUS_CONTRIBUTOR_INITIALS` | No | Derived from Git user name when available | Prefix applied to the CRUD random seed, for example `shabcde` |
-| `NEXUDUS_MP_BASE_URL` | No | `https://dashboard-staging.nexudus.com/` | Base URL for the MP staging project |
+| `NEXUDUS_MP_BASE_URL` | No | `https://coworkingnetworksteven.spacesstaging.nexudus.com/` | Base URL for the MP staging project |
 | `NEXUDUS_MP_EMAIL` | Yes | None | Username for the MP staging project |
 | `NEXUDUS_MP_PASSWORD` | Yes | None | Password for the MP staging project |
 | `PLAYWRIGHT_HEADLESS` | No | `false` locally, `true` on CI | Forces headless browser execution |
@@ -93,7 +93,7 @@ NEXUDUS_AP_PASSWORD='your-ap-password'
 NEXUDUS_MP_EMAIL='your-mp-staging-user@example.com'
 NEXUDUS_MP_PASSWORD='your-mp-staging-password'
 NEXUDUS_AP_BASE_URL='https://dashboard.nexudus.com/'
-NEXUDUS_MP_BASE_URL='https://dashboard-staging.nexudus.com/'
+NEXUDUS_MP_BASE_URL='https://coworkingnetworksteven.spacesstaging.nexudus.com/'
 ```
 
 The committed [.env.shared](/Users/steven/Source/Playwright/playwright-nexudus-sh/.env.shared) currently provides:

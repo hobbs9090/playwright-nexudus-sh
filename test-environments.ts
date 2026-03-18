@@ -21,7 +21,7 @@ export const testEnvironments: TestEnvironment[] = [
   {
     projectName: 'MP Staging Chromium',
     baseUrlEnvVar: 'NEXUDUS_MP_BASE_URL',
-    defaultBaseURL: 'https://dashboard-staging.nexudus.com/',
+    defaultBaseURL: 'https://coworkingnetworksteven.spacesstaging.nexudus.com/',
     emailEnvVar: 'NEXUDUS_MP_EMAIL',
     passwordEnvVar: 'NEXUDUS_MP_PASSWORD',
     testMatch: ['tests/mp/**/*.spec.ts'],
