@@ -31,8 +31,8 @@ const courseOverviewHtml = [
   '<p>This public course introduces the major decorative languages that transformed celebration cakes from formal centrepieces into expressive works of craft.</p>',
   '<p>Across three sections, learners will study foundational influences, hands-on techniques, and finishing decisions that help each decorating style communicate mood, occasion, and period detail.</p>',
 ].join('')
-const largeCourseImagePath = resolve(__dirname, '..', 'fixtures', 'ap-course-cake-decorations-large.jpg')
-const smallCourseImagePath = resolve(__dirname, '..', 'fixtures', 'ap-course-cake-decorations-small.jpg')
+const largeCourseImagePath = resolve(__dirname, '..', 'fixtures', 'ap-course-cake-decorations-large.png')
+const smallCourseImagePath = resolve(__dirname, '..', 'fixtures', 'ap-course-cake-decorations-small.png')
 
 const cakeDecoratingCoursePlan: CourseSectionPlan[] = [
   {

@@ -72,8 +72,8 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   |   |-- business-settings.spec.ts
 |   |   `-- user-info.spec.ts
 |   |-- fixtures/
-|   |   |-- ap-course-cake-decorations-large.jpg
-|   |   |-- ap-course-cake-decorations-small.jpg
+|   |   |-- ap-course-cake-decorations-large.png
+|   |   |-- ap-course-cake-decorations-small.png
 |   |   |-- collection-signature.png
 |   |   `-- delivery-label.pdf
 |   |-- lighthouse/
@@ -87,6 +87,19 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |       `-- mp-signup.spec.ts
 |       `-- mp-login.spec.ts
 ```
+
+## Course image preview
+
+<details>
+<summary>Open the large cake-decoration course image</summary>
+
+[<img
+  src="tests/fixtures/ap-course-cake-decorations-large.png"
+  alt="Large cake-decoration course image"
+  width="420"
+/>](tests/fixtures/ap-course-cake-decorations-large.png)
+
+</details>
 
 ## Development setup
 
