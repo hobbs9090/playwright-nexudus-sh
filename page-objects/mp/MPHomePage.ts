@@ -109,6 +109,24 @@ export class MPHomePage extends AbstractPage {
     await expect(this.footer).toContainText(sayingText)
   }
 
+  async assertFooterSayingAuthorVisible(authorText: string) {
+    await expect(this.footer).toContainText(authorText)
+  }
+
+  async scrollToFooterAndPause(pauseMs: number = 10000) {
+    await this.page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
+    await this.page.evaluate(() => {
+      const maxScrollTop = Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight,
+      )
+
+      window.scrollTo({ top: maxScrollTop, behavior: 'smooth' })
+    })
+    await expect(this.footer).toBeVisible()
+    await this.page.waitForTimeout(pauseMs)
+  }
+
   async assertConfiguredPlansAndProductsVisible(data: Pick<MPHomeContentData, 'pricePlans' | 'products'>) {
     for (const pricePlan of data.pricePlans) {
       await expect(this.page.getByRole('heading', { exact: true, name: pricePlan })).toBeVisible()

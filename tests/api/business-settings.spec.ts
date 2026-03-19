@@ -5,7 +5,7 @@ import { MPHomePage } from '../../page-objects/mp/MPHomePage'
 import { expect, test } from './api-test'
 
 test.describe('Nexudus API business settings', () => {
-  test('can update Footer.SayingText for the current business, leave it updated, and verify it in MP @api', async (
+  test('can update Footer.SayingText and verify it in MP @api', async (
     { nexudusApi, accessToken, page },
     testInfo,
   ) => {
@@ -13,23 +13,38 @@ test.describe('Nexudus API business settings', () => {
 
     const currentUser = await nexudusApi.getCurrentUser(accessToken)
     const currentBusinessId = getCurrentBusinessId(currentUser)
+    const footerSeed = buildFooterSeed()
     const homePage = new MPHomePage(page)
     const mpHomeURL = buildMPHomeURL()
     const footerSayingText = await nexudusApi.getBusinessSetting(accessToken, {
       businessId: currentBusinessId,
       name: 'Footer.SayingText',
     })
+    const footerSayingAuthor = await nexudusApi.getBusinessSetting(accessToken, {
+      businessId: currentBusinessId,
+      name: 'Footer.SayingAuthor',
+    })
     const originalFooterSayingText = footerSayingText.Value
-    const updatedFooterSayingText = buildUniqueFooterSayingText(testInfo.title)
+    const originalFooterSayingAuthor = footerSayingAuthor.Value
+    const updatedFooterSayingText = buildUniqueFooterSayingText(testInfo.title, footerSeed)
+    const updatedFooterSayingAuthor = buildUniqueFooterSayingAuthor(footerSeed)
 
     expect(
       updatedFooterSayingText,
       'Expected the updated footer saying text to differ from the current business setting value.',
     ).not.toBe(originalFooterSayingText)
     expect(
+      updatedFooterSayingAuthor,
+      'Expected the updated footer saying author to differ from the current business setting value.',
+    ).not.toBe(originalFooterSayingAuthor)
+    expect(
       updatedFooterSayingText,
       'Expected the updated footer saying text to include the seeded timestamp and random suffix.',
     ).toMatch(buildFooterSayingSeedPattern())
+    expect(
+      updatedFooterSayingAuthor,
+      'Expected the updated footer saying author to include Playwright and the shared seed.',
+    ).toBe(`Playwright ${footerSeed}`)
 
     const updatedBusinessSetting = await nexudusApi.updateBusinessSetting(accessToken, {
       BusinessId: footerSayingText.BusinessId,
@@ -37,12 +52,22 @@ test.describe('Nexudus API business settings', () => {
       Name: footerSayingText.Name,
       Value: updatedFooterSayingText,
     })
+    const updatedAuthorSetting = await nexudusApi.updateBusinessSetting(accessToken, {
+      BusinessId: footerSayingAuthor.BusinessId,
+      Id: footerSayingAuthor.Id,
+      Name: footerSayingAuthor.Name,
+      Value: updatedFooterSayingAuthor,
+    })
 
     expect(updatedBusinessSetting.Value).toBe(updatedFooterSayingText)
+    expect(updatedAuthorSetting.Value).toBe(updatedFooterSayingAuthor)
 
     await expect
       .poll(() => nexudusApi.getBusinessSettingById(accessToken, footerSayingText.Id).then((setting) => setting.Value))
       .toBe(updatedFooterSayingText)
+    await expect
+      .poll(() => nexudusApi.getBusinessSettingById(accessToken, footerSayingAuthor.Id).then((setting) => setting.Value))
+      .toBe(updatedFooterSayingAuthor)
 
     await expect
       .poll(
@@ -53,8 +78,19 @@ test.describe('Nexudus API business settings', () => {
         { timeout: 45000 },
       )
       .toContain(updatedFooterSayingText)
+    await expect
+      .poll(
+        async () => {
+          await homePage.goto(buildCacheBustedMPHomeURL(mpHomeURL))
+          return homePage.getFooterText()
+        },
+        { timeout: 45000 },
+      )
+      .toContain(updatedFooterSayingAuthor)
 
     await homePage.assertFooterSayingVisible(updatedFooterSayingText)
+    await homePage.assertFooterSayingAuthorVisible(updatedFooterSayingAuthor)
+    await homePage.scrollToFooterAndPause()
   })
 
   test('can update Calendars.DefaultView for the current business and restore it afterwards @api', async ({
@@ -111,10 +147,18 @@ test.describe('Nexudus API business settings', () => {
   })
 })
 
-function buildUniqueFooterSayingText(testTitle: string) {
+function buildFooterSeed() {
+  return generateUniqueName('', getContributorInitials()).trim()
+}
+
+function buildUniqueFooterSayingText(testTitle: string, footerSeed: string) {
   const normalizedTitle = testTitle.replace(/[^a-z0-9]+/gi, ' ').trim()
 
-  return generateUniqueName(`Playwright ${normalizedTitle}`, getContributorInitials())
+  return `Playwright ${normalizedTitle} ${footerSeed}`
+}
+
+function buildUniqueFooterSayingAuthor(footerSeed: string) {
+  return `Playwright ${footerSeed}`
 }
 
 function buildFooterSayingSeedPattern() {
