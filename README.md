@@ -20,6 +20,8 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 ### MP
 
 - MP staging member-portal login succeeds with the configured MP credentials
+- MP staging account creation succeeds for new individual accounts
+- MP staging account creation succeeds for new company accounts
 
 ### API
 
@@ -43,6 +45,7 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   |   |-- EventPage.ts
 |   |   `-- ProductPage.ts
 |   |-- mp/
+|   |   `-- MPSignupPage.ts
 |   |   `-- MPLoginPage.ts
 |   `-- shared/
 |       `-- AbstractPage.ts
@@ -72,6 +75,7 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   |   |   `-- mp-dashboard-lighthouse.spec.ts
 |   |   `-- support.ts
 |   `-- mp/
+|       `-- mp-signup.spec.ts
 |       `-- mp-login.spec.ts
 ```
 
