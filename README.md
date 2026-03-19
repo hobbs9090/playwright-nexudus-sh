@@ -11,7 +11,7 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 - AP login shows a clear error message when invalid credentials are provided
 - AP login succeeds with the configured AP credentials
 - Admin overview sections render expected capability groupings
-- A flower arranging course can be created in AP
+- A public cake-decoration history course can be created in AP with seeded titles, images, sections, lessons, discussion-board creation, home-page featuring, and random participant enrolment
 - A product can be created and then removed from the products area
 - A delivery can be registered, assigned to a user, uploaded with a PDF label, and then removed
 - A delivery can be signed for on collection and marked as collected
@@ -72,6 +72,8 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   |   |-- business-settings.spec.ts
 |   |   `-- user-info.spec.ts
 |   |-- fixtures/
+|   |   |-- ap-course-cake-decorations-large.jpg
+|   |   |-- ap-course-cake-decorations-small.jpg
 |   |   |-- collection-signature.png
 |   |   `-- delivery-label.pdf
 |   |-- lighthouse/
@@ -126,6 +128,71 @@ If you want to use Codex with this repository:
 
 If anyone on the team wants help getting set up or adding new tests, I’d be very happy to help.
 
+## Adding tests with AI
+
+AI tools such as Codex can usually produce a useful first pass from a short prompt. For example:
+
+```text
+Create an AP test that sets up a complete published cake decorating course with lessons, images, and enrolments, following the existing patterns.
+```
+
+That said, more detail will usually produce output that is much closer to what you actually want.
+
+When asking AI to add a test, it helps to specify:
+
+- which area the test belongs to: `AP`, `MP`, or `API`
+- the exact workflow or business behavior to cover
+- any required names, titles, settings, images, participants, or seeded data
+- whether the AI should choose sensible defaults when you do not care about the exact values
+- where the code should live, for example `tests/ap`, `page-objects/ap`, or `api`
+- whether existing page objects, config helpers, or API clients should be reused
+- how the flow should be verified locally
+- whether the work should be split into logical commits and pushed
+
+The current AP course-creation workflow in [course-workflows.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/ap/course-workflows.spec.ts) was created from a more detailed prompt. The requirements below are the example instructions that were used to create that last test:
+
+```text
+Create an AP test that creates a course called:
+
+"Six million four hundred and fifty-three thousand five hundred and sixty-eight Hundreds and Thousands: A History of Cake Decorations"
+
+Requirements:
+
+- Add a random seed to the title
+- Add 6 lessons, plus an Introduction and summary
+- Organise the course into 3 sections: Foundations, Techniques, and Finishing & Presentation.
+- Use one lesson per cake decorating style.
+- If I don’t specify the 6 styles, choose sensible main styles yourself.
+- Add both a large image and a small image.
+- Set This course is published
+- Make the course public
+- Ensure the course is available in all locations
+- Populate all fields with appropriate text that matches the subject matter.
+- Generate the images with AI and store them in the repo under `tests/fixtures/` for reuse.
+- Feature this course on the home page after users log in
+- Create a discussion board group for members of this course.
+- Automatically enrol three random participants (for this and future course runs)
+- Follow the existing AP test/page-object style already used in this repo.
+- If needed, use the existing API test/client structure for lesson creation rather than ad hoc requests.
+- Keep the changes split into logical commits.
+- Run the relevant AP test and verify it passes locally before commit and push to repository
+```
+
+In practice, those requirements asked the AI to build all of the following:
+
+- a new AP end-to-end workflow in [course-workflows.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/ap/course-workflows.spec.ts)
+- supporting AP page-object behavior in [CoursePage.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/page-objects/ap/CoursePage.ts)
+- reusable API client helpers in [NexudusApiClient.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/api/NexudusApiClient.ts) for reading courses, updating courses, creating sections, creating lessons, listing coworkers, and enrolling members
+- two reusable AI-generated image fixtures under [tests/fixtures](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/fixtures)
+- seeded course-title generation rather than a fixed title
+- appropriate course summary, description, overview, section summaries, and lesson content that matched the subject matter
+- a mixed UI and API setup flow, with the UI used for course creation and image upload, and the API used for richer course configuration and lesson/member setup
+- verification that the course was published, public, available in all locations, featured after login, and configured with a discussion-board group
+- verification that all three sections, all eight lessons, and three enrolled participants were present
+- local test execution, failure diagnosis, fixes, reruns, logical commits, and push-ready output
+
+Detailed prompts are especially helpful when a test mixes UI automation, API setup, generated fixtures, seeded names, repo conventions, and local verification. You do not always need this much detail, but in practice it reduces back-and-forth and usually gives a result that is closer to ready for review.
+
 ## Nexudus documentation
 
 - Knowledge Base: https://help.nexudus.com/
@@ -133,7 +200,7 @@ If anyone on the team wants help getting set up or adding new tests, I’d be ve
 
 The Developers Hub is the main place to find details about the Nexudus APIs.
 
-The API test infrastructure in this repository uses the public Nexudus API pattern documented there. The current API coverage authenticates with `POST /api/token`, reads the current user profile from `GET /en/user/me`, and updates plus restores selected `BusinessSetting` records through the REST API.
+The API test infrastructure in this repository uses the public Nexudus API pattern documented there. The current API coverage authenticates with `POST /api/token`, reads the current user profile from `GET /en/user/me`, updates plus restores selected `BusinessSetting` records through the REST API, and exposes reusable helpers for AP course setup such as creating sections, lessons, and members.
 
 When adding tests, follow the existing split:
 
@@ -141,18 +208,6 @@ When adding tests, follow the existing split:
 - Put Member Portal specs in `tests/mp` and page objects in `page-objects/mp`
 - Put API specs in `tests/api` and API client helpers in `api`
 - Keep shared browser helpers in `page-objects/shared`
-
-An effective way to work with Codex is to be explicit about the target area, data to use, and how the new flow should be verified. For example:
-
-```text
-Create a new AP Playwright test that adds a booking for next Tuesday at 10:00 AM.
-Use the existing AP page object pattern, put the spec under tests/ap,
-add any new page-object methods under page-objects/ap, reuse shared config
-where possible, run the new test locally, and update the README if new
-configuration is needed.
-```
-
-I have not tried that exact example above, but in practice Codex should usually be able to work across the site, add the necessary page objects, run the tests locally, fix issues, and rerun until things pass before anything goes up to CI, including in parts of AP or MP it has not previously visited. In practice it is not always quite that simple, but it does seem to be getting better.
 
 ## Configuration
 
@@ -259,15 +314,15 @@ By default the suite runs three projects: `AP Chromium`, `MP Staging Chromium`, 
 
 The environment split is explicit in code:
 
-- AP-specific page objects live in [page-objects/ap](/Users/steven/Source/Playwright/playwright-nexudus-sh/page-objects/ap), while MP-specific page objects live in [page-objects/mp](/Users/steven/Source/Playwright/playwright-nexudus-sh/page-objects/mp).
-- Shared low-level behavior stays in [AbstractPage.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/page-objects/shared/AbstractPage.ts).
+- AP-specific page objects live in [page-objects/ap](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/page-objects/ap), while MP-specific page objects live in [page-objects/mp](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/page-objects/mp).
+- Shared low-level behavior stays in [AbstractPage.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/page-objects/shared/AbstractPage.ts).
 
 ### AP tests
 
-- [ap-login.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/ap/ap-login.spec.ts) covers invalid and valid AP login
-- [admin-panel-overview.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/ap/admin-panel-overview.spec.ts) checks the main AP sections and capability groups
-- [admin-panel-workflows.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/ap/admin-panel-workflows.spec.ts) covers members, bookings, invoices, events, help-desk, deliveries, products, and event creation
-- [course-workflows.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/ap/course-workflows.spec.ts) covers AP course creation
+- [ap-login.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/ap/ap-login.spec.ts) covers invalid and valid AP login
+- [admin-panel-overview.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/ap/admin-panel-overview.spec.ts) checks the main AP sections and capability groups
+- [admin-panel-workflows.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/ap/admin-panel-workflows.spec.ts) covers members, bookings, invoices, events, help-desk, deliveries, products, and event creation
+- [course-workflows.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/ap/course-workflows.spec.ts) creates a public AP course titled `Six million four hundred and fifty-three thousand five hundred and sixty-eight Hundreds and Thousands: A History of Cake Decorations` with a random seed, three sections, eight lessons, uploaded large and small fixture images, discussion-board setup, home-page featuring, and three randomly enrolled participants
 
 ### MP tests
 
