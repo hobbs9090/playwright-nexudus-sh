@@ -21,12 +21,27 @@ const reporter = isCI
   ? [['github'], ['html', { outputFolder: 'playwright-report/lighthouse', open: 'never' }]]
   : [['list'], ['html', { outputFolder: 'playwright-report/lighthouse', open: 'never' }]]
 
-function getProjectName(projectName: string) {
-  return projectName.startsWith('AP') ? 'AP Lighthouse' : 'MP Lighthouse'
-}
+const lighthouseProjects = [
+  {
+    environmentProjectName: 'AP Chromium',
+    name: 'AP Lighthouse',
+    testMatch: ['ap/**/*.spec.ts'],
+  },
+  {
+    environmentProjectName: 'MP Staging Chromium',
+    name: 'MP Lighthouse',
+    testMatch: ['mp/**/*.spec.ts'],
+  },
+] as const
 
-function getTestMatch(projectName: string) {
-  return projectName.startsWith('AP') ? ['ap/**/*.spec.ts'] : ['mp/**/*.spec.ts']
+function getEnvironment(projectName: string) {
+  const environment = testEnvironments.find((candidate) => candidate.projectName === projectName)
+
+  if (!environment) {
+    throw new Error(`Could not find a test environment named "${projectName}" for the Lighthouse suite.`)
+  }
+
+  return environment
 }
 
 const config: PlaywrightTestConfig = {
@@ -48,12 +63,12 @@ const config: PlaywrightTestConfig = {
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
-  projects: testEnvironments.map((environment) => ({
-    name: getProjectName(environment.projectName),
-    testMatch: getTestMatch(environment.projectName),
+  projects: lighthouseProjects.map((project) => ({
+    name: project.name,
+    testMatch: project.testMatch,
     use: {
       ...devices['Desktop Chrome'],
-      baseURL: getBaseURL(environment),
+      baseURL: getBaseURL(getEnvironment(project.environmentProjectName)),
       viewport,
       screen: viewport,
     },

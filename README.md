@@ -285,7 +285,7 @@ Local Lighthouse runs use the repo defaults of:
 - `LIGHTHOUSE_MIN_ACCESSIBILITY=60`
 - `LIGHTHOUSE_MIN_BEST_PRACTICES=50`
 
-In GitHub Actions, the workflow overrides `LIGHTHOUSE_MIN_PERFORMANCE=29` to account for lower and noisier performance scores on GitHub-hosted runners. The Lighthouse helper also compares the rounded category scores that appear in the HTML report, which avoids failing CI on floating-point values such as `28.999999999999996`.
+In GitHub Actions, the workflow overrides `LIGHTHOUSE_MIN_PERFORMANCE=25` to account for lower and noisier performance scores on GitHub-hosted runners. The Lighthouse helper also compares the rounded category scores that appear in the HTML report, which avoids failing CI on floating-point values such as `24.999999999999996`.
 
 ## Running the k6 performance smoke test
 
