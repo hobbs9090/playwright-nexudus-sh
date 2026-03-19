@@ -93,6 +93,8 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 <details>
 <summary>Open the large cake-decoration course image</summary>
 
+The AI even knew to create this rather fabulous course image for the workflow.
+
 [<img
   src="tests/fixtures/ap-course-cake-decorations-large.png"
   alt="Large cake-decoration course image"
@@ -217,6 +219,8 @@ In practice, those requirements asked the AI to build all of the following:
   coworkers, and enrolling members
 - two reusable AI-generated image fixtures under
   [tests/fixtures](tests/fixtures/)
+- even knew to create this rather fabulous
+  [large course image](tests/fixtures/ap-course-cake-decorations-large.png)
 - seeded course-title generation rather than a fixed title
 - appropriate course summary, description, overview, section summaries, and lesson content that matched the subject matter
 - a mixed UI and API setup flow, with the UI used for course creation and image upload, and the API used for richer course configuration and lesson/member setup
