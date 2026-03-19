@@ -33,7 +33,6 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |-- api/
 |   `-- NexudusApiClient.ts
 |-- .github/workflows/playwright.yml
-|-- docs/
 |-- helpers.ts
 |-- page-objects/
 |   |-- ap/
@@ -41,6 +40,7 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   |   |-- APLoginPage.ts
 |   |   |-- CoursePage.ts
 |   |   |-- DeliveryPage.ts
+|   |   |-- EventPage.ts
 |   |   `-- ProductPage.ts
 |   |-- mp/
 |   |   `-- MPLoginPage.ts
@@ -73,7 +73,6 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   |   `-- support.ts
 |   `-- mp/
 |       `-- mp-login.spec.ts
-`-- playwright-report-example/
 ```
 
 ## Development setup
@@ -170,7 +169,7 @@ The suite supports the following environment variables:
 | `LIGHTHOUSE_MIN_ACCESSIBILITY`  | No                            | `60`                                                        | Minimum Lighthouse accessibility score for the AP and MP dashboard audits       |
 | `LIGHTHOUSE_MIN_BEST_PRACTICES` | No                            | `50`                                                        | Minimum Lighthouse best-practices score for the AP and MP dashboard audits      |
 
-The suite currently runs AP admin coverage on the AP dashboard and MP login coverage on the MP staging dashboard. It fails fast if the credential pair required for the selected project is missing.
+The suite currently runs AP admin coverage on the AP dashboard, MP login coverage on the MP staging dashboard, and a small authenticated API smoke check against the configured Nexudus API host. It fails fast if the credential pair required for the selected project is missing.
 
 The repo root `.env.shared` and `.env` files are loaded automatically by the npm scripts in this repository. `.env.shared` is intended for tracked team-wide non-sensitive defaults, while `.env` is intended for local secrets and machine-specific overrides. A tracked template is available in `.env.example`, while `.env` itself is ignored by git.
 
@@ -353,7 +352,6 @@ The login test uses a browser scenario, so it is intentionally lightweight by de
 - Native Lighthouse HTML bundle output: `lighthouse-report/`
 - Lighthouse JSON and HTML audit output: `test-results/lighthouse/`
 - Combined Pages bundle output: `pages-report/`
-- A checked-in sample report is available in `playwright-report-example/`
 
 ## GitHub Actions
 
@@ -362,6 +360,8 @@ The repository includes a workflow at [.github/workflows/playwright.yml](.github
 - pushes to branches
 - pull requests
 - manual dispatches
+
+README-only changes are ignored for the `push` and `pull_request` triggers, so documentation-only edits do not start the workflow unless you run it manually.
 
 To use the workflow, configure these GitHub settings:
 
@@ -391,6 +391,14 @@ On non-PR pushes and manual runs, the published GitHub Pages site includes:
 - the merged Playwright HTML report at `/playwright/`
 - the native Lighthouse HTML bundle at `/lighthouse/`
 - an index page linking to both reports
+
+The current published GitHub Pages URLs for this repository are:
+
+- Reports index: `https://hobbs9090.github.io/playwright-nexudus-sh/`
+- Playwright report: `https://hobbs9090.github.io/playwright-nexudus-sh/playwright/`
+- Lighthouse report: `https://hobbs9090.github.io/playwright-nexudus-sh/lighthouse/`
+
+Pull request runs do not publish to GitHub Pages. For PR runs, open the GitHub Actions run and download the uploaded report artifacts instead.
 
 The `k6` smoke tests are local-only and are not executed by the GitHub Actions workflow.
 
