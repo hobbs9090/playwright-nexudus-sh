@@ -88,21 +88,6 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |       `-- mp-login.spec.ts
 ```
 
-## Course image preview
-
-<details>
-<summary>Open the large cake-decoration course image</summary>
-
-The AI even knew to create this rather fabulous course image for the workflow.
-
-[<img
-  src="tests/fixtures/ap-course-cake-decorations-large.png"
-  alt="Large cake-decoration course image"
-  width="420"
-/>](tests/fixtures/ap-course-cake-decorations-large.png)
-
-</details>
-
 ## Development setup
 
 If you are a QA engineer who wants to run, debug, or extend the suite locally, the usual setup is:
@@ -148,9 +133,8 @@ If anyone on the team wants help getting set up or adding new tests, I’d be ve
 AI tools such as Codex can usually produce a useful first pass from a short prompt. For example:
 
 ```text
-Create an AP test that sets up a complete published cake
-decorating course with lessons, images, and enrolments,
-following the existing patterns.
+Create an AP test that sets up a complete published course
+with lessons, images, and enrolments, following the existing patterns.
 ```
 
 That said, more detail will usually produce output that is much closer to what you actually want.
@@ -219,14 +203,18 @@ In practice, those requirements asked the AI to build all of the following:
   coworkers, and enrolling members
 - two reusable AI-generated image fixtures under
   [tests/fixtures](tests/fixtures/)
-- even knew to create this rather fabulous
-  [large course image](tests/fixtures/ap-course-cake-decorations-large.png)
 - seeded course-title generation rather than a fixed title
+- sensible lesson titles and topics, including details like
+  `Lambeth Overpiping`, which turned out to be a real cake-decorating
+  technique rather than a made-up phrase. See
+  [Joseph Lambeth](https://en.wikipedia.org/wiki/Joseph_Lambeth).
 - appropriate course summary, description, overview, section summaries, and lesson content that matched the subject matter
 - a mixed UI and API setup flow, with the UI used for course creation and image upload, and the API used for richer course configuration and lesson/member setup
 - verification that the course was published, public, available in all locations, featured after login, and configured with a discussion-board group
 - verification that all three sections, all eight lessons, and three enrolled participants were present
 - local test execution, failure diagnosis, fixes, reruns, logical commits, and push-ready output
+- even knew to create this rather fabulous
+  [large course image](tests/fixtures/ap-course-cake-decorations-large.png)
 
 Detailed prompts are especially helpful when a test mixes UI automation, API setup, generated fixtures, seeded names, repo conventions, and local verification. You do not always need this much detail, but in practice it reduces back-and-forth and usually gives a result that is closer to ready for review.
 
