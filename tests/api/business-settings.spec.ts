@@ -1,16 +1,20 @@
 import type { NexudusCurrentUserResponse } from '../../api/NexudusApiClient'
-import { generateUniqueName } from '../../helpers'
+import { generateUniqueName, getContributorInitials } from '../../helpers'
+import { getConfiguredBaseURL } from '../../nexudus-config'
+import { MPHomePage } from '../../page-objects/mp/MPHomePage'
 import { expect, test } from './api-test'
 
 test.describe('Nexudus API business settings', () => {
-  test('can update Footer.SayingText for the current business and restore it afterwards @api', async (
-    { nexudusApi, accessToken },
+  test('can update Footer.SayingText for the current business, leave it updated, and verify it in MP @api', async (
+    { nexudusApi, accessToken, page },
     testInfo,
   ) => {
     test.slow()
 
     const currentUser = await nexudusApi.getCurrentUser(accessToken)
     const currentBusinessId = getCurrentBusinessId(currentUser)
+    const homePage = new MPHomePage(page)
+    const mpHomeURL = buildMPHomeURL()
     const footerSayingText = await nexudusApi.getBusinessSetting(accessToken, {
       businessId: currentBusinessId,
       name: 'Footer.SayingText',
@@ -22,34 +26,35 @@ test.describe('Nexudus API business settings', () => {
       updatedFooterSayingText,
       'Expected the updated footer saying text to differ from the current business setting value.',
     ).not.toBe(originalFooterSayingText)
+    expect(
+      updatedFooterSayingText,
+      'Expected the updated footer saying text to include the seeded timestamp and random suffix.',
+    ).toMatch(buildFooterSayingSeedPattern())
 
-    try {
-      const updatedBusinessSetting = await nexudusApi.updateBusinessSetting(accessToken, {
-        BusinessId: footerSayingText.BusinessId,
-        Id: footerSayingText.Id,
-        Name: footerSayingText.Name,
-        Value: updatedFooterSayingText,
-      })
+    const updatedBusinessSetting = await nexudusApi.updateBusinessSetting(accessToken, {
+      BusinessId: footerSayingText.BusinessId,
+      Id: footerSayingText.Id,
+      Name: footerSayingText.Name,
+      Value: updatedFooterSayingText,
+    })
 
-      expect(updatedBusinessSetting.Value).toBe(updatedFooterSayingText)
+    expect(updatedBusinessSetting.Value).toBe(updatedFooterSayingText)
 
-      await expect
-        .poll(() => nexudusApi.getBusinessSettingById(accessToken, footerSayingText.Id).then((setting) => setting.Value))
-        .toBe(updatedFooterSayingText)
-    } finally {
-      const restoredBusinessSetting = await nexudusApi.updateBusinessSetting(accessToken, {
-        BusinessId: footerSayingText.BusinessId,
-        Id: footerSayingText.Id,
-        Name: footerSayingText.Name,
-        Value: originalFooterSayingText,
-      })
+    await expect
+      .poll(() => nexudusApi.getBusinessSettingById(accessToken, footerSayingText.Id).then((setting) => setting.Value))
+      .toBe(updatedFooterSayingText)
 
-      expect(restoredBusinessSetting.Value).toBe(originalFooterSayingText)
+    await expect
+      .poll(
+        async () => {
+          await homePage.goto(buildCacheBustedMPHomeURL(mpHomeURL))
+          return homePage.getFooterText()
+        },
+        { timeout: 45000 },
+      )
+      .toContain(updatedFooterSayingText)
 
-      await expect
-        .poll(() => nexudusApi.getBusinessSettingById(accessToken, footerSayingText.Id).then((setting) => setting.Value))
-        .toBe(originalFooterSayingText)
-    }
+    await homePage.assertFooterSayingVisible(updatedFooterSayingText)
   })
 
   test('can update Calendars.DefaultView for the current business and restore it afterwards @api', async ({
@@ -109,7 +114,24 @@ test.describe('Nexudus API business settings', () => {
 function buildUniqueFooterSayingText(testTitle: string) {
   const normalizedTitle = testTitle.replace(/[^a-z0-9]+/gi, ' ').trim()
 
-  return generateUniqueName(`Playwright ${normalizedTitle}`)
+  return generateUniqueName(`Playwright ${normalizedTitle}`, getContributorInitials())
+}
+
+function buildFooterSayingSeedPattern() {
+  const contributorInitials = getContributorInitials()
+
+  return new RegExp(` \\d{4} \\d{4} ${contributorInitials}[a-z]{5}$`)
+}
+
+function buildMPHomeURL() {
+  return new URL('/home', getConfiguredBaseURL('NEXUDUS_MP_BASE_URL')).toString()
+}
+
+function buildCacheBustedMPHomeURL(baseURL: string) {
+  const url = new URL(baseURL)
+  url.searchParams.set('playwright_footer_saying', Date.now().toString())
+
+  return url.toString()
 }
 
 function getCurrentBusinessId(currentUser: NexudusCurrentUserResponse) {

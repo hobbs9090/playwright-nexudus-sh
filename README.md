@@ -29,7 +29,7 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 
 - API authentication returns a bearer token for the configured Nexudus user
 - The authenticated API user profile can be retrieved from the Nexudus API
-- API business setting `Footer.SayingText` can be updated and restored for the current business
+- API business setting `Footer.SayingText` can be updated and verified in MP
 - API business setting `Calendars.DefaultView` can be updated and restored for the current business
 
 ## Project structure
@@ -225,7 +225,7 @@ Detailed prompts are especially helpful when a test mixes UI automation, API set
 
 The Developers Hub is the main place to find details about the Nexudus APIs.
 
-The API test infrastructure in this repository uses the public Nexudus API pattern documented there. The current API coverage authenticates with `POST /api/token`, reads the current user profile from `GET /en/user/me`, updates plus restores selected `BusinessSetting` records through the REST API, and exposes reusable helpers for AP course setup such as creating sections, lessons, and members.
+The API test infrastructure in this repository uses the public Nexudus API pattern documented there. The current API coverage authenticates with `POST /api/token`, reads the current user profile from `GET /en/user/me`, updates selected `BusinessSetting` records through the REST API, verifies the footer saying in MP, restores the calendar-setting mutation, and exposes reusable helpers for AP course setup such as creating sections, lessons, and members.
 
 When adding tests, follow the existing split:
 
@@ -339,7 +339,7 @@ npx playwright test --headed -g @3093
 npm run test:report
 ```
 
-By default the suite runs three projects: `AP Chromium`, `MP Staging Chromium`, and `API`. `AP Chromium` includes the admin overview, admin workflow, AP login, and AP course-creation specs against the dashboard application. `MP Staging Chromium` covers the member-portal login flow plus the public signup and home-content checks against the spaces staging application. `API` uses the configured MP host origin by default, authenticates against `/api/token`, and runs API-only coverage under `tests/api`, including business-setting mutation checks that restore the original values after each test. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "API"`.
+By default the suite runs three projects: `AP Chromium`, `MP Staging Chromium`, and `API`. `AP Chromium` includes the admin overview, admin workflow, AP login, and AP course-creation specs against the dashboard application. `MP Staging Chromium` covers the member-portal login flow plus the public signup and home-content checks against the spaces staging application. `API` uses the configured MP host origin by default, authenticates against `/api/token`, and runs API-only coverage under `tests/api`, including business-setting mutation checks and MP footer verification. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "API"`.
 
 The environment split is explicit in code:
 
@@ -372,11 +372,16 @@ The environment split is explicit in code:
 
 - [business-settings.spec.ts](tests/api/business-settings.spec.ts)
   authenticates against the Nexudus API, updates `Footer.SayingText` and
-  `Calendars.DefaultView` for the current business, and restores the original
-  values after each test
+  verifies it in MP, and updates plus restores `Calendars.DefaultView` for the
+  current business
 - [user-info.spec.ts](tests/api/user-info.spec.ts) authenticates against the
   Nexudus API and verifies that the current user profile can be read from
   `/en/user/me`
+
+Note: the `Footer.SayingText` test intentionally leaves the updated footer
+saying in place so the API mutation can be demonstrated in MP as well. This is
+for demo purposes only; in a stricter production suite, shared business
+settings would usually be restored after verification.
 
 ## Running the Lighthouse audits
 

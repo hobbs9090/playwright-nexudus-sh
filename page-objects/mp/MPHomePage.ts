@@ -25,8 +25,8 @@ export class MPHomePage extends AbstractPage {
     this.footer = page.getByRole('contentinfo')
   }
 
-  async goto() {
-    await this.page.goto('/home')
+  async goto(pathOrUrl: string = '/home') {
+    await this.page.goto(pathOrUrl)
     await this.dismissStartupNoticeIfPresent()
   }
 
@@ -98,6 +98,15 @@ export class MPHomePage extends AbstractPage {
 
     await expect(this.footer.getByRole('img', { name: businessName })).toBeVisible()
     await expect(this.footer).toContainText(`${currentYear} © ${businessName}. All rights reserved.`)
+  }
+
+  async getFooterText() {
+    await expect(this.footer).toBeVisible()
+    return (await this.footer.innerText()).trim()
+  }
+
+  async assertFooterSayingVisible(sayingText: string) {
+    await expect(this.footer).toContainText(sayingText)
   }
 
   async assertConfiguredPlansAndProductsVisible(data: Pick<MPHomeContentData, 'pricePlans' | 'products'>) {
