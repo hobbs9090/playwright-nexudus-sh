@@ -133,7 +133,9 @@ If anyone on the team wants help getting set up or adding new tests, I’d be ve
 AI tools such as Codex can usually produce a useful first pass from a short prompt. For example:
 
 ```text
-Create an AP test that sets up a complete published cake decorating course with lessons, images, and enrolments, following the existing patterns.
+Create an AP test that sets up a complete published cake
+decorating course with lessons, images, and enrolments,
+following the existing patterns.
 ```
 
 That said, more detail will usually produce output that is much closer to what you actually want.
@@ -149,41 +151,59 @@ When asking AI to add a test, it helps to specify:
 - how the flow should be verified locally
 - whether the work should be split into logical commits and pushed
 
-The current AP course-creation workflow in [course-workflows.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/ap/course-workflows.spec.ts) was created from a more detailed prompt. The requirements below are the example instructions that were used to create that last test:
+The current AP course-creation workflow in
+[course-workflows.spec.ts](tests/ap/course-workflows.spec.ts) was created from a
+more detailed prompt. The requirements below are the example instructions that
+were used to create that last test:
 
 ```text
 Create an AP test that creates a course called:
 
-"Six million four hundred and fifty-three thousand five hundred and sixty-eight Hundreds and Thousands: A History of Cake Decorations"
+"Six million four hundred and fifty-three thousand five hundred and
+sixty-eight Hundreds and Thousands: A History of Cake Decorations"
 
 Requirements:
 
 - Add a random seed to the title
 - Add 6 lessons, plus an Introduction and summary
-- Organise the course into 3 sections: Foundations, Techniques, and Finishing & Presentation.
+- Organise the course into 3 sections: Foundations, Techniques,
+  and Finishing & Presentation.
 - Use one lesson per cake decorating style.
-- If I don’t specify the 6 styles, choose sensible main styles yourself.
+- If I don’t specify the 6 styles, choose sensible main styles
+  yourself.
 - Add both a large image and a small image.
 - Set This course is published
 - Make the course public
 - Ensure the course is available in all locations
-- Populate all fields with appropriate text that matches the subject matter.
-- Generate the images with AI and store them in the repo under `tests/fixtures/` for reuse.
+- Populate all fields with appropriate text that matches the
+  subject matter.
+- Generate the images with AI and store them in the repo under
+  `tests/fixtures/` for reuse.
 - Feature this course on the home page after users log in
 - Create a discussion board group for members of this course.
-- Automatically enrol three random participants (for this and future course runs)
-- Follow the existing AP test/page-object style already used in this repo.
-- If needed, use the existing API test/client structure for lesson creation rather than ad hoc requests.
+- Automatically enrol three random participants (for this and
+  future course runs)
+- Follow the existing AP test/page-object style already used in
+  this repo.
+- If needed, use the existing API test/client structure for
+  lesson creation rather than ad hoc requests.
 - Keep the changes split into logical commits.
-- Run the relevant AP test and verify it passes locally before commit and push to repository
+- Run the relevant AP test and verify it passes locally before
+  commit and push to repository
 ```
 
 In practice, those requirements asked the AI to build all of the following:
 
-- a new AP end-to-end workflow in [course-workflows.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/ap/course-workflows.spec.ts)
-- supporting AP page-object behavior in [CoursePage.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/page-objects/ap/CoursePage.ts)
-- reusable API client helpers in [NexudusApiClient.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/api/NexudusApiClient.ts) for reading courses, updating courses, creating sections, creating lessons, listing coworkers, and enrolling members
-- two reusable AI-generated image fixtures under [tests/fixtures](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/fixtures)
+- a new AP end-to-end workflow in
+  [course-workflows.spec.ts](tests/ap/course-workflows.spec.ts)
+- supporting AP page-object behavior in
+  [CoursePage.ts](page-objects/ap/CoursePage.ts)
+- reusable API client helpers in
+  [NexudusApiClient.ts](api/NexudusApiClient.ts) for reading courses,
+  updating courses, creating sections, creating lessons, listing
+  coworkers, and enrolling members
+- two reusable AI-generated image fixtures under
+  [tests/fixtures](tests/fixtures/)
 - seeded course-title generation rather than a fixed title
 - appropriate course summary, description, overview, section summaries, and lesson content that matched the subject matter
 - a mixed UI and API setup flow, with the UI used for course creation and image upload, and the API used for richer course configuration and lesson/member setup
@@ -262,9 +282,13 @@ NEXUDUS_MP_BASE_URL='https://coworkingnetworksteven.spacesstaging.nexudus.com/'
 NEXUDUS_API_BASE_URL='https://coworkingnetworksteven.spacesstaging.nexudus.com/'
 ```
 
-For role-based test helpers, the repo now exposes `getConfiguredUserCredentials('admin' | 'member' | 'contact')` from [test-environments.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/test-environments.ts). `admin` falls back to the AP credential pair, `member` falls back to the MP credential pair, and `contact` must be configured explicitly when a test needs it.
+For role-based test helpers, the repo now exposes
+`getConfiguredUserCredentials('admin' | 'member' | 'contact')` from
+[test-environments.ts](test-environments.ts). `admin` falls back to the AP
+credential pair, `member` falls back to the MP credential pair, and `contact`
+must be configured explicitly when a test needs it.
 
-The committed [.env.shared](/Users/steven/Source/Playwright/playwright-nexudus-sh/.env.shared) currently provides:
+The committed [.env.shared](.env.shared) currently provides:
 
 - `NEXUDUS_AP_MEMBER_NAME=Felicity Ward`
 - `NEXUDUS_AP_RECEIVED_BY_NAME=Steven Hobbs`
@@ -314,36 +338,59 @@ By default the suite runs three projects: `AP Chromium`, `MP Staging Chromium`, 
 
 The environment split is explicit in code:
 
-- AP-specific page objects live in [page-objects/ap](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/page-objects/ap), while MP-specific page objects live in [page-objects/mp](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/page-objects/mp).
-- Shared low-level behavior stays in [AbstractPage.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/page-objects/shared/AbstractPage.ts).
+- AP-specific page objects live in [page-objects/ap](page-objects/ap), while
+  MP-specific page objects live in [page-objects/mp](page-objects/mp).
+- Shared low-level behavior stays in
+  [AbstractPage.ts](page-objects/shared/AbstractPage.ts).
 
 ### AP tests
 
-- [ap-login.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/ap/ap-login.spec.ts) covers invalid and valid AP login
-- [admin-panel-overview.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/ap/admin-panel-overview.spec.ts) checks the main AP sections and capability groups
-- [admin-panel-workflows.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/ap/admin-panel-workflows.spec.ts) covers members, bookings, invoices, events, help-desk, deliveries, products, and event creation
-- [course-workflows.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/ap/course-workflows.spec.ts) creates a public AP course titled `Six million four hundred and fifty-three thousand five hundred and sixty-eight Hundreds and Thousands: A History of Cake Decorations` with a random seed, three sections, eight lessons, uploaded large and small fixture images, discussion-board setup, home-page featuring, and three randomly enrolled participants
+- [ap-login.spec.ts](tests/ap/ap-login.spec.ts) covers invalid and valid AP login
+- [admin-panel-overview.spec.ts](tests/ap/admin-panel-overview.spec.ts) checks
+  the main AP sections and capability groups
+- [admin-panel-workflows.spec.ts](tests/ap/admin-panel-workflows.spec.ts)
+  covers members, bookings, invoices, events, help-desk, deliveries,
+  products, and event creation
+- [course-workflows.spec.ts](tests/ap/course-workflows.spec.ts) creates a public
+  AP course titled
+  `Six million four hundred and fifty-three thousand five hundred and sixty-eight Hundreds and Thousands: A History of Cake Decorations`
+  with a random seed, three sections, eight lessons, uploaded large and small
+  fixture images, discussion-board setup, home-page featuring, and three
+  randomly enrolled participants
 
 ### MP tests
 
-- [mp-login.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/mp/mp-login.spec.ts) opens the member-portal `/login` page and verifies the authenticated dashboard
+- [mp-login.spec.ts](tests/mp/mp-login.spec.ts) opens the member-portal
+  `/login` page and verifies the authenticated dashboard
 
 ### API tests
 
-- [business-settings.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/api/business-settings.spec.ts) authenticates against the Nexudus API, updates `Footer.SayingText` and `Calendars.DefaultView` for the current business, and restores the original values after each test
-- [user-info.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/api/user-info.spec.ts) authenticates against the Nexudus API and verifies that the current user profile can be read from `/en/user/me`
+- [business-settings.spec.ts](tests/api/business-settings.spec.ts)
+  authenticates against the Nexudus API, updates `Footer.SayingText` and
+  `Calendars.DefaultView` for the current business, and restores the original
+  values after each test
+- [user-info.spec.ts](tests/api/user-info.spec.ts) authenticates against the
+  Nexudus API and verifies that the current user profile can be read from
+  `/en/user/me`
 
 ## Running the Lighthouse audits
 
-The repository also includes authenticated Lighthouse checks for both AP and MP. These audits run through [playwright.lighthouse.config.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/playwright.lighthouse.config.ts) so the regular functional suite stays focused on end-to-end behavior while Lighthouse keeps its own config, retries, thresholds, and report output.
+The repository also includes authenticated Lighthouse checks for both AP and MP.
+These audits run through
+[playwright.lighthouse.config.ts](playwright.lighthouse.config.ts) so the
+regular functional suite stays focused on end-to-end behavior while Lighthouse
+keeps its own config, retries, thresholds, and report output.
 
 For the underlying audit model, categories, and scoring guidance, see the official Lighthouse documentation from Chrome for Developers: <https://developer.chrome.com/docs/lighthouse/>.
 
-The Lighthouse specs live in [tests/lighthouse](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/lighthouse):
+The Lighthouse specs live in [tests/lighthouse](tests/lighthouse):
 
-- [ap-dashboard-lighthouse.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/lighthouse/ap/ap-dashboard-lighthouse.spec.ts) signs into AP and audits the authenticated dashboard
-- [mp-dashboard-lighthouse.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/lighthouse/mp/mp-dashboard-lighthouse.spec.ts) signs into MP and audits the authenticated dashboard
-- [support.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/lighthouse/support.ts) manages the persistent Chromium context, authenticated audit flow, report generation, and threshold checks
+- [ap-dashboard-lighthouse.spec.ts](tests/lighthouse/ap/ap-dashboard-lighthouse.spec.ts)
+  signs into AP and audits the authenticated dashboard
+- [mp-dashboard-lighthouse.spec.ts](tests/lighthouse/mp/mp-dashboard-lighthouse.spec.ts)
+  signs into MP and audits the authenticated dashboard
+- [support.ts](tests/lighthouse/support.ts) manages the persistent Chromium
+  context, authenticated audit flow, report generation, and threshold checks
 
 The Lighthouse audits can be run locally, and they also run in CI as the `Run Lighthouse audits` job inside the normal Playwright workflow.
 
