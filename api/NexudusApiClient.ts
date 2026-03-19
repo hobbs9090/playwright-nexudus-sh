@@ -45,16 +45,92 @@ export type NexudusBusinessSettingResponse = {
   [key: string]: unknown
 }
 
+export type NexudusCourseResponse = {
+  Active: boolean
+  BusinessId: number
+  ClearImageFile?: boolean
+  ClearLargeImageFile?: boolean
+  DisplayOrder: number
+  FullDescription: string | null
+  GroupName: string | null
+  HasCommunityGroup: boolean
+  HostId: number | null
+  Id: number
+  ImageFileName?: string | null
+  LargeImageFileName?: string | null
+  NewImageUrl?: string | null
+  NewLargeImageUrl?: string | null
+  OverviewText: string | null
+  ShowInHomePage: boolean
+  ShowOverview: boolean
+  SummaryText: string | null
+  Title: string
+  Visibility: number
+  [key: string]: unknown
+}
+
+export type NexudusCourseSectionResponse = {
+  Active: boolean
+  ClearImageFile?: boolean
+  CourseId: number
+  DisplayOrder: number
+  Id: number
+  ImageFileName?: string | null
+  NewImageUrl?: string | null
+  SectionContents: string | null
+  Title: string
+  UnlockAfterDays: number
+  UnlockType: number
+  [key: string]: unknown
+}
+
+export type NexudusCourseLessonResponse = {
+  Active: boolean
+  ClearImageFile?: boolean
+  CompletionType: number
+  CourseId: number
+  DisplayOrder: number
+  Id: number
+  ImageFileName?: string | null
+  LessonContents: string | null
+  NewImageUrl?: string | null
+  SectionDisplayOrder?: number | null
+  SectionId?: number | null
+  SectionTitle?: string | null
+  SummaryText: string | null
+  Title: string
+  UnlockAfterDays: number
+  UnlockType: number
+  [key: string]: unknown
+}
+
+export type NexudusCourseMemberResponse = {
+  Approved: boolean
+  Blocked: boolean
+  CourseId: number
+  CoworkerFullName?: string | null
+  CoworkerId: number
+  Id: number
+  [key: string]: unknown
+}
+
+export type NexudusCoworkerResponse = {
+  Email?: string | null
+  FullName?: string | null
+  Id: number
+  [key: string]: unknown
+}
+
 type NexudusBusinessSettingIdentifier = {
   businessId: number
   name: string
 }
 
-type NexudusMutationResponse = {
+type NexudusMutationResponse<TValue = unknown> = {
   Errors?: unknown
   Message?: string | null
   Status: number
-  Value?: unknown
+  Value?: TValue
   WasSuccessful?: boolean
 }
 
@@ -94,6 +170,146 @@ export class NexudusApiClient {
     await expectOk(response, 'fetch the current Nexudus user')
 
     return (await response.json()) as NexudusCurrentUserResponse
+  }
+
+  async getCourse(accessToken: string, courseId: number) {
+    const response = await this.request.get(`/api/content/courses/${courseId}`, {
+      headers: getAuthorizationHeaders(accessToken),
+    })
+
+    await expectOk(response, `fetch course ${courseId}`)
+
+    return (await response.json()) as NexudusCourseResponse
+  }
+
+  async updateCourse(accessToken: string, course: NexudusCourseResponse) {
+    const response = await this.request.put('/api/content/courses', {
+      data: {
+        ...course,
+        TypeName: 'course',
+      },
+      headers: {
+        ...getAuthorizationHeaders(accessToken),
+        'content-type': 'application/json',
+      },
+    })
+
+    await expectOk(response, `update course "${course.Title}"`)
+
+    const updateResponse = (await response.json()) as NexudusMutationResponse<{ Id: number }>
+    expectSuccessfulMutation(updateResponse, `update course "${course.Title}"`)
+
+    return this.getCourse(accessToken, course.Id)
+  }
+
+  async createCourseSection(
+    accessToken: string,
+    courseSection: Pick<NexudusCourseSectionResponse, 'CourseId' | 'Title'> &
+      Partial<Omit<NexudusCourseSectionResponse, 'CourseId' | 'Id' | 'Title'>>,
+  ) {
+    const response = await this.request.post('/api/content/coursesections', {
+      data: {
+        Id: 0,
+        SectionContents: null,
+        Active: true,
+        DisplayOrder: 0,
+        UnlockType: 1,
+        UnlockAfterDays: 0,
+        NewImageUrl: null,
+        ImageFileName: null,
+        ClearImageFile: false,
+        TypeName: 'courseSection',
+        ...courseSection,
+      },
+      headers: {
+        ...getAuthorizationHeaders(accessToken),
+        'content-type': 'application/json',
+      },
+    })
+
+    await expectOk(response, `create course section "${courseSection.Title}"`)
+
+    const createResponse = (await response.json()) as NexudusMutationResponse<NexudusCourseSectionResponse>
+    expectSuccessfulMutation(createResponse, `create course section "${courseSection.Title}"`)
+
+    return createResponse.Value as NexudusCourseSectionResponse
+  }
+
+  async createCourseLesson(
+    accessToken: string,
+    courseLesson: Pick<NexudusCourseLessonResponse, 'CourseId' | 'Title'> &
+      Partial<Omit<NexudusCourseLessonResponse, 'CourseId' | 'Id' | 'Title'>>,
+  ) {
+    const response = await this.request.post('/api/content/courselessons', {
+      data: {
+        SectionId: null,
+        SectionDisplayOrder: null,
+        SectionTitle: null,
+        SummaryText: null,
+        LessonContents: null,
+        Active: true,
+        DisplayOrder: 0,
+        UnlockType: 1,
+        UnlockAfterDays: 0,
+        CompletionType: 2,
+        NewImageUrl: null,
+        ImageFileName: null,
+        ClearImageFile: false,
+        TypeName: 'courseLesson',
+        ...courseLesson,
+      },
+      headers: {
+        ...getAuthorizationHeaders(accessToken),
+        'content-type': 'application/json',
+      },
+    })
+
+    await expectOk(response, `create course lesson "${courseLesson.Title}"`)
+
+    const createResponse = (await response.json()) as NexudusMutationResponse<NexudusCourseLessonResponse>
+    expectSuccessfulMutation(createResponse, `create course lesson "${courseLesson.Title}"`)
+
+    return createResponse.Value as NexudusCourseLessonResponse
+  }
+
+  async createCourseMember(
+    accessToken: string,
+    courseMember: Pick<NexudusCourseMemberResponse, 'CourseId' | 'CoworkerId'> &
+      Partial<Pick<NexudusCourseMemberResponse, 'Approved' | 'Blocked'>>,
+  ) {
+    const response = await this.request.post('/api/content/coursemembers', {
+      data: {
+        Approved: true,
+        Blocked: false,
+        ...courseMember,
+      },
+      headers: {
+        ...getAuthorizationHeaders(accessToken),
+        'content-type': 'application/json',
+      },
+    })
+
+    await expectOk(response, `create course member ${courseMember.CoworkerId}`)
+
+    const createResponse = (await response.json()) as NexudusMutationResponse<NexudusCourseMemberResponse>
+    expectSuccessfulMutation(createResponse, `create course member ${courseMember.CoworkerId}`)
+
+    return createResponse.Value as NexudusCourseMemberResponse
+  }
+
+  async listCoworkers(accessToken: string, pageSize: number = 5000) {
+    const response = await this.request.get('/api/spaces/coworkers', {
+      headers: getAuthorizationHeaders(accessToken),
+      params: {
+        page: '1',
+        size: String(pageSize),
+      },
+    })
+
+    await expectOk(response, 'fetch coworkers')
+
+    const pagedCoworkers = (await response.json()) as NexudusPagedResponse<NexudusCoworkerResponse>
+    return pagedCoworkers.Records
   }
 
   async getBusinessSetting(accessToken: string, businessSetting: NexudusBusinessSettingIdentifier) {
@@ -156,10 +372,7 @@ export class NexudusApiClient {
     await expectOk(response, `update Nexudus business setting "${businessSetting.Name}"`)
 
     const updateResponse = (await response.json()) as NexudusMutationResponse
-    expect(
-      updateResponse.WasSuccessful,
-      `Expected Nexudus to update business setting "${businessSetting.Name}" successfully.`,
-    ).toBeTruthy()
+    expectSuccessfulMutation(updateResponse, `update business setting "${businessSetting.Name}"`)
 
     return this.getBusinessSettingById(accessToken, businessSetting.Id)
   }
@@ -167,6 +380,10 @@ export class NexudusApiClient {
 
 async function expectOk(response: APIResponse, actionDescription: string) {
   expect(response.ok(), `Expected Nexudus API to ${actionDescription}.`).toBeTruthy()
+}
+
+function expectSuccessfulMutation(response: NexudusMutationResponse, actionDescription: string) {
+  expect(response.WasSuccessful, `Expected Nexudus API to ${actionDescription} successfully.`).toBeTruthy()
 }
 
 function getApiCredential(name: CredentialName) {
