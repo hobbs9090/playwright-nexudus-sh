@@ -98,6 +98,13 @@ The usual editing setup for this repo is Visual Studio Code with the Codex exten
 
 If anyone on the team wants help getting set up or adding new tests, I’d be very happy to help.
 
+## Nexudus documentation
+
+- Knowledge Base: https://help.nexudus.com/
+- Developers Hub: https://developers.nexudus.com/reference/getting-started-with-your-api-1
+
+The Developers Hub is the main place to find details about the Nexudus APIs.
+
 When adding tests, follow the existing split:
 
 - Put Admin Panel specs in `tests/ap` and page objects in `page-objects/ap`
