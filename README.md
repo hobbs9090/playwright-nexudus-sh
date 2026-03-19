@@ -128,8 +128,6 @@ If you want to use Codex with this repository:
 - A paid plan such as ChatGPT Pro is often more practical for sustained repo work, but plan limits and availability can change over time.
 - Even on paid plans, focused prompts help because larger exploratory tasks can consume allowance quickly.
 
-A common editing setup for this repo is Visual Studio Code with the Codex extension, which works well for creating or extending Playwright tests while staying inside the existing project structure.
-
 If anyone on the team wants help getting set up or adding new tests, I’d be very happy to help.
 
 ## Nexudus documentation
