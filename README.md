@@ -92,7 +92,7 @@ npx playwright install chromium
 
 ## Development setup
 
-If you want to extend the suite, the usual local setup is:
+If you are a QA engineer who wants to run, debug, or extend the suite locally, the usual setup is:
 
 ```bash
 git clone https://github.com/hobbs9090/playwright-nexudus-sh.git
@@ -102,9 +102,33 @@ npx playwright install chromium
 cp .env.example .env
 ```
 
-Then add your local AP and MP credentials to `.env`. The repo already loads `.env.shared` first and `.env` second, so team defaults remain available while your local secrets override them.
+To get fully up and running, a QA would usually need:
 
-The usual editing setup for this repo is Visual Studio Code with the Codex extension, which works well for creating or extending Playwright tests while staying inside the existing project structure.
+- Git installed locally and access to this repository.
+- Node.js 24 recommended locally. The repo supports Node.js 18.16 or newer, but matching the CI runtime is usually simpler.
+- npm.
+- Playwright Chromium installed with `npx playwright install chromium`.
+- A local `.env` copied from `.env.example`.
+- Working Nexudus staging credentials for AP and MP.
+- Optional separate API credentials only if the API tests should not reuse the MP credentials.
+
+The repo already loads `.env.shared` first and `.env` second, so team defaults remain available while your local secrets override them. In practice that means a new QA will usually only need to add the AP and MP login credentials unless they want to override the shared defaults for delivery, course, event, or API work.
+
+Helpful local tools are:
+
+- Visual Studio Code.
+- The Codex extension for VS Code if you want AI help creating or extending Playwright tests inside the repo.
+- GitHub CLI (`gh`) if you want to inspect GitHub Actions runs and logs from the terminal.
+- `k6` only if you plan to use the optional performance smoke scripts described later in this README.
+
+If you want to use Codex with this repository:
+
+- Codex is optional. The suite can be run and maintained without it.
+- ChatGPT Free or lighter usage tiers can be restrictive for longer Codex sessions, especially when the work involves reading a lot of files, running tests repeatedly, or fixing CI issues.
+- A paid plan such as ChatGPT Pro is often more practical for sustained repo work, but plan limits and availability can change over time.
+- Even on paid plans, focused prompts help because larger exploratory tasks can consume allowance quickly.
+
+A common editing setup for this repo is Visual Studio Code with the Codex extension, which works well for creating or extending Playwright tests while staying inside the existing project structure.
 
 If anyone on the team wants help getting set up or adding new tests, I’d be very happy to help.
 
@@ -133,7 +157,7 @@ where possible, run the new test locally, and update the README if new
 configuration is needed.
 ```
 
-I have not tried that exact example above, but in practice Codex should usually be able to work across the site, add the necessary page objects, run the tests locally, fix issues, and rerun until things pass before anything goes up to CI, including in parts of AP or MP it has not previously visited. In practice it is not always quite that simple, but it does seem to be getting better. The main practical warning is to make sure you have plenty of tokens available, because it can get through a ChatGPT Pro allowance surprisingly quickly.
+I have not tried that exact example above, but in practice Codex should usually be able to work across the site, add the necessary page objects, run the tests locally, fix issues, and rerun until things pass before anything goes up to CI, including in parts of AP or MP it has not previously visited. In practice it is not always quite that simple, but it does seem to be getting better.
 
 ## Configuration
 
