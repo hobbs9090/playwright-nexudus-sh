@@ -167,7 +167,6 @@ The suite supports the following environment variables:
 | `NEXUDUS_ADMIN_PASSWORD`        | No                            | `NEXUDUS_AP_PASSWORD`                                       | Optional dedicated admin-user password for role-based tests                     |
 | `NEXUDUS_AP_MEMBER_NAME`        | Yes for AP delivery workflows | `Felicity Ward` via `.env.shared`                           | Member name used by AP delivery workflow tests                                  |
 | `NEXUDUS_AP_RECEIVED_BY_NAME`   | Yes for AP delivery workflows | `Steven Hobbs` via `.env.shared`                            | AP user name expected in the delivery `Received by` field                       |
-| `NEXUDUS_AP_COURSE_HOST_NAME`   | Yes for AP course workflows   | `Jane Appleby` via `.env.shared`                            | Host name selected when creating AP courses                                     |
 | `CRUD_APPEND_RANDOM_SEED`       | No                            | `true` via `.env.shared`                                    | Appends the shared CRUD random seed to created course, product, and event names |
 | `NEXUDUS_AP_EVENT_NAME`         | No                            | `Astronomy Night` via `.env.shared`                         | Base name used when generating AP event titles                                  |
 | `NEXUDUS_CONTRIBUTOR_INITIALS`  | No                            | Derived from Git user name when available                   | Prefix applied to the CRUD random seed, for example `shabcde`                   |
@@ -214,7 +213,6 @@ The committed [.env.shared](/Users/steven/Source/Playwright/playwright-nexudus-s
 
 - `NEXUDUS_AP_MEMBER_NAME=Felicity Ward`
 - `NEXUDUS_AP_RECEIVED_BY_NAME=Steven Hobbs`
-- `NEXUDUS_AP_COURSE_HOST_NAME=Jane Appleby`
 - `CRUD_APPEND_RANDOM_SEED=true`
 - `NEXUDUS_AP_EVENT_NAME=Astronomy Night`
 

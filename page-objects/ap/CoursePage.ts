@@ -1,5 +1,4 @@
 import { expect, Locator, Page } from '@playwright/test'
-import { requireEnvVar } from '../../helpers'
 import { AbstractPage } from '../shared/AbstractPage'
 
 export class CoursePage extends AbstractPage {
@@ -35,15 +34,12 @@ export class CoursePage extends AbstractPage {
   }
 
   async createCourse(title: string) {
-    const hostName = requireEnvVar('NEXUDUS_AP_COURSE_HOST_NAME')
-
     await this.navigateToList()
     await this.addCourseButton.click({ force: true })
     await expect(this.page).toHaveURL(/\/content\/courses\/new(?:\?|$)/)
 
     await this.titleInput.fill(title)
-    await this.hostOptionsButton.click()
-    await this.page.getByRole('option', { name: new RegExp(`${hostName}`, 'i') }).click()
+    await this.selectRandomHost()
     await this.courseSummaryInput.fill('A flower arranging course covering bouquets, colour palettes, and seasonal stems.')
     await this.fullCourseDescriptionInput.fill(
       'Learn the basics of flower arranging with hands-on bouquet design, vase composition, and care tips.',
@@ -81,5 +77,18 @@ export class CoursePage extends AbstractPage {
   async isCourseVisible(title: string) {
     await this.navigateToList()
     return this.page.getByText(title, { exact: true }).isVisible().catch(() => false)
+  }
+
+  async selectRandomHost() {
+    await this.hostOptionsButton.click()
+
+    const hostOptions = this.page.getByRole('option')
+    await expect(hostOptions.first()).toBeVisible({ timeout: 15000 })
+
+    const hostOptionCount = await hostOptions.count()
+    expect(hostOptionCount, 'Expected at least one AP course host option to be available.').toBeGreaterThan(0)
+
+    const randomIndex = Math.floor(Math.random() * hostOptionCount)
+    await hostOptions.nth(randomIndex).click()
   }
 }
