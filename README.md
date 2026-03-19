@@ -1,6 +1,6 @@
 # playwright-nexudus-sh
 
-End-to-end Playwright test suite for the Nexudus Admin Panel (AP) dashboard and Nexudus Member Portal (MP).
+End-to-end Playwright test suite for the Nexudus Admin Panel (AP) dashboard, Nexudus Member Portal (MP), and Nexudus API.
 
 This project is written in TypeScript, uses `@playwright/test` as the test runner, and follows a small page object model structure to keep test flows readable.
 
