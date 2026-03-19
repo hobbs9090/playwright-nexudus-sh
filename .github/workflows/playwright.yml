@@ -45,7 +45,17 @@ jobs:
           PLAYWRIGHT_CI_MP_SERIAL_MINUTES: ${{ vars.PLAYWRIGHT_CI_MP_SERIAL_MINUTES }}
           PLAYWRIGHT_CI_MP_SHARDS: ${{ vars.PLAYWRIGHT_CI_MP_SHARDS }}
           PLAYWRIGHT_CI_TARGET_MINUTES: ${{ vars.PLAYWRIGHT_CI_TARGET_MINUTES }}
-        run: node scripts/build-playwright-ci-matrix.mjs >> "$GITHUB_OUTPUT"
+        run: |
+          if [ "${{ github.ref_name }}" = "demo" ] || [ "${{ github.head_ref }}" = "demo" ]; then
+            printf '%s\n' \
+              'execution_budget_minutes=1' \
+              'target_minutes=1' \
+              'total_runners=1' \
+              'matrix=[{"project":"MP Staging Chromium","project_slug":"mp","shard_index":1,"shard_total":1,"test_target":"tests/mp/mp-help-requests.spec.ts"}]' \
+              >> "$GITHUB_OUTPUT"
+          else
+            node scripts/build-playwright-ci-matrix.mjs >> "$GITHUB_OUTPUT"
+          fi
 
   playwright:
     name: Run Playwright tests (${{ matrix.project_slug }} ${{ matrix.shard_index }}/${{ matrix.shard_total }})
@@ -88,7 +98,12 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
-        run: npx playwright test --project "${{ matrix.project }}" --shard="${{ matrix.shard_index }}/${{ matrix.shard_total }}" --reporter=blob
+        run: |
+          if [ -n "${{ matrix.test_target }}" ]; then
+            npx playwright test "${{ matrix.test_target }}" --project "${{ matrix.project }}" --reporter=blob
+          else
+            npx playwright test --project "${{ matrix.project }}" --shard="${{ matrix.shard_index }}/${{ matrix.shard_total }}" --reporter=blob
+          fi
 
       - name: Upload Playwright blob report
         if: always()
@@ -184,6 +199,7 @@ jobs:
 
   lighthouse:
     name: Run Lighthouse audits
+    if: github.ref_name != 'demo' && github.head_ref != 'demo'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -241,7 +257,7 @@ jobs:
 
   deploy-report:
     name: Publish CI reports
-    if: always() && github.event_name != 'pull_request' && needs.report.result != 'cancelled' && needs.lighthouse.result != 'cancelled'
+    if: always() && github.event_name != 'pull_request' && github.ref_name != 'demo' && github.head_ref != 'demo' && needs.report.result != 'cancelled' && needs.lighthouse.result != 'cancelled'
     needs:
       - report
       - lighthouse
