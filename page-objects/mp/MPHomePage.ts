@@ -113,7 +113,7 @@ export class MPHomePage extends AbstractPage {
     await expect(this.footer).toContainText(authorText)
   }
 
-  async scrollToFooterAndPause(pauseMs: number = 10000) {
+  async scrollToFooterAndPause(pauseMs: number = 15000) {
     await this.page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
     await this.page.evaluate(() => {
       const maxScrollTop = Math.max(
