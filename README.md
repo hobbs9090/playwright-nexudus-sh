@@ -76,20 +76,6 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 `-- playwright-report-example/
 ```
 
-## Prerequisites
-
-- Node.js 18.16 or newer
-- npm
-
-## Installation
-
-```bash
-git clone https://github.com/hobbs9090/playwright-nexudus-sh.git
-cd playwright-nexudus-sh
-npm ci
-npx playwright install chromium
-```
-
 ## Development setup
 
 If you are a QA engineer who wants to run, debug, or extend the suite locally, the usual setup is:
