@@ -51,6 +51,59 @@ test.describe('Nexudus API business settings', () => {
         .toBe(originalFooterSayingText)
     }
   })
+
+  test('can update Calendars.DefaultView for the current business and restore it afterwards @api', async ({
+    nexudusApi,
+    accessToken,
+  }) => {
+    test.slow()
+
+    const currentUser = await nexudusApi.getCurrentUser(accessToken)
+    const currentBusinessId = getCurrentBusinessId(currentUser)
+    const calendarDefaultView = await nexudusApi.getBusinessSetting(accessToken, {
+      businessId: currentBusinessId,
+      name: 'Calendars.DefaultView',
+    })
+    const originalCalendarDefaultView = calendarDefaultView.Value
+    const updatedCalendarDefaultView = getUpdatedCalendarDefaultView(originalCalendarDefaultView)
+
+    expect(
+      updatedCalendarDefaultView,
+      'Expected the updated calendar default view to differ from the current business setting value.',
+    ).not.toBe(originalCalendarDefaultView)
+
+    try {
+      const updatedBusinessSetting = await nexudusApi.updateBusinessSetting(accessToken, {
+        BusinessId: calendarDefaultView.BusinessId,
+        Id: calendarDefaultView.Id,
+        Name: calendarDefaultView.Name,
+        Value: updatedCalendarDefaultView,
+      })
+
+      expect(updatedBusinessSetting.Value).toBe(updatedCalendarDefaultView)
+
+      await expect
+        .poll(() =>
+          nexudusApi.getBusinessSettingById(accessToken, calendarDefaultView.Id).then((setting) => setting.Value),
+        )
+        .toBe(updatedCalendarDefaultView)
+    } finally {
+      const restoredBusinessSetting = await nexudusApi.updateBusinessSetting(accessToken, {
+        BusinessId: calendarDefaultView.BusinessId,
+        Id: calendarDefaultView.Id,
+        Name: calendarDefaultView.Name,
+        Value: originalCalendarDefaultView,
+      })
+
+      expect(restoredBusinessSetting.Value).toBe(originalCalendarDefaultView)
+
+      await expect
+        .poll(() =>
+          nexudusApi.getBusinessSettingById(accessToken, calendarDefaultView.Id).then((setting) => setting.Value),
+        )
+        .toBe(originalCalendarDefaultView)
+    }
+  })
 })
 
 function buildUniqueFooterSayingText(testTitle: string) {
@@ -68,4 +121,8 @@ function getCurrentBusinessId(currentUser: NexudusCurrentUserResponse) {
   ).toBeTruthy()
 
   return currentBusinessId
+}
+
+function getUpdatedCalendarDefaultView(currentCalendarDefaultView: string | null) {
+  return currentCalendarDefaultView === '2' ? '3' : '2'
 }

@@ -29,6 +29,8 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 
 - API authentication returns a bearer token for the configured Nexudus user
 - The authenticated API user profile can be retrieved from the Nexudus API
+- API business setting `Footer.SayingText` can be updated and restored for the current business
+- API business setting `Calendars.DefaultView` can be updated and restored for the current business
 
 ## Project structure
 
@@ -67,6 +69,7 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   |   `-- admin-panel-workflows.spec.ts
 |   |-- api/
 |   |   |-- api-test.ts
+|   |   |-- business-settings.spec.ts
 |   |   `-- user-info.spec.ts
 |   |-- fixtures/
 |   |   |-- collection-signature.png
@@ -130,7 +133,7 @@ If anyone on the team wants help getting set up or adding new tests, I’d be ve
 
 The Developers Hub is the main place to find details about the Nexudus APIs.
 
-The API test infrastructure in this repository uses the public Nexudus API pattern documented there. The initial smoke coverage authenticates with `POST /api/token` and then reads the current user profile from `GET /en/user/me`.
+The API test infrastructure in this repository uses the public Nexudus API pattern documented there. The current API coverage authenticates with `POST /api/token`, reads the current user profile from `GET /en/user/me`, and updates plus restores selected `BusinessSetting` records through the REST API.
 
 When adding tests, follow the existing split:
 
@@ -183,7 +186,7 @@ The suite supports the following environment variables:
 | `LIGHTHOUSE_MIN_ACCESSIBILITY`  | No                            | `60`                                                        | Minimum Lighthouse accessibility score for the AP and MP dashboard audits       |
 | `LIGHTHOUSE_MIN_BEST_PRACTICES` | No                            | `50`                                                        | Minimum Lighthouse best-practices score for the AP and MP dashboard audits      |
 
-The suite currently runs AP admin coverage on the AP dashboard, MP login coverage on the MP staging dashboard, and a small authenticated API smoke check against the configured Nexudus API host. It fails fast if the credential pair required for the selected project is missing.
+The suite currently runs AP admin coverage on the AP dashboard, MP coverage on the MP staging dashboard, and authenticated API smoke plus mutation coverage against the configured Nexudus API host. It fails fast if the credential pair required for the selected project is missing.
 
 The repo root `.env.shared` and `.env` files are loaded automatically by the npm scripts in this repository. `.env.shared` is intended for tracked team-wide non-sensitive defaults, while `.env` is intended for local secrets and machine-specific overrides. A tracked template is available in `.env.example`, while `.env` itself is ignored by git.
 
@@ -254,7 +257,7 @@ npx playwright test --headed -g @3093
 npm run test:report
 ```
 
-By default the suite runs three projects: `AP Chromium`, `MP Staging Chromium`, and `API`. `AP Chromium` includes the admin overview, admin workflow, AP login, and AP course-creation specs against the dashboard application. `MP Staging Chromium` currently runs only the MP member-portal login spec against the spaces staging application. `API` uses the configured MP host origin by default, authenticates against `/api/token`, and runs API-only coverage under `tests/api`. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "API"`.
+By default the suite runs three projects: `AP Chromium`, `MP Staging Chromium`, and `API`. `AP Chromium` includes the admin overview, admin workflow, AP login, and AP course-creation specs against the dashboard application. `MP Staging Chromium` covers the member-portal login flow plus the public signup and home-content checks against the spaces staging application. `API` uses the configured MP host origin by default, authenticates against `/api/token`, and runs API-only coverage under `tests/api`, including business-setting mutation checks that restore the original values after each test. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "API"`.
 
 The environment split is explicit in code:
 
@@ -274,7 +277,8 @@ The environment split is explicit in code:
 
 ### API tests
 
-- [user-info.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/api/user-info.spec.ts) authenticates against the Nexudus API and verifies that the current user profile can be read from `/en/user/me`
+- [business-settings.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/api/business-settings.spec.ts) authenticates against the Nexudus API, updates `Footer.SayingText` and `Calendars.DefaultView` for the current business, and restores the original values after each test
+- [user-info.spec.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/tests/api/user-info.spec.ts) authenticates against the Nexudus API and verifies that the current user profile can be read from `/en/user/me`
 
 ## Running the Lighthouse audits
 
