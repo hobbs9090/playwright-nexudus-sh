@@ -143,6 +143,7 @@ When adding tests, follow the existing split:
 
 - Put Admin Panel specs in `tests/ap` and page objects in `page-objects/ap`
 - Put Member Portal specs in `tests/mp` and page objects in `page-objects/mp`
+- Put API specs in `tests/api` and API client helpers in `api`
 - Keep shared browser helpers in `page-objects/shared`
 
 An effective way to work with Codex is to be explicit about the target area, data to use, and how the new flow should be verified. For example:
