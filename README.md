@@ -22,7 +22,6 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 - MP staging member-portal login succeeds with the configured MP credentials
 - MP staging account creation succeeds for new individual accounts
 - MP staging account creation succeeds for new company accounts
-- MP authenticated help requests can be submitted and reopened from the member portal
 - MP public footer renders the configured business branding and copyright content
 - MP public home page renders the configured plans, add-ons, featured articles, and locations
 
@@ -50,7 +49,6 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   |   |-- EventPage.ts
 |   |   `-- ProductPage.ts
 |   |-- mp/
-|   |   `-- MPHelpRequestsPage.ts
 |   |   `-- MPHomePage.ts
 |   |   `-- MPSignupPage.ts
 |   |   `-- MPLoginPage.ts
@@ -85,7 +83,6 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   |   |   `-- mp-dashboard-lighthouse.spec.ts
 |   |   `-- support.ts
 |   `-- mp/
-|       `-- mp-help-requests.spec.ts
 |       `-- mp-home-content.spec.ts
 |       `-- mp-signup.spec.ts
 |       `-- mp-login.spec.ts
@@ -342,7 +339,7 @@ npx playwright test --headed -g @3093
 npm run test:report
 ```
 
-By default the suite runs three projects: `AP Chromium`, `MP Staging Chromium`, and `API`. `AP Chromium` includes the admin overview, admin workflow, AP login, and AP course-creation specs against the dashboard application. `MP Staging Chromium` covers the member-portal login flow plus the public signup and home-content checks against the spaces staging application. `API` uses the configured MP host origin by default, authenticates against `/api/token`, and runs API-only coverage under `tests/api`, including business-setting mutation checks and MP footer verification. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "API"`.
+By default the suite runs three projects: `AP Chromium`, `MP Staging Chromium`, and `API`. `AP Chromium` includes the admin overview, admin workflow, AP login, and AP course-creation specs against the dashboard application. `MP Staging Chromium` covers the member-portal login flow, public signup coverage, and public home-content checks against the spaces staging application. `API` uses the configured MP host origin by default, authenticates against `/api/token`, and runs API-only coverage under `tests/api`, including business-setting mutation checks and MP footer verification. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "API"`.
 
 The environment split is explicit in code:
 
@@ -370,6 +367,11 @@ The environment split is explicit in code:
 
 - [mp-login.spec.ts](tests/mp/mp-login.spec.ts) opens the member-portal
   `/login` page and verifies the authenticated dashboard
+- [mp-signup.spec.ts](tests/mp/mp-signup.spec.ts) creates new public MP
+  accounts for both individual and company journeys
+- [mp-home-content.spec.ts](tests/mp/mp-home-content.spec.ts) verifies the
+  configured public footer branding, plans, add-ons, featured articles, and
+  locations on the MP home page
 
 ### API tests
 
