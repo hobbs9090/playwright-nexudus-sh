@@ -517,19 +517,26 @@ To use the workflow, configure these GitHub settings:
 - Optional repository variable: `PLAYWRIGHT_CI_MAX_SHARDS_PER_PROJECT`
 - Optional repository variables: `PLAYWRIGHT_CI_AP_SHARDS`, `PLAYWRIGHT_CI_MP_SHARDS`, `PLAYWRIGHT_CI_API_SHARDS`
 - GitHub Pages configured to deploy from GitHub Actions
-- If the `github-pages` environment has deployment branch rules, allow the branch that should publish reports, usually `main`
+- If the `github-pages` environment has deployment branch rules, allow every branch that should publish reports. If branch report publishing should work everywhere, add a wildcard branch rule such as `*`
 
 The workflow installs dependencies, computes a Playwright shard matrix, installs the Playwright Chromium browser on each selected runner, and runs five CI jobs:
 
-- `Plan Playwright runner fan-out` computes how many Playwright shard runners to request for the current target duration
-- `Run Playwright tests` fans the AP, MP, and API Playwright projects out across GitHub-hosted runners and uploads one blob report artifact per shard
+- `Plan Playwright runner fan-out` decides whether the workflow should run the full suite or only the changed spec files for the current branch, then builds the Playwright execution matrix
+- `Run Playwright tests` runs either the full AP, MP, and API Playwright suite on `main`, or only the changed `tests/ap`, `tests/mp`, and `tests/api` spec files on other branches, and uploads one blob report artifact per job
 - `Merge Playwright reports` merges the blob report into the Playwright HTML and JUnit outputs, uploads the merged report, and writes a GitHub job summary
-- `Run Lighthouse audits` runs the authenticated AP and MP Lighthouse specs, uploads the native Lighthouse HTML bundle, and uploads the raw Lighthouse result artifacts
-- `Publish CI reports` publishes a combined GitHub Pages site that includes both report types on non-PR pushes and manual runs
+- `Run Lighthouse audits` runs the full authenticated AP and MP Lighthouse suite on `main`, or only the changed Lighthouse spec files on other branches when any were modified
+- `Publish CI reports` publishes a combined GitHub Pages site on non-PR pushes and manual runs, including branch runs that only executed a single changed test
 
 If the optional API CI variables are not set, the API project falls back to the MP staging host origin and MP credentials that are already configured for the main Playwright run.
 
 By default the Playwright planner targets roughly five minutes of in-run test execution with conservative serial-duration estimates, which currently scales out to three AP shards plus one MP shard and one API shard. GitHub-hosted runners are provisioned automatically for that matrix. If the suite grows or shrinks, tune the target with `PLAYWRIGHT_CI_TARGET_MINUTES`, cap the fan-out with `PLAYWRIGHT_CI_MAX_SHARDS_PER_PROJECT`, or pin a project to a specific shard count with `PLAYWRIGHT_CI_AP_SHARDS`, `PLAYWRIGHT_CI_MP_SHARDS`, or `PLAYWRIGHT_CI_API_SHARDS`.
+
+The branch policy is:
+
+- `main` runs the full functional Playwright suite and the full Lighthouse suite
+- non-`main` branches compare themselves against `main` and run only the added or changed `*.spec.ts` files
+- branch runs still publish the Pages report site, even if only one changed test was executed
+- if a branch did not change any Lighthouse specs, the published report site will still include the Playwright report and show the Lighthouse report as unavailable for that run
 
 On non-PR pushes and manual runs, the published GitHub Pages site includes:
 
