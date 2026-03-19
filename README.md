@@ -160,6 +160,8 @@ The suite supports the following environment variables:
 | `NEXUDUS_AP_BASE_URL`           | No                            | `https://dashboard-staging.nexudus.com/`                    | Base URL for the AP project                                                     |
 | `NEXUDUS_AP_EMAIL`              | Yes                           | None                                                        | Username for the AP project                                                     |
 | `NEXUDUS_AP_PASSWORD`           | Yes                           | None                                                        | Password for the AP project                                                     |
+| `NEXUDUS_ADMIN_EMAIL`           | No                            | `NEXUDUS_AP_EMAIL`                                          | Optional dedicated admin-user email for role-based tests                        |
+| `NEXUDUS_ADMIN_PASSWORD`        | No                            | `NEXUDUS_AP_PASSWORD`                                       | Optional dedicated admin-user password for role-based tests                     |
 | `NEXUDUS_AP_MEMBER_NAME`        | Yes for AP delivery workflows | `Felicity Ward` via `.env.shared`                           | Member name used by AP delivery workflow tests                                  |
 | `NEXUDUS_AP_RECEIVED_BY_NAME`   | Yes for AP delivery workflows | `Steven Hobbs` via `.env.shared`                            | AP user name expected in the delivery `Received by` field                       |
 | `NEXUDUS_AP_COURSE_HOST_NAME`   | Yes for AP course workflows   | `Jane Appleby` via `.env.shared`                            | Host name selected when creating AP courses                                     |
@@ -169,6 +171,10 @@ The suite supports the following environment variables:
 | `NEXUDUS_MP_BASE_URL`           | No                            | `https://coworkingnetworksteven.spacesstaging.nexudus.com/` | Base URL for the MP staging project                                             |
 | `NEXUDUS_MP_EMAIL`              | Yes                           | None                                                        | Username for the MP staging project                                             |
 | `NEXUDUS_MP_PASSWORD`           | Yes                           | None                                                        | Password for the MP staging project                                             |
+| `NEXUDUS_MEMBER_EMAIL`          | No                            | `NEXUDUS_MP_EMAIL`                                          | Optional dedicated member-user email for role-based tests                       |
+| `NEXUDUS_MEMBER_PASSWORD`       | No                            | `NEXUDUS_MP_PASSWORD`                                       | Optional dedicated member-user password for role-based tests                    |
+| `NEXUDUS_CONTACT_EMAIL`         | No                            | None                                                        | Optional dedicated contact-user email for role-based tests                      |
+| `NEXUDUS_CONTACT_PASSWORD`      | No                            | None                                                        | Optional dedicated contact-user password for role-based tests                   |
 | `NEXUDUS_API_BASE_URL`          | No                            | Derived from `NEXUDUS_MP_BASE_URL` origin                   | Base URL for API tests, for example `https://your-space.spacesstaging.nexudus.com` |
 | `NEXUDUS_API_USERNAME`          | No                            | `NEXUDUS_MP_EMAIL`, then `NEXUDUS_AP_EMAIL`                | Optional username override for API authentication                               |
 | `NEXUDUS_API_PASSWORD`          | No                            | `NEXUDUS_MP_PASSWORD`, then `NEXUDUS_AP_PASSWORD`          | Optional password override for API authentication                               |
@@ -188,10 +194,18 @@ NEXUDUS_AP_EMAIL='your-ap-user@example.com'
 NEXUDUS_AP_PASSWORD='your-ap-password'
 NEXUDUS_MP_EMAIL='your-mp-staging-user@example.com'
 NEXUDUS_MP_PASSWORD='your-mp-staging-password'
+NEXUDUS_ADMIN_EMAIL='your-admin-user@example.com'
+NEXUDUS_ADMIN_PASSWORD='your-admin-password'
+NEXUDUS_MEMBER_EMAIL='your-member-user@example.com'
+NEXUDUS_MEMBER_PASSWORD='your-member-password'
+NEXUDUS_CONTACT_EMAIL='your-contact-user@example.com'
+NEXUDUS_CONTACT_PASSWORD='your-contact-password'
 NEXUDUS_AP_BASE_URL='https://dashboard-staging.nexudus.com/'
 NEXUDUS_MP_BASE_URL='https://coworkingnetworksteven.spacesstaging.nexudus.com/'
 NEXUDUS_API_BASE_URL='https://coworkingnetworksteven.spacesstaging.nexudus.com/'
 ```
+
+For role-based test helpers, the repo now exposes `getConfiguredUserCredentials('admin' | 'member' | 'contact')` from [test-environments.ts](/Users/steven/Source/Nexudus/Steven/playwright-nexudus-sh/test-environments.ts). `admin` falls back to the AP credential pair, `member` falls back to the MP credential pair, and `contact` must be configured explicitly when a test needs it.
 
 The committed [.env.shared](/Users/steven/Source/Playwright/playwright-nexudus-sh/.env.shared) currently provides:
 

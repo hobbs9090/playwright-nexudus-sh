@@ -9,6 +9,15 @@ export type TestEnvironment = {
   testMatch: string[]
 }
 
+export type ConfiguredUserRole = 'admin' | 'member' | 'contact'
+
+type RoleCredentialConfig = {
+  emailEnvVar: string
+  fallbackEmailEnvVar?: string
+  fallbackPasswordEnvVar?: string
+  passwordEnvVar: string
+}
+
 export const testEnvironments: TestEnvironment[] = [
   {
     projectName: 'AP Chromium',
@@ -33,6 +42,25 @@ export const testEnvironments: TestEnvironment[] = [
   },
 ]
 
+export const configuredUserCredentialEnvVars: Record<ConfiguredUserRole, RoleCredentialConfig> = {
+  admin: {
+    emailEnvVar: 'NEXUDUS_ADMIN_EMAIL',
+    fallbackEmailEnvVar: 'NEXUDUS_AP_EMAIL',
+    fallbackPasswordEnvVar: 'NEXUDUS_AP_PASSWORD',
+    passwordEnvVar: 'NEXUDUS_ADMIN_PASSWORD',
+  },
+  member: {
+    emailEnvVar: 'NEXUDUS_MEMBER_EMAIL',
+    fallbackEmailEnvVar: 'NEXUDUS_MP_EMAIL',
+    fallbackPasswordEnvVar: 'NEXUDUS_MP_PASSWORD',
+    passwordEnvVar: 'NEXUDUS_MEMBER_PASSWORD',
+  },
+  contact: {
+    emailEnvVar: 'NEXUDUS_CONTACT_EMAIL',
+    passwordEnvVar: 'NEXUDUS_CONTACT_PASSWORD',
+  },
+}
+
 export function getBaseURL(environment: TestEnvironment) {
   return getConfiguredBaseURL(environment.baseUrlEnvVar)
 }
@@ -45,6 +73,29 @@ export function getCredentials(emailEnvVar: string, passwordEnvVar: string) {
   return {
     email: requireEnvVar(emailEnvVar),
     password: requireEnvVar(passwordEnvVar),
+  }
+}
+
+function getCredentialValue(primaryEnvVar: string, fallbackEnvVar?: string) {
+  const primaryValue = process.env[primaryEnvVar]?.trim()
+
+  if (primaryValue) {
+    return primaryValue
+  }
+
+  if (fallbackEnvVar) {
+    return requireEnvVar(fallbackEnvVar)
+  }
+
+  return requireEnvVar(primaryEnvVar)
+}
+
+export function getConfiguredUserCredentials(role: ConfiguredUserRole) {
+  const credentialConfig = configuredUserCredentialEnvVars[role]
+
+  return {
+    email: getCredentialValue(credentialConfig.emailEnvVar, credentialConfig.fallbackEmailEnvVar),
+    password: getCredentialValue(credentialConfig.passwordEnvVar, credentialConfig.fallbackPasswordEnvVar),
   }
 }
 
