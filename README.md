@@ -398,17 +398,23 @@ To use the workflow, configure these GitHub settings:
 - Optional repository variable: `NEXUDUS_API_BASE_URL`
 - Optional repository secret: `NEXUDUS_API_USERNAME`
 - Optional repository secret: `NEXUDUS_API_PASSWORD`
+- Optional repository variable: `PLAYWRIGHT_CI_TARGET_MINUTES`
+- Optional repository variable: `PLAYWRIGHT_CI_MAX_SHARDS_PER_PROJECT`
+- Optional repository variables: `PLAYWRIGHT_CI_AP_SHARDS`, `PLAYWRIGHT_CI_MP_SHARDS`, `PLAYWRIGHT_CI_API_SHARDS`
 - GitHub Pages configured to deploy from GitHub Actions
 - If the `github-pages` environment has deployment branch rules, allow the branch that should publish reports, usually `main`
 
-The workflow installs dependencies, installs the Playwright Chromium browser, and runs four CI jobs:
+The workflow installs dependencies, computes a Playwright shard matrix, installs the Playwright Chromium browser on each selected runner, and runs five CI jobs:
 
-- `Run Playwright tests` runs the AP, MP, and API Playwright projects and uploads a blob report
+- `Plan Playwright runner fan-out` computes how many Playwright shard runners to request for the current target duration
+- `Run Playwright tests` fans the AP, MP, and API Playwright projects out across GitHub-hosted runners and uploads one blob report artifact per shard
 - `Merge Playwright reports` merges the blob report into the Playwright HTML and JUnit outputs, uploads the merged report, and writes a GitHub job summary
 - `Run Lighthouse audits` runs the authenticated AP and MP Lighthouse specs, uploads the native Lighthouse HTML bundle, and uploads the raw Lighthouse result artifacts
 - `Publish CI reports` publishes a combined GitHub Pages site that includes both report types on non-PR pushes and manual runs
 
 If the optional API CI variables are not set, the API project falls back to the MP staging host origin and MP credentials that are already configured for the main Playwright run.
+
+By default the Playwright planner targets roughly five minutes of in-run test execution with conservative serial-duration estimates, which currently scales out to three AP shards plus one MP shard and one API shard. GitHub-hosted runners are provisioned automatically for that matrix. If the suite grows or shrinks, tune the target with `PLAYWRIGHT_CI_TARGET_MINUTES`, cap the fan-out with `PLAYWRIGHT_CI_MAX_SHARDS_PER_PROJECT`, or pin a project to a specific shard count with `PLAYWRIGHT_CI_AP_SHARDS`, `PLAYWRIGHT_CI_MP_SHARDS`, or `PLAYWRIGHT_CI_API_SHARDS`.
 
 On non-PR pushes and manual runs, the published GitHub Pages site includes:
 

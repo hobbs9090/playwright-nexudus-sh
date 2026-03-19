@@ -13,12 +13,51 @@ on:
   workflow_dispatch:
 
 jobs:
+  plan-playwright:
+    name: Plan Playwright runner fan-out
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      execution_budget_minutes: ${{ steps.matrix.outputs.execution_budget_minutes }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      target_minutes: ${{ steps.matrix.outputs.target_minutes }}
+      total_runners: ${{ steps.matrix.outputs.total_runners }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Build Playwright shard matrix
+        id: matrix
+        env:
+          PLAYWRIGHT_CI_API_SERIAL_MINUTES: ${{ vars.PLAYWRIGHT_CI_API_SERIAL_MINUTES }}
+          PLAYWRIGHT_CI_API_SHARDS: ${{ vars.PLAYWRIGHT_CI_API_SHARDS }}
+          PLAYWRIGHT_CI_AP_SERIAL_MINUTES: ${{ vars.PLAYWRIGHT_CI_AP_SERIAL_MINUTES }}
+          PLAYWRIGHT_CI_AP_SHARDS: ${{ vars.PLAYWRIGHT_CI_AP_SHARDS }}
+          PLAYWRIGHT_CI_FIXED_OVERHEAD_MINUTES: ${{ vars.PLAYWRIGHT_CI_FIXED_OVERHEAD_MINUTES }}
+          PLAYWRIGHT_CI_MAX_SHARDS_PER_PROJECT: ${{ vars.PLAYWRIGHT_CI_MAX_SHARDS_PER_PROJECT }}
+          PLAYWRIGHT_CI_MP_SERIAL_MINUTES: ${{ vars.PLAYWRIGHT_CI_MP_SERIAL_MINUTES }}
+          PLAYWRIGHT_CI_MP_SHARDS: ${{ vars.PLAYWRIGHT_CI_MP_SHARDS }}
+          PLAYWRIGHT_CI_TARGET_MINUTES: ${{ vars.PLAYWRIGHT_CI_TARGET_MINUTES }}
+        run: node scripts/build-playwright-ci-matrix.mjs >> "$GITHUB_OUTPUT"
+
   playwright:
-    name: Run Playwright tests
+    name: Run Playwright tests (${{ matrix.project_slug }} ${{ matrix.shard_index }}/${{ matrix.shard_total }})
+    needs: plan-playwright
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan-playwright.outputs.matrix) }}
     env:
       CI: true
       PLAYWRIGHT_HEADLESS: true
@@ -49,20 +88,22 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
-        run: npx playwright test --reporter=blob
+        run: npx playwright test --project "${{ matrix.project }}" --shard="${{ matrix.shard_index }}/${{ matrix.shard_total }}" --reporter=blob
 
       - name: Upload Playwright blob report
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-blob-report
+          name: playwright-blob-report-${{ matrix.project_slug }}-${{ matrix.shard_index }}-of-${{ matrix.shard_total }}
           path: blob-report/
           retention-days: 14
 
   report:
     name: Merge Playwright reports
     if: always() && needs.playwright.result != 'cancelled'
-    needs: playwright
+    needs:
+      - plan-playwright
+      - playwright
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -119,6 +160,9 @@ jobs:
       - name: Add Playwright summary to GitHub UI
         if: always()
         env:
+          PLAYWRIGHT_CI_EXECUTION_BUDGET_MINUTES: ${{ needs.plan-playwright.outputs.execution_budget_minutes }}
+          PLAYWRIGHT_CI_TARGET_MINUTES: ${{ needs.plan-playwright.outputs.target_minutes }}
+          PLAYWRIGHT_CI_TOTAL_RUNNERS: ${{ needs.plan-playwright.outputs.total_runners }}
           PLAYWRIGHT_JUNIT_PATH: test-results/results.xml
         run: node scripts/write-github-summary.mjs
 

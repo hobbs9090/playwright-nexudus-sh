@@ -8,6 +8,9 @@ if (!summaryPath) {
 
 const junitPath = process.env.PLAYWRIGHT_JUNIT_PATH || 'test-results/results.xml'
 const pagesUrl = process.env.PLAYWRIGHT_REPORT_URL || ''
+const plannedTargetMinutes = process.env.PLAYWRIGHT_CI_TARGET_MINUTES || ''
+const plannedExecutionBudgetMinutes = process.env.PLAYWRIGHT_CI_EXECUTION_BUDGET_MINUTES || ''
+const plannedRunnerCount = process.env.PLAYWRIGHT_CI_TOTAL_RUNNERS || ''
 const runUrl = [
   process.env.GITHUB_SERVER_URL,
   process.env.GITHUB_REPOSITORY,
@@ -57,6 +60,28 @@ function parseJUnitReport(xml) {
 }
 
 const lines = ['## Playwright Results', '']
+
+if (plannedRunnerCount) {
+  lines.push(
+    `CI runner fan-out: ${plannedRunnerCount} Playwright shard runner${plannedRunnerCount === '1' ? '' : 's'}`
+  )
+
+  if (plannedTargetMinutes || plannedExecutionBudgetMinutes) {
+    const detailParts = []
+
+    if (plannedTargetMinutes) {
+      detailParts.push(`target ${plannedTargetMinutes}m`)
+    }
+
+    if (plannedExecutionBudgetMinutes) {
+      detailParts.push(`estimated execution budget ${plannedExecutionBudgetMinutes}m`)
+    }
+
+    lines.push(`Planner: ${detailParts.join(', ')}`)
+  }
+
+  lines.push('')
+}
 
 if (existsSync(junitPath)) {
   const report = parseJUnitReport(readFileSync(junitPath, 'utf8'))
