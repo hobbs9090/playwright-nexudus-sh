@@ -9,6 +9,7 @@
   "scripts": {
     "test": "node scripts/run-with-dotenv.mjs -- npx playwright test",
     "test:headed": "node scripts/run-with-dotenv.mjs -- npx playwright test --headed",
+    "test:api": "node scripts/run-with-dotenv.mjs -- npx playwright test --project \"API\"",
     "test:report": "node scripts/run-with-dotenv.mjs -- npx playwright show-report",
     "test:lighthouse": "node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.lighthouse.config.ts",
     "test:lighthouse:ap": "node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.lighthouse.config.ts --project \"AP Lighthouse\"",

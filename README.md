@@ -21,10 +21,17 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 
 - MP staging member-portal login succeeds with the configured MP credentials
 
+### API
+
+- API authentication returns a bearer token for the configured Nexudus user
+- The authenticated API user profile can be retrieved from the Nexudus API
+
 ## Project structure
 
 ```text
 .
+|-- api/
+|   `-- NexudusApiClient.ts
 |-- .github/workflows/playwright.yml
 |-- docs/
 |-- helpers.ts
@@ -52,6 +59,9 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   |   |-- course-workflows.spec.ts
 |   |   |-- admin-panel-overview.spec.ts
 |   |   `-- admin-panel-workflows.spec.ts
+|   |-- api/
+|   |   |-- api-test.ts
+|   |   `-- user-info.spec.ts
 |   |-- fixtures/
 |   |   |-- collection-signature.png
 |   |   `-- delivery-label.pdf
@@ -105,6 +115,8 @@ If anyone on the team wants help getting set up or adding new tests, I’d be ve
 
 The Developers Hub is the main place to find details about the Nexudus APIs.
 
+The API test infrastructure in this repository uses the public Nexudus API pattern documented there. The initial smoke coverage authenticates with `POST /api/token` and then reads the current user profile from `GET /en/user/me`.
+
 When adding tests, follow the existing split:
 
 - Put Admin Panel specs in `tests/ap` and page objects in `page-objects/ap`
@@ -141,6 +153,9 @@ The suite supports the following environment variables:
 | `NEXUDUS_MP_BASE_URL`           | No                            | `https://coworkingnetworksteven.spacesstaging.nexudus.com/` | Base URL for the MP staging project                                             |
 | `NEXUDUS_MP_EMAIL`              | Yes                           | None                                                        | Username for the MP staging project                                             |
 | `NEXUDUS_MP_PASSWORD`           | Yes                           | None                                                        | Password for the MP staging project                                             |
+| `NEXUDUS_API_BASE_URL`          | No                            | Derived from `NEXUDUS_MP_BASE_URL` origin                   | Base URL for API tests, for example `https://your-space.spacesstaging.nexudus.com` |
+| `NEXUDUS_API_USERNAME`          | No                            | `NEXUDUS_MP_EMAIL`, then `NEXUDUS_AP_EMAIL`                | Optional username override for API authentication                               |
+| `NEXUDUS_API_PASSWORD`          | No                            | `NEXUDUS_MP_PASSWORD`, then `NEXUDUS_AP_PASSWORD`          | Optional password override for API authentication                               |
 | `PLAYWRIGHT_HEADLESS`           | No                            | `false` locally, `true` on CI                               | Forces headless browser execution                                               |
 | `LIGHTHOUSE_MIN_PERFORMANCE`    | No                            | `35`                                                        | Minimum Lighthouse performance score for the AP and MP dashboard audits         |
 | `LIGHTHOUSE_MIN_ACCESSIBILITY`  | No                            | `60`                                                        | Minimum Lighthouse accessibility score for the AP and MP dashboard audits       |
@@ -159,6 +174,7 @@ NEXUDUS_MP_EMAIL='your-mp-staging-user@example.com'
 NEXUDUS_MP_PASSWORD='your-mp-staging-password'
 NEXUDUS_AP_BASE_URL='https://dashboard-staging.nexudus.com/'
 NEXUDUS_MP_BASE_URL='https://coworkingnetworksteven.spacesstaging.nexudus.com/'
+NEXUDUS_API_BASE_URL='https://coworkingnetworksteven.spacesstaging.nexudus.com/'
 ```
 
 The committed [.env.shared](/Users/steven/Source/Playwright/playwright-nexudus-sh/.env.shared) currently provides:
@@ -192,6 +208,9 @@ If initials cannot be resolved, the CRUD flows still get the standard random see
 # Run the suite
 npm test
 
+# Run only the API project
+npm run test:api
+
 # Run in headed mode
 npm run test:headed
 
@@ -205,7 +224,7 @@ npx playwright test --headed -g @3093
 npm run test:report
 ```
 
-By default the suite runs two Chromium projects: `AP Chromium` and `MP Staging Chromium`. `AP Chromium` includes the admin overview, admin workflow, AP login, and AP course-creation specs against the dashboard application. `MP Staging Chromium` currently runs only the MP member-portal login spec against the spaces staging application. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "MP Staging Chromium"`.
+By default the suite runs three projects: `AP Chromium`, `MP Staging Chromium`, and `API`. `AP Chromium` includes the admin overview, admin workflow, AP login, and AP course-creation specs against the dashboard application. `MP Staging Chromium` currently runs only the MP member-portal login spec against the spaces staging application. `API` uses the configured MP host origin by default, authenticates against `/api/token`, and runs API-only coverage under `tests/api`. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "API"`.
 
 The environment split is explicit in code:
 
@@ -222,6 +241,10 @@ The environment split is explicit in code:
 ### MP tests
 
 - [mp-login.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/mp/mp-login.spec.ts) opens the member-portal `/login` page and verifies the authenticated dashboard
+
+### API tests
+
+- [user-info.spec.ts](/Users/steven/Source/Playwright/playwright-nexudus-sh/tests/api/user-info.spec.ts) authenticates against the Nexudus API and verifies that the current user profile can be read from `/en/user/me`
 
 ## Running the Lighthouse audits
 
@@ -339,15 +362,20 @@ To use the workflow, configure these GitHub settings:
 - Repository secret: `NEXUDUS_MP_PASSWORD`
 - Optional repository variable: `NEXUDUS_AP_BASE_URL`
 - Optional repository variable: `NEXUDUS_MP_BASE_URL`
+- Optional repository variable: `NEXUDUS_API_BASE_URL`
+- Optional repository secret: `NEXUDUS_API_USERNAME`
+- Optional repository secret: `NEXUDUS_API_PASSWORD`
 - GitHub Pages configured to deploy from GitHub Actions
 - If the `github-pages` environment has deployment branch rules, allow the branch that should publish reports, usually `main`
 
 The workflow installs dependencies, installs the Playwright Chromium browser, and runs four CI jobs:
 
-- `Run Playwright tests` runs the normal functional suite and uploads a blob report
+- `Run Playwright tests` runs the AP, MP, and API Playwright projects and uploads a blob report
 - `Merge Playwright reports` merges the blob report into the Playwright HTML and JUnit outputs, uploads the merged report, and writes a GitHub job summary
 - `Run Lighthouse audits` runs the authenticated AP and MP Lighthouse specs, uploads the native Lighthouse HTML bundle, and uploads the raw Lighthouse result artifacts
 - `Publish CI reports` publishes a combined GitHub Pages site that includes both report types on non-PR pushes and manual runs
+
+If the optional API CI variables are not set, the API project falls back to the MP staging host origin and MP credentials that are already configured for the main Playwright run.
 
 On non-PR pushes and manual runs, the published GitHub Pages site includes:
 

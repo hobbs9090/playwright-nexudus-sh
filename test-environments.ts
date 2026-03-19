@@ -1,8 +1,8 @@
 import { requireEnvVar } from './helpers'
+import { getConfiguredBaseURL } from './nexudus-config'
 
 export type TestEnvironment = {
   baseUrlEnvVar: string
-  defaultBaseURL: string
   emailEnvVar: string
   passwordEnvVar: string
   projectName: string
@@ -13,7 +13,6 @@ export const testEnvironments: TestEnvironment[] = [
   {
     projectName: 'AP Chromium',
     baseUrlEnvVar: 'NEXUDUS_AP_BASE_URL',
-    defaultBaseURL: 'https://dashboard-staging.nexudus.com/',
     emailEnvVar: 'NEXUDUS_AP_EMAIL',
     passwordEnvVar: 'NEXUDUS_AP_PASSWORD',
     testMatch: ['tests/ap/**/*.spec.ts'],
@@ -21,19 +20,25 @@ export const testEnvironments: TestEnvironment[] = [
   {
     projectName: 'MP Staging Chromium',
     baseUrlEnvVar: 'NEXUDUS_MP_BASE_URL',
-    defaultBaseURL: 'https://coworkingnetworksteven.spacesstaging.nexudus.com/',
     emailEnvVar: 'NEXUDUS_MP_EMAIL',
     passwordEnvVar: 'NEXUDUS_MP_PASSWORD',
     testMatch: ['tests/mp/**/*.spec.ts'],
   },
+  {
+    projectName: 'API',
+    baseUrlEnvVar: 'NEXUDUS_API_BASE_URL',
+    emailEnvVar: 'NEXUDUS_MP_EMAIL',
+    passwordEnvVar: 'NEXUDUS_MP_PASSWORD',
+    testMatch: ['tests/api/**/*.spec.ts'],
+  },
 ]
 
 export function getBaseURL(environment: TestEnvironment) {
-  return process.env[environment.baseUrlEnvVar]?.trim() || environment.defaultBaseURL
+  return getConfiguredBaseURL(environment.baseUrlEnvVar)
 }
 
 export function getRequiredCredentialEnvVars() {
-  return testEnvironments.flatMap((environment) => [environment.emailEnvVar, environment.passwordEnvVar])
+  return [...new Set(testEnvironments.flatMap((environment) => [environment.emailEnvVar, environment.passwordEnvVar]))]
 }
 
 export function getCredentials(emailEnvVar: string, passwordEnvVar: string) {
