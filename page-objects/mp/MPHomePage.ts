@@ -18,11 +18,13 @@ type MPHomeContentData = {
 export class MPHomePage extends AbstractPage {
   readonly dismissStartupNoticeButton: Locator
   readonly footer: Locator
+  readonly footerLanguageSelector: Locator
 
   constructor(page: Page) {
     super(page)
     this.dismissStartupNoticeButton = page.getByRole('button', { name: 'Okay, got it!' })
     this.footer = page.getByRole('contentinfo')
+    this.footerLanguageSelector = this.footer.getByRole('combobox').first()
   }
 
   async goto(pathOrUrl: string = '/home') {
@@ -105,12 +107,81 @@ export class MPHomePage extends AbstractPage {
     return (await this.footer.innerText()).trim()
   }
 
+  async assertFooterHeadingVisible(...candidateLabels: string[]) {
+    await expect(
+      this.footer.getByRole('heading', {
+        name: new RegExp(`^(${candidateLabels.map(escapeRegExp).join('|')})$`, 'i'),
+      }).first(),
+    ).toBeVisible()
+  }
+
+  async assertFooterLinkVisible(linkLabel: string) {
+    await expect(this.footer.getByRole('link', { exact: true, name: linkLabel }).first()).toBeVisible()
+  }
+
+  async assertFooterLinksVisible(linkLabels: string[]) {
+    for (const linkLabel of linkLabels) {
+      await this.assertFooterLinkVisible(linkLabel)
+    }
+  }
+
+  async clickFooterLink(linkLabel: string) {
+    await this.footer.getByRole('link', { exact: true, name: linkLabel }).first().click()
+  }
+
   async assertFooterSayingVisible(sayingText: string) {
     await expect(this.footer).toContainText(sayingText)
   }
 
   async assertFooterSayingAuthorVisible(authorText: string) {
     await expect(this.footer).toContainText(authorText)
+  }
+
+  async assertFooterSocialLinkVisible(href: string) {
+    await expect(this.footer.locator(`a[href="${href}"]`).first()).toBeVisible()
+  }
+
+  async getSelectedFooterLanguageLabel() {
+    await expect(this.footerLanguageSelector).toBeVisible()
+
+    return (
+      (await this.footerLanguageSelector.evaluate((element) => {
+        if (!(element instanceof HTMLSelectElement)) {
+          return ''
+        }
+
+        return element.selectedOptions[0]?.textContent?.trim() || ''
+      })) || ''
+    ).trim()
+  }
+
+  async selectFooterLanguage(candidateLabels: string[]) {
+    await expect(this.footerLanguageSelector).toBeVisible()
+
+    const availableLabels = (
+      await this.footerLanguageSelector.evaluate((element) => {
+        if (!(element instanceof HTMLSelectElement)) {
+          return []
+        }
+
+        return Array.from(element.options).map((option) => option.textContent?.trim() || '')
+      })
+    ).filter(Boolean)
+    const targetLabel = candidateLabels.find((candidateLabel) => availableLabels.includes(candidateLabel))
+
+    if (!targetLabel) {
+      throw new Error(
+        `Could not find any footer language option matching: ${candidateLabels.join(', ')}. Available: ${availableLabels.join(', ')}.`,
+      )
+    }
+
+    await this.footerLanguageSelector.selectOption({ label: targetLabel })
+
+    await expect
+      .poll(async () => await this.getSelectedFooterLanguageLabel(), { timeout: 10000 })
+      .toBe(targetLabel)
+
+    return targetLabel
   }
 
   async scrollToFooterAndPause(pauseMs: number = 15000) {
@@ -160,4 +231,8 @@ export class MPHomePage extends AbstractPage {
 
     await expect(mapLinks).toHaveCount(data.locations.length)
   }
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
