@@ -28,7 +28,7 @@ test.describe('MP admin portal navigation', () => {
     expect(adminDisplayName, 'Expected the admin dashboard greeting to expose a name fragment for the profile menu button.').toBeTruthy()
   })
 
-  test('user-profile-menu exposes the current admin-only actions', async ({ page }) => {
+  test('user-profile-menu exposes the current admin-only actions @dg', async ({ page }) => {
     await portalPage.openProfileMenu(adminDisplayName)
 
     await expect(page.getByText('This account has administrator rights.')).toBeVisible()

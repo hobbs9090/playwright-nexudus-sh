@@ -42,7 +42,7 @@ test.describe('MP staging account creation', () => {
     await portalPage.installBlockingDialogSuppression()
   })
 
-  test('individual account opens create account, shows the signup fields, and reaches the dashboard with the new full name', async () => {
+  test('individual account opens create account, shows the signup fields, and reaches the dashboard with the new full name @dg', async () => {
     const details = createSignupDetails('Individual')
 
     await signupPage.openSignupForm()
@@ -54,7 +54,7 @@ test.describe('MP staging account creation', () => {
     await loginPage.assertProfileMenuContains(details.fullName)
   })
 
-  test('company account opens create account, shows the signup fields, and reaches the dashboard with the new full name', async () => {
+  test('company account opens create account, shows the signup fields, and reaches the dashboard with the new full name @dg', async () => {
     const details = createSignupDetails('Company')
 
     await signupPage.openSignupForm()

@@ -11,7 +11,7 @@ test.describe('MP public access', () => {
     loginPage = new MPLoginPage(page)
   })
 
-  test('access member portal shows the public entry points and reaches the login form from the header sign in link', async ({
+  test('access member portal shows the public entry points and reaches the login form from the header sign in link @dg', async ({
     page,
   }) => {
     await homePage.goto()

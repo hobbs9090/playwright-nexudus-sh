@@ -88,7 +88,7 @@ test.describe('MP footer and social settings', () => {
     loginPage = new MPLoginPage(page)
   })
 
-  test('Footer.Links opens the marketing page and shows the expected footer headings and links @api', async () => {
+  test('Footer.Links opens the marketing page and shows the expected footer headings and links @api @dg', async () => {
     await homePage.goto(buildCacheBustedMPURL('/home'))
 
     for (const footerHeadingExpectation of footerHeadingExpectations) {
@@ -101,7 +101,7 @@ test.describe('MP footer and social settings', () => {
     await homePage.assertFooterLinksVisible(footerLinkLabels)
   })
 
-  test('Footer.Login signs in from the footer account flow and shows the dashboard footer controls @api', async ({
+  test('Footer.Login signs in from the footer account flow and shows the dashboard footer controls @api @dg', async ({
     page,
   }) => {
     await homePage.goto(buildCacheBustedMPURL('/home'))
@@ -124,7 +124,7 @@ test.describe('MP footer and social settings', () => {
     await loginPage.assertDashboardVisible(currentUserFullName)
   })
 
-  test('Footer.Language changes the footer language selector to one of the requested languages @api', async () => {
+  test('Footer.Language changes the footer language selector to one of the requested languages @api @dg', async () => {
     await homePage.goto(buildCacheBustedMPURL('/home'))
 
     const currentLanguageLabel = await homePage.getSelectedFooterLanguageLabel()
@@ -137,7 +137,7 @@ test.describe('MP footer and social settings', () => {
     ).toBeTruthy()
   })
 
-  test('Footer.SayingText updates the business setting by API and shows the new footer text in MP @api', async ({
+  test('Footer.SayingText updates the business setting by API and shows the new footer text in MP @api @dg', async ({
     accessToken,
     nexudusApi,
   }, testInfo) => {
@@ -182,7 +182,7 @@ test.describe('MP footer and social settings', () => {
     }
   })
 
-  test('Footer.SayingAuthor updates the business setting by API and shows the new author text in MP @api', async ({
+  test('Footer.SayingAuthor updates the business setting by API and shows the new author text in MP @api @dg', async ({
     accessToken,
     nexudusApi,
   }, testInfo) => {
@@ -228,7 +228,7 @@ test.describe('MP footer and social settings', () => {
   })
 
   for (const socialSettingExpectation of socialSettingExpectations) {
-    test(`${socialSettingExpectation.title} updates the social URL by API and shows the matching footer link in MP @api`, async ({
+    test(`${socialSettingExpectation.title} updates the social URL by API and shows the matching footer link in MP @api @dg`, async ({
       accessToken,
       nexudusApi,
     }) => {

@@ -33,7 +33,7 @@ test.describe('MP authenticated portal navigation', () => {
     await portalPage.dismissOnboardingModalIfPresent()
   })
 
-  test('user-profile-menu shows the current member actions and hides legacy-only entries', async ({ page }) => {
+  test('user-profile-menu shows the current member actions and hides legacy-only entries @dg', async ({ page }) => {
     await portalPage.openProfileMenu(currentUserFullName)
 
     await expect(page.getByText('This account has administrator rights.')).toBeVisible()
@@ -47,7 +47,7 @@ test.describe('MP authenticated portal navigation', () => {
     }
   })
 
-  test('access dashboard returns to the dashboard from another member page', async ({ page }) => {
+  test('access dashboard returns to the dashboard from another member page @dg', async ({ page }) => {
     await portalPage.clickSidebarItem('My activity')
     await expect(page).toHaveURL(/\/my-activity(?:\?.*)?$/)
     await portalPage.assertMainHeadingVisible('My Activity')
@@ -59,7 +59,7 @@ test.describe('MP authenticated portal navigation', () => {
     await loginPage.assertDashboardVisible(currentUserFullName)
   })
 
-  test('access invoices opens the billing area and the invoices controls', async ({ page }) => {
+  test('access invoices opens the billing area and the invoices controls @dg', async ({ page }) => {
     await portalPage.clickProfileMenuEntry(currentUserFullName, 'Billing')
 
     await expect(page).toHaveURL(/\/account\/billing(?:\?.*)?$/)
@@ -71,7 +71,7 @@ test.describe('MP authenticated portal navigation', () => {
     await portalPage.assertMainControlVisible('Payment details')
   })
 
-  test('access bookings opens the bookings experience and keeps the booking filters visible', async ({ page }) => {
+  test('access bookings opens the bookings experience and keeps the booking filters visible @dg', async ({ page }) => {
     await portalPage.clickSidebarItem('Bookings')
 
     await expect(page).toHaveURL(/\/bookings(?:\?.*)?$/)
@@ -79,7 +79,7 @@ test.describe('MP authenticated portal navigation', () => {
     await portalPage.assertMainControlVisible('All Resources')
   })
 
-  test('access my plans opens the plans and benefits area', async ({ page }) => {
+  test('access my plans opens the plans and benefits area @dg', async ({ page }) => {
     await portalPage.clickProfileMenuEntry(currentUserFullName, 'Plans and Benefits')
 
     await expect(page).toHaveURL(/\/account\/plan(?:\?.*)?$/)
@@ -88,7 +88,7 @@ test.describe('MP authenticated portal navigation', () => {
     await portalPage.assertMainTextVisible('Current plan')
   })
 
-  test('access help & support opens FAQ and help request from the support menu', async ({ page }) => {
+  test('access help & support opens FAQ and help request from the support menu @dg', async ({ page }) => {
     await portalPage.clickSidebarItem('Support')
     await portalPage.assertSidebarItemVisible('FAQ')
     await portalPage.assertSidebarItemVisible('Help request')
@@ -105,7 +105,7 @@ test.describe('MP authenticated portal navigation', () => {
     await portalPage.assertMainHeadingVisible('Help requests')
   })
 
-  test('access settings opens notifications and exposes the current settings pages', async ({ page }) => {
+  test('access settings opens notifications and exposes the current settings pages @dg', async ({ page }) => {
     await portalPage.clickSidebarItem('Settings')
 
     for (const entry of ['Notifications', 'Security', 'Integrations', 'Language']) {
@@ -119,7 +119,7 @@ test.describe('MP authenticated portal navigation', () => {
     await portalPage.assertMainTextVisible('When to receive notifications')
   })
 
-  test('access my activity drills through the current member activity tabs', async ({ page }) => {
+  test('access my activity drills through the current member activity tabs @dg', async ({ page }) => {
     await portalPage.clickSidebarItem('My activity')
 
     await expect(page).toHaveURL(/\/my-activity(?:\?.*)?$/)
@@ -140,7 +140,7 @@ test.describe('MP authenticated portal navigation', () => {
     }
   })
 
-  test('access building opens availability and confirms environment is not exposed in the current member navigation', async ({
+  test('access building opens availability and confirms environment is not exposed in the current member navigation @dg', async ({
     page,
   }) => {
     await portalPage.clickSidebarItem('Building')
@@ -153,7 +153,7 @@ test.describe('MP authenticated portal navigation', () => {
     await portalPage.assertMainHeadingVisible('Availability')
   })
 
-  test('access account opens the current profile page and confirms the legacy account tabs are not exposed', async ({
+  test('access account opens the current profile page and confirms the legacy account tabs are not exposed @dg', async ({
     page,
   }) => {
     await portalPage.clickProfileMenuEntry(currentUserFullName, 'Profile')
@@ -170,7 +170,7 @@ test.describe('MP authenticated portal navigation', () => {
     }
   })
 
-  test('sign out returns to an anonymous MP page with public entry points back into the portal', async ({ page }) => {
+  test('sign out returns to an anonymous MP page with public entry points back into the portal @dg', async ({ page }) => {
     await portalPage.clickProfileMenuEntry(currentUserFullName, 'Log out')
 
     await expect
@@ -206,7 +206,7 @@ test.describe('MP authenticated portal navigation', () => {
     ).not.toBeVisible()
   })
 
-  test('access marketing uses the anonymous brand link to reach or keep the public member home page', async ({ page }) => {
+  test('access marketing uses the anonymous brand link to reach or keep the public member home page @dg', async ({ page }) => {
     await portalPage.clickProfileMenuEntry(currentUserFullName, 'Log out')
 
     await expect
