@@ -1,4 +1,5 @@
 import type { NexudusCurrentUserResponse } from '../../api/NexudusApiClient'
+import { generateUniqueName, getContributorInitials } from '../../helpers'
 import { getConfiguredBaseURL } from '../../nexudus-config'
 import { MPHomePage } from '../../page-objects/mp/MPHomePage'
 import { MPLoginPage } from '../../page-objects/mp/MPLoginPage'
@@ -110,6 +111,96 @@ test.describe('MP footer and social settings', () => {
       `Expected the footer language selector to show one of ${selectedLanguage.candidateLabels.join(', ')}.`,
     ).toBeTruthy()
   })
+
+  test('Footer.SayingText updates the business setting by API and shows the new footer text in MP @api', async ({
+    accessToken,
+    nexudusApi,
+  }, testInfo) => {
+    const footerSayingText = await nexudusApi.getBusinessSetting(accessToken, {
+      businessId: currentBusinessId,
+      name: 'Footer.SayingText',
+    })
+    const originalValue = footerSayingText.Value
+    const updatedValue = buildFooterSettingValue(testInfo.title)
+
+    expect(updatedValue, 'Expected the footer saying text update value to differ from the current setting.').not.toBe(originalValue)
+
+    try {
+      const updateResponse = await nexudusApi.updateBusinessSettingMutation(accessToken, {
+        BusinessId: footerSayingText.BusinessId,
+        Id: footerSayingText.Id,
+        Name: footerSayingText.Name,
+        Value: updatedValue,
+      })
+
+      expect(updateResponse.Message).toBe(`Space Setting "${currentBusinessName}" was successfully updated.`)
+
+      const updatedSetting = await nexudusApi.getBusinessSettingById(accessToken, footerSayingText.Id)
+
+      expect(updatedSetting.Value).toBe(updatedValue)
+
+      await expect
+        .poll(async () => {
+          await homePage.goto(buildCacheBustedMPURL('/home'))
+          return await homePage.getFooterText()
+        }, { timeout: 45000 })
+        .toContain(updatedValue)
+
+      await homePage.assertFooterSayingVisible(updatedValue)
+    } finally {
+      await nexudusApi.updateBusinessSetting(accessToken, {
+        BusinessId: footerSayingText.BusinessId,
+        Id: footerSayingText.Id,
+        Name: footerSayingText.Name,
+        Value: originalValue,
+      })
+    }
+  })
+
+  test('Footer.SayingAuthor updates the business setting by API and shows the new author text in MP @api', async ({
+    accessToken,
+    nexudusApi,
+  }, testInfo) => {
+    const footerSayingAuthor = await nexudusApi.getBusinessSetting(accessToken, {
+      businessId: currentBusinessId,
+      name: 'Footer.SayingAuthor',
+    })
+    const originalValue = footerSayingAuthor.Value
+    const updatedValue = buildFooterSettingValue(testInfo.title)
+
+    expect(updatedValue, 'Expected the footer saying author update value to differ from the current setting.').not.toBe(originalValue)
+
+    try {
+      const updateResponse = await nexudusApi.updateBusinessSettingMutation(accessToken, {
+        BusinessId: footerSayingAuthor.BusinessId,
+        Id: footerSayingAuthor.Id,
+        Name: footerSayingAuthor.Name,
+        Value: updatedValue,
+      })
+
+      expect(updateResponse.Message).toBe(`Space Setting "${currentBusinessName}" was successfully updated.`)
+
+      const updatedSetting = await nexudusApi.getBusinessSettingById(accessToken, footerSayingAuthor.Id)
+
+      expect(updatedSetting.Value).toBe(updatedValue)
+
+      await expect
+        .poll(async () => {
+          await homePage.goto(buildCacheBustedMPURL('/home'))
+          return await homePage.getFooterText()
+        }, { timeout: 45000 })
+        .toContain(updatedValue)
+
+      await homePage.assertFooterSayingAuthorVisible(updatedValue)
+    } finally {
+      await nexudusApi.updateBusinessSetting(accessToken, {
+        BusinessId: footerSayingAuthor.BusinessId,
+        Id: footerSayingAuthor.Id,
+        Name: footerSayingAuthor.Name,
+        Value: originalValue,
+      })
+    }
+  })
 })
 
 function buildCacheBustedMPURL(path: string) {
@@ -152,4 +243,9 @@ function selectFooterLanguageExpectation(currentLanguageLabel: string) {
       languageExpectation.candidateLabels.every((candidateLabel) => candidateLabel !== currentLanguageLabel),
     ) || footerLanguageExpectations[0]
   )
+}
+
+function buildFooterSettingValue(testTitle: string) {
+  const normalizedTitle = testTitle.replace(/[^a-z0-9]+/gi, ' ').trim()
+  return generateUniqueName(`Playwright ${normalizedTitle}`, getContributorInitials())
 }
