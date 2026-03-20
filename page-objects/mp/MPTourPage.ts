@@ -1,15 +1,23 @@
 import { expect, Locator, Page } from '@playwright/test'
 import { AbstractPage } from '../shared/AbstractPage'
 
+export type MPTourRequestDetails = {
+  email: string
+  fullName: string
+  phoneNumber: string
+}
+
 export class MPTourPage extends AbstractPage {
   readonly requestTourLink: Locator
   readonly requestTourHeading: Locator
   readonly fullNameInput: Locator
   readonly emailInput: Locator
   readonly phoneNumberInput: Locator
+  readonly termsAgreementText: Locator
   readonly requestTourButton: Locator
-  readonly validationDialog: Locator
-  readonly validationDismissButton: Locator
+  readonly completionHeading: Locator
+  readonly completionMessage: Locator
+  readonly gotItButton: Locator
 
   constructor(page: Page) {
     super(page)
@@ -18,9 +26,11 @@ export class MPTourPage extends AbstractPage {
     this.fullNameInput = page.getByRole('textbox', { name: 'Full name*' })
     this.emailInput = page.getByRole('textbox', { name: 'Email*' })
     this.phoneNumberInput = page.getByRole('textbox', { name: 'Phone number*' })
+    this.termsAgreementText = page.getByText('I agree with our terms and')
     this.requestTourButton = page.getByRole('button', { name: /Request a tour/ })
-    this.validationDialog = page.getByRole('dialog').filter({ hasText: 'Sorry, this page could not be loaded' })
-    this.validationDismissButton = page.getByRole('button', { name: 'Okay, got it!' })
+    this.completionHeading = page.getByRole('heading', { name: 'Your tour has been requested!' })
+    this.completionMessage = page.getByText('You will receive a confirmation email when your tour is confirmed.')
+    this.gotItButton = page.getByRole('button', { name: 'Got it!' })
   }
 
   async openFromLogin() {
@@ -30,19 +40,17 @@ export class MPTourPage extends AbstractPage {
     await expect(this.requestTourHeading).toBeVisible({ timeout: 30000 })
   }
 
-  async submitEmptyRequest() {
+  async fillTourRequest(details: MPTourRequestDetails) {
+    await this.fullNameInput.fill(details.fullName)
+    await this.emailInput.fill(details.email)
+    await this.phoneNumberInput.fill(details.phoneNumber)
+    await this.termsAgreementText.click()
+  }
+
+  async submitTourRequest() {
     await this.requestTourButton.click()
-  }
-
-  async assertRequiredFieldValidationVisible() {
-    await expect(this.validationDialog).toBeVisible({ timeout: 30000 })
-    await expect(this.validationDialog).toContainText('Full name is required')
-    await expect(this.validationDialog).toContainText('Email is required')
-    await expect(this.validationDialog).toContainText('This email address does not seem to be valid.')
-  }
-
-  async dismissValidationDialog() {
-    await this.validationDismissButton.click()
-    await expect(this.validationDialog).not.toBeVisible({ timeout: 30000 })
+    await expect(this.page).toHaveURL(/\/tour\/complete(?:\?.*)?$/)
+    await expect(this.completionHeading).toBeVisible({ timeout: 30000 })
+    await expect(this.completionMessage).toBeVisible({ timeout: 30000 })
   }
 }
