@@ -115,6 +115,10 @@ export class MPHomePage extends AbstractPage {
     await this.headerSignInLink.click()
   }
 
+  async goToHeroSignIn() {
+    await this.heroSignInLink.click()
+  }
+
   async clickAnonymousBrandLink(businessName: string) {
     await this.page
       .getByRole('navigation')
