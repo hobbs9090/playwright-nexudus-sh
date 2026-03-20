@@ -95,7 +95,12 @@ export class CoursePage extends AbstractPage {
 
   async uploadCourseImages(largeImagePath: string, smallImagePath: string) {
     await this.largeImageInput.setInputFiles(largeImagePath)
+    await expect(this.saveChangesButton).toBeEnabled({ timeout: 15000 })
+    await this.saveCourseChanges()
+    await this.openCurrentCourse()
+
     await this.smallImageInput.setInputFiles(smallImagePath)
+    await expect(this.saveChangesButton).toBeEnabled({ timeout: 15000 })
     await this.saveCourseChanges()
   }
 
@@ -156,5 +161,12 @@ export class CoursePage extends AbstractPage {
 
     const randomIndex = Math.floor(Math.random() * hostOptionCount)
     await hostOptions.nth(randomIndex).click()
+  }
+
+  private async openCurrentCourse() {
+    const coursePath = new URL(this.page.url()).pathname
+    await this.page.goto(coursePath)
+    await this.dismissBlockingDialogs()
+    await expect(this.courseDialog).toBeVisible({ timeout: 30000 })
   }
 }
