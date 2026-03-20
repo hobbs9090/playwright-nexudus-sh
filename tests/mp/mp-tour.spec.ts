@@ -1,12 +1,14 @@
 import { expect, test } from '@playwright/test'
+import { generateUniqueName, getContributorInitials } from '../../helpers'
 import { MPTourPage } from '../../page-objects/mp/MPTourPage'
 
 function buildUniqueTourRequestDetails() {
-  const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  const fullName = generateUniqueName('Playwright Tour Request', getContributorInitials())
+  const emailSlug = fullName.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.+|\.+$/g, '')
 
   return {
-    email: `pw.tour.${uniqueSuffix}@gmail.com`,
-    fullName: `Playwright Tour Request ${uniqueSuffix}`,
+    email: `pw.tour.${emailSlug}@gmail.com`,
+    fullName,
     phoneNumber: '+447700900123',
   }
 }
@@ -28,7 +30,6 @@ test.describe('MP public request a tour', () => {
     const requestDetails = buildUniqueTourRequestDetails()
 
     await tourPage.fillTourRequest(requestDetails)
-    await page.pause()
     await tourPage.submitTourRequest()
 
     await expect(page).toHaveURL(/\/tour\/complete(?:\?.*)?$/)
