@@ -1,5 +1,12 @@
 import { requireEnvVar } from './helpers'
 import { getConfiguredBaseURL } from './nexudus-config'
+export type { ConfiguredLocationSelector } from './location-selectors'
+export {
+  commonLocationSelectorLabels,
+  configuredLocationSelectorEnvVars,
+  defaultLocationSelectorLabels,
+  getConfiguredLocationSelectorLabel,
+} from './location-selectors'
 
 export type TestEnvironment = {
   baseUrlEnvVar: string

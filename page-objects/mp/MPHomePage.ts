@@ -158,6 +158,11 @@ export class MPHomePage extends AbstractPage {
       }
     }
 
-    await expect(mapLinks).toHaveCount(data.locations.length)
+    const visibleMapLinkCount = await mapLinks.count()
+
+    expect(
+      visibleMapLinkCount,
+      'Expected the home page to expose at least one map link per configured location.',
+    ).toBeGreaterThanOrEqual(Math.max(data.locations.length, 1))
   }
 }

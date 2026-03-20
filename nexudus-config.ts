@@ -1,17 +1,35 @@
+import { defaultLocationSelectorLabels, getConfiguredLocationSelectorLabel } from './location-selectors'
+
 export const nexudusBaseURLs = {
   ap: 'https://dashboard-staging.nexudus.com/',
-  mp: 'https://coworkingnetworksteven.spacesstaging.nexudus.com/',
+  mp: 'https://coworkingsohosteven.spacesstaging.nexudus.com/',
+} as const
+
+export const nexudusMpBaseURLsByLocationLabel: Record<string, string> = {
+  'Coworking Network (STEVEN)': 'https://coworkingnetworksteven.spacesstaging.nexudus.com/',
+  'Coworking Central Street (STEVEN)': 'https://coworkingcentralstreetsteven.spacesstaging.nexudus.com/',
+  'Coworking Soho (STEVEN)': 'https://coworkingsohosteven.spacesstaging.nexudus.com/',
 } as const
 
 const defaultBaseURLsByEnvVar: Record<string, string> = {
   NEXUDUS_AP_BASE_URL: nexudusBaseURLs.ap,
-  NEXUDUS_MP_BASE_URL: nexudusBaseURLs.mp,
-  NEXUDUS_API_BASE_URL: nexudusBaseURLs.mp,
+  NEXUDUS_MP_BASE_URL: nexudusMpBaseURLsByLocationLabel[defaultLocationSelectorLabels.mp],
+  NEXUDUS_API_BASE_URL: nexudusMpBaseURLsByLocationLabel[defaultLocationSelectorLabels.mp],
 }
 
 export function getConfiguredBaseURL(baseUrlEnvVar: string) {
   if (baseUrlEnvVar === 'NEXUDUS_API_BASE_URL') {
     return getConfiguredApiBaseURL()
+  }
+
+  if (baseUrlEnvVar === 'NEXUDUS_MP_BASE_URL') {
+    const configuredBaseURL = process.env.NEXUDUS_MP_BASE_URL?.trim()
+
+    if (configuredBaseURL && !isKnownSharedMpBaseURL(configuredBaseURL)) {
+      return configuredBaseURL
+    }
+
+    return getConfiguredMpBaseURL()
   }
 
   return process.env[baseUrlEnvVar]?.trim() || defaultBaseURLsByEnvVar[baseUrlEnvVar] || ''
@@ -24,7 +42,23 @@ export function getConfiguredApiBaseURL() {
     return getURLOrigin(configuredBaseURL)
   }
 
-  return getURLOrigin(process.env.NEXUDUS_MP_BASE_URL?.trim() || defaultBaseURLsByEnvVar.NEXUDUS_MP_BASE_URL)
+  return getURLOrigin(getConfiguredBaseURL('NEXUDUS_MP_BASE_URL'))
+}
+
+export function getConfiguredMpBaseURL() {
+  const configuredLocationLabel = getConfiguredLocationSelectorLabel('mp')
+
+  return (
+    nexudusMpBaseURLsByLocationLabel[configuredLocationLabel] ||
+    process.env.NEXUDUS_MP_BASE_URL?.trim() ||
+    defaultBaseURLsByEnvVar.NEXUDUS_MP_BASE_URL
+  )
+}
+
+function isKnownSharedMpBaseURL(url: string) {
+  const urlOrigin = getURLOrigin(url)
+
+  return Object.values(nexudusMpBaseURLsByLocationLabel).some((knownBaseURL) => getURLOrigin(knownBaseURL) === urlOrigin)
 }
 
 export function getURLOrigin(url: string) {

@@ -10,8 +10,16 @@ export type NexudusBearerTokenResponse = {
 }
 
 export type NexudusCurrentUserResponse = {
+  Businesses?: Array<number | string> | null
   DefaultBusinessId?: number | string | null
   DefaultBusinessName?: string | null
+  [key: string]: unknown
+}
+
+export type NexudusBusinessResponse = {
+  Id: number
+  Name?: string | null
+  ToStringText?: string | null
   [key: string]: unknown
 }
 
@@ -170,6 +178,16 @@ export class NexudusApiClient {
     await expectOk(response, 'fetch the current Nexudus user')
 
     return (await response.json()) as NexudusCurrentUserResponse
+  }
+
+  async getBusiness(accessToken: string, businessId: number) {
+    const response = await this.request.get(`/api/sys/businesses/${businessId}`, {
+      headers: getAuthorizationHeaders(accessToken),
+    })
+
+    await expectOk(response, `fetch business ${businessId}`)
+
+    return (await response.json()) as NexudusBusinessResponse
   }
 
   async getCourse(accessToken: string, courseId: number) {

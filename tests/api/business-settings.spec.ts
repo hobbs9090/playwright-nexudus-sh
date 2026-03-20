@@ -1,7 +1,8 @@
-import type { NexudusCurrentUserResponse } from '../../api/NexudusApiClient'
+import type { NexudusApiClient, NexudusCurrentUserResponse } from '../../api/NexudusApiClient'
 import { generateUniqueName, getContributorInitials } from '../../helpers'
 import { getConfiguredBaseURL } from '../../nexudus-config'
 import { MPHomePage } from '../../page-objects/mp/MPHomePage'
+import { getConfiguredLocationSelectorLabel } from '../../test-environments'
 import { expect, test } from './api-test'
 
 test.describe('Nexudus API business settings', () => {
@@ -12,7 +13,7 @@ test.describe('Nexudus API business settings', () => {
     test.slow()
 
     const currentUser = await nexudusApi.getCurrentUser(accessToken)
-    const currentBusinessId = getCurrentBusinessId(currentUser)
+    const currentBusinessId = await getConfiguredMpBusinessId(nexudusApi, accessToken, currentUser)
     const footerSeed = buildFooterSeed()
     const homePage = new MPHomePage(page)
     const mpHomeURL = buildMPHomeURL()
@@ -100,7 +101,7 @@ test.describe('Nexudus API business settings', () => {
     test.slow()
 
     const currentUser = await nexudusApi.getCurrentUser(accessToken)
-    const currentBusinessId = getCurrentBusinessId(currentUser)
+    const currentBusinessId = await getConfiguredMpBusinessId(nexudusApi, accessToken, currentUser)
     const calendarDefaultView = await nexudusApi.getBusinessSetting(accessToken, {
       businessId: currentBusinessId,
       name: 'Calendars.DefaultView',
@@ -187,6 +188,44 @@ function getCurrentBusinessId(currentUser: NexudusCurrentUserResponse) {
   ).toBeTruthy()
 
   return currentBusinessId
+}
+
+async function getConfiguredMpBusinessId(
+  nexudusApi: NexudusApiClient,
+  accessToken: string,
+  currentUser: NexudusCurrentUserResponse,
+) {
+  const configuredBusinessName = getConfiguredLocationSelectorLabel('mp')
+  const defaultBusinessId = getCurrentBusinessId(currentUser)
+  const defaultBusinessName = currentUser.DefaultBusinessName?.toString().trim()
+
+  if (defaultBusinessName === configuredBusinessName) {
+    return defaultBusinessId
+  }
+
+  const accessibleBusinessIds = (currentUser.Businesses || [])
+    .map((businessId) => Number(businessId))
+    .filter((businessId) => Number.isInteger(businessId) && businessId > 0)
+
+  expect(
+    accessibleBusinessIds.length,
+    `Expected the current API user to expose at least one accessible business id when resolving "${configuredBusinessName}".`,
+  ).toBeGreaterThan(0)
+
+  const accessibleBusinesses = await Promise.all(
+    accessibleBusinessIds.map((businessId) => nexudusApi.getBusiness(accessToken, businessId)),
+  )
+
+  const configuredBusiness = accessibleBusinesses.find(
+    (business) => business.Name?.toString().trim() === configuredBusinessName,
+  )
+
+  expect(
+    configuredBusiness?.Id,
+    `Expected the current API user to have access to the configured MP business "${configuredBusinessName}".`,
+  ).toBeTruthy()
+
+  return configuredBusiness!.Id
 }
 
 function getUpdatedCalendarDefaultView(currentCalendarDefaultView: string | null) {

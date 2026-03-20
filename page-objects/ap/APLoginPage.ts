@@ -1,5 +1,5 @@
 import { expect, Locator, Page } from '@playwright/test'
-import { getCredentials } from '../../test-environments'
+import { getConfiguredLocationSelectorLabel, getCredentials } from '../../test-environments'
 import { AbstractPage } from '../shared/AbstractPage'
 
 export class APLoginPage extends AbstractPage {
@@ -9,6 +9,7 @@ export class APLoginPage extends AbstractPage {
   readonly errorMessage: Locator
   readonly dashboardLink: Locator
   readonly globalSearchInput: Locator
+  readonly locationMenu: Locator
 
   constructor(page: Page) {
     super(page)
@@ -18,6 +19,7 @@ export class APLoginPage extends AbstractPage {
     this.errorMessage = page.locator('.euiText')
     this.dashboardLink = page.getByRole('link', { name: 'Dashboard' }).first()
     this.globalSearchInput = page.getByRole('textbox', { name: /Search everywhere for/i })
+    this.locationMenu = page.locator('[aria-label="Locations menu"]').first()
   }
 
   async login(email?: string, password?: string, valid: boolean = true) {
@@ -44,6 +46,7 @@ export class APLoginPage extends AbstractPage {
           { timeout: 30000 }
         )
         .toBe(true)
+      await this.ensureConfiguredLocationSelected()
       return
     }
 
@@ -58,5 +61,22 @@ export class APLoginPage extends AbstractPage {
   async assertDashboardVisible() {
     await expect(this.dashboardLink).toBeVisible()
     await expect(this.globalSearchInput).toBeVisible()
+  }
+
+  async ensureConfiguredLocationSelected(locationLabel: string = getConfiguredLocationSelectorLabel('ap')) {
+    await expect(this.locationMenu).toBeVisible()
+
+    if ((await this.locationMenu.innerText()).trim() === locationLabel) {
+      return
+    }
+
+    await this.dismissBlockingDialogs()
+    await this.locationMenu.dispatchEvent('click')
+
+    const targetLocationOption = this.page.getByRole('option').filter({ hasText: locationLabel }).first()
+
+    await expect(targetLocationOption).toBeVisible({ timeout: 10000 })
+    await targetLocationOption.dispatchEvent('click')
+    await expect(this.locationMenu).toContainText(locationLabel, { timeout: 30000 })
   }
 }
