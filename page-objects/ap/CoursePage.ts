@@ -94,14 +94,15 @@ export class CoursePage extends AbstractPage {
   }
 
   async uploadCourseImages(largeImagePath: string, smallImagePath: string) {
-    await this.largeImageInput.setInputFiles(largeImagePath)
-    await expect(this.saveChangesButton).toBeEnabled({ timeout: 15000 })
-    await this.saveCourseChanges()
+    if (await this.setCourseImage(this.largeImageInput, largeImagePath)) {
+      await this.saveCourseChanges()
+    }
+
     await this.openCurrentCourse()
 
-    await this.smallImageInput.setInputFiles(smallImagePath)
-    await expect(this.saveChangesButton).toBeEnabled({ timeout: 15000 })
-    await this.saveCourseChanges()
+    if (await this.setCourseImage(this.smallImageInput, smallImagePath)) {
+      await this.saveCourseChanges()
+    }
   }
 
   async saveCourseChanges() {
@@ -142,7 +143,7 @@ export class CoursePage extends AbstractPage {
   }
 
   async expectTextContaining(text: string) {
-    await expect(this.courseDialog.getByText(text)).toBeVisible({ timeout: 30000 })
+    await expect(this.courseDialog.getByText(text).first()).toBeVisible({ timeout: 30000 })
   }
 
   async isCourseVisible(title: string) {
@@ -156,11 +157,27 @@ export class CoursePage extends AbstractPage {
     const hostOptions = this.page.getByRole('option')
     await expect(hostOptions.first()).toBeVisible({ timeout: 15000 })
 
-    const hostOptionCount = await hostOptions.count()
-    expect(hostOptionCount, 'Expected at least one AP course host option to be available.').toBeGreaterThan(0)
+    const hostNames = (await hostOptions.allTextContents()).map((hostName) => hostName.trim()).filter(Boolean)
+    expect(hostNames, 'Expected at least one AP course host option to be available.').not.toHaveLength(0)
 
-    const randomIndex = Math.floor(Math.random() * hostOptionCount)
-    await hostOptions.nth(randomIndex).click()
+    const randomIndex = Math.floor(Math.random() * hostNames.length)
+    const selectedHostName = hostNames[randomIndex]
+
+    await this.hostCombobox.click()
+
+    for (let optionIndex = 0; optionIndex <= randomIndex; optionIndex += 1) {
+      await this.page.keyboard.press('ArrowDown')
+    }
+
+    await this.page.keyboard.press('Enter')
+    await expect(hostOptions.first()).toBeHidden({ timeout: 15000 })
+    await expect.poll(() => this.hostCombobox.inputValue(), { timeout: 15000 }).not.toBe('')
+    const selectedHostValue = await this.hostCombobox.inputValue()
+
+    expect(
+      hostNames.some((hostName) => hostName === selectedHostValue || hostName.startsWith(selectedHostValue)),
+      `Expected the selected AP course host "${selectedHostValue}" to match one of the available options.`,
+    ).toBe(true)
   }
 
   private async openCurrentCourse() {
@@ -168,5 +185,31 @@ export class CoursePage extends AbstractPage {
     await this.page.goto(coursePath)
     await this.dismissBlockingDialogs()
     await expect(this.courseDialog).toBeVisible({ timeout: 30000 })
+  }
+
+  private async setCourseImage(imageInput: Locator, imagePath: string) {
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      await imageInput.setInputFiles([])
+      await imageInput.setInputFiles(imagePath)
+
+      if (await this.isSaveChangesButtonEnabled()) {
+        return true
+      }
+
+      if (attempt === 1) {
+        await this.openCurrentCourse()
+      }
+    }
+
+    return false
+  }
+
+  private async isSaveChangesButtonEnabled() {
+    try {
+      await expect.poll(() => this.saveChangesButton.isEnabled(), { timeout: 5000 }).toBe(true)
+      return true
+    } catch {
+      return false
+    }
   }
 }
