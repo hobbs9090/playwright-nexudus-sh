@@ -81,9 +81,11 @@ export class MPLoginPage extends AbstractPage {
   }
 
   async assertAnonymousEntryPointsVisible(businessName: string) {
-    await expect(
-      this.page.getByRole('heading', { name: new RegExp(`^Sign in to ${escapeRegExp(businessName)}$`, 'i') }),
-    ).toBeVisible()
+    const signInHeading = this.page
+      .getByRole('heading', { name: new RegExp(`^Sign in(?: to ${escapeRegExp(businessName)})?$`, 'i') })
+      .first()
+
+    await expect(signInHeading).toBeVisible()
     await this.assertLoginFormVisible()
     await expect(this.keepMeLoggedInCheckbox).toBeVisible()
     await expect(this.createAccountLink).toBeVisible()

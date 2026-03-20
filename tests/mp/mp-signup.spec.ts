@@ -46,7 +46,7 @@ test.describe('MP staging account creation', () => {
     const details = createSignupDetails('Individual')
 
     await signupPage.openSignupForm()
-    await signupPage.assertSignupFormVisible()
+    await signupPage.assertSignupFormVisible('Individual')
     await signupPage.submitSignupForm(details)
     await signupPage.goToDashboard()
     await loginPage.assertDashboardVisible(details.fullName)
@@ -58,7 +58,7 @@ test.describe('MP staging account creation', () => {
     const details = createSignupDetails('Company')
 
     await signupPage.openSignupForm()
-    await signupPage.assertSignupFormVisible()
+    await signupPage.assertSignupFormVisible('Company')
     await signupPage.submitSignupForm(details)
     await signupPage.goToDashboard()
     await loginPage.assertDashboardVisible(details.fullName)

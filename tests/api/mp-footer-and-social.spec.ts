@@ -4,6 +4,7 @@ import { getConfiguredBaseURL } from '../../nexudus-config'
 import { MPHomePage } from '../../page-objects/mp/MPHomePage'
 import { MPLoginPage } from '../../page-objects/mp/MPLoginPage'
 import { expect, test } from './api-test'
+import { getConfiguredMpBusinessContext } from './configured-mp-business'
 
 type FooterHeadingExpectation = {
   candidateLabels: string[]
@@ -80,9 +81,10 @@ test.describe('MP footer and social settings', () => {
     expect(accessToken.trim(), 'Expected the API suite beforeEach to retrieve a bearer token before each test.').toBeTruthy()
 
     const currentUser = await nexudusApi.getCurrentUser(accessToken)
+    const configuredMpBusiness = await getConfiguredMpBusinessContext(nexudusApi, accessToken, currentUser)
 
-    currentBusinessId = getCurrentBusinessId(currentUser)
-    currentBusinessName = getCurrentBusinessName(currentUser)
+    currentBusinessId = configuredMpBusiness.businessId
+    currentBusinessName = configuredMpBusiness.businessName
     currentUserFullName = getCurrentUserFullName(currentUser)
     homePage = new MPHomePage(page)
     loginPage = new MPLoginPage(page)
@@ -286,25 +288,6 @@ function buildCacheBustedMPURL(path: string) {
   url.searchParams.set('playwright_footer_suite', Date.now().toString())
 
   return url.toString()
-}
-
-function getCurrentBusinessId(currentUser: NexudusCurrentUserResponse) {
-  const currentBusinessId = Number(currentUser.DefaultBusinessId)
-
-  expect(
-    Number.isInteger(currentBusinessId) && currentBusinessId > 0,
-    'Expected the current API user profile to expose a numeric default business id.',
-  ).toBeTruthy()
-
-  return currentBusinessId
-}
-
-function getCurrentBusinessName(currentUser: NexudusCurrentUserResponse) {
-  const currentBusinessName = String(currentUser.DefaultBusinessName || '').trim()
-
-  expect(currentBusinessName, 'Expected the current API user profile to expose a default business name.').toBeTruthy()
-
-  return currentBusinessName
 }
 
 function getCurrentUserFullName(currentUser: NexudusCurrentUserResponse) {

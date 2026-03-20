@@ -1,9 +1,9 @@
 import type { Page } from '@playwright/test'
-import type { NexudusCurrentUserResponse } from '../../api/NexudusApiClient'
 import { getConfiguredBaseURL } from '../../nexudus-config'
 import { MPBookingsPage } from '../../page-objects/mp/MPBookingsPage'
 import { getCredentials } from '../../test-environments'
 import { expect, test } from './api-test'
+import { getConfiguredMpBusinessContext } from './configured-mp-business'
 
 test.describe('MP calendar business settings', () => {
   let bookingsPage: MPBookingsPage
@@ -14,10 +14,11 @@ test.describe('MP calendar business settings', () => {
     expect(accessToken.trim(), 'Expected the API suite beforeEach to retrieve a bearer token before each test.').toBeTruthy()
 
     const currentUser = await nexudusApi.getCurrentUser(accessToken)
+    const configuredMpBusiness = await getConfiguredMpBusinessContext(nexudusApi, accessToken, currentUser)
 
     bookingsPage = new MPBookingsPage(page)
-    currentBusinessId = getCurrentBusinessId(currentUser)
-    currentBusinessName = getCurrentBusinessName(currentUser)
+    currentBusinessId = configuredMpBusiness.businessId
+    currentBusinessName = configuredMpBusiness.businessName
   })
 
   test('Calendars.DefaultView updates the business setting by API and shows the configured view in MP bookings @api @dg', async ({
@@ -94,25 +95,6 @@ function buildCacheBustedMPBookingsURL() {
   url.searchParams.set('playwright_calendar_default_view', Date.now().toString())
 
   return url.toString()
-}
-
-function getCurrentBusinessId(currentUser: NexudusCurrentUserResponse) {
-  const currentBusinessId = Number(currentUser.DefaultBusinessId)
-
-  expect(
-    Number.isInteger(currentBusinessId) && currentBusinessId > 0,
-    'Expected the current API user profile to expose a numeric default business id.',
-  ).toBeTruthy()
-
-  return currentBusinessId
-}
-
-function getCurrentBusinessName(currentUser: NexudusCurrentUserResponse) {
-  const currentBusinessName = String(currentUser.DefaultBusinessName || '').trim()
-
-  expect(currentBusinessName, 'Expected the current API user profile to expose a default business name.').toBeTruthy()
-
-  return currentBusinessName
 }
 
 function getUpdatedCalendarDefaultView(currentCalendarDefaultView: string | null) {

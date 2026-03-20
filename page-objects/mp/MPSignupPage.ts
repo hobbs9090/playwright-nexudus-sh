@@ -24,6 +24,7 @@ export type MPSignupDetails = {
 }
 
 export class MPSignupPage extends AbstractPage {
+  readonly billingDetailsGroup: Locator
   readonly createAccountLink: Locator
   readonly dismissStartupNoticeButton: Locator
   readonly continueWithoutPlanButton: Locator
@@ -38,8 +39,10 @@ export class MPSignupPage extends AbstractPage {
   readonly billingPostCodeInput: Locator
   readonly billingEmailInput: Locator
   readonly taxIdNumberInput: Locator
+  readonly otherDetailsGroup: Locator
+  readonly personalAddressGroup: Locator
+  readonly personalDetailsGroup: Locator
   readonly addressInput: Locator
-  readonly countrySelect: Locator
   readonly stateInput: Locator
   readonly cityInput: Locator
   readonly postCodeInput: Locator
@@ -58,19 +61,28 @@ export class MPSignupPage extends AbstractPage {
     this.accountTypeSelect = page.getByLabel('Type')
     this.fullNameInput = page.getByRole('textbox', { name: 'Full name*' })
     this.emailInput = page.getByRole('textbox', { name: 'Email*' })
-    this.companyNameInput = page.getByRole('textbox', { name: 'Company/Org. name*' })
-    this.billingAddressInput = page.locator('textarea[name="BillingAddress"]')
-    this.billingStateInput = page.locator('input[name="BillingState"]')
-    this.billingCityInput = page.locator('input[name="BillingCityName"]')
-    this.billingPostCodeInput = page.locator('input[name="BillingPostCode"]')
-    this.billingEmailInput = page.locator('input[name="BillingEmail"]')
-    this.taxIdNumberInput = page.locator('input[name="TaxIDNumber"]')
-    this.addressInput = page.locator('textarea[name="Address"]')
-    this.countrySelect = page.locator('select[name="CountryId"]')
-    this.stateInput = page.locator('input[name="State"]')
-    this.cityInput = page.locator('input[name="CityName"]')
-    this.postCodeInput = page.locator('input[name="PostCode"]')
-    this.petPreferenceSelect = page.locator('select[name="Custom1"]')
+    this.personalDetailsGroup = page.getByRole('group').filter({ has: page.getByRole('heading', { name: 'Personal details' }) }).first()
+    this.billingDetailsGroup = page
+      .getByRole('group')
+      .filter({ has: page.getByRole('heading', { name: 'Billing/Company details' }) })
+      .first()
+    this.personalAddressGroup = page
+      .getByRole('group')
+      .filter({ has: page.getByRole('heading', { name: 'Personal Address' }) })
+      .first()
+    this.otherDetailsGroup = page.getByRole('group').filter({ has: page.getByRole('heading', { name: 'Other Details' }) }).first()
+    this.companyNameInput = this.billingDetailsGroup.getByRole('textbox', { name: 'Company/Org. name' })
+    this.billingAddressInput = this.billingDetailsGroup.getByRole('textbox').nth(1)
+    this.billingStateInput = this.billingDetailsGroup.getByRole('textbox').nth(2)
+    this.billingCityInput = this.billingDetailsGroup.getByRole('textbox').nth(3)
+    this.billingPostCodeInput = this.billingDetailsGroup.getByRole('textbox').nth(4)
+    this.billingEmailInput = this.billingDetailsGroup.getByRole('textbox', { name: 'Send my invoices to' })
+    this.taxIdNumberInput = this.billingDetailsGroup.getByRole('textbox', { name: 'VAT / Tax number' })
+    this.addressInput = this.personalAddressGroup.getByRole('textbox').nth(0)
+    this.stateInput = this.personalAddressGroup.getByRole('textbox').nth(1)
+    this.cityInput = this.personalAddressGroup.getByRole('textbox').nth(2)
+    this.postCodeInput = this.personalAddressGroup.getByRole('textbox').nth(3)
+    this.petPreferenceSelect = page.getByRole('combobox', { name: 'Cats or Dogs*' })
     this.termsCheckbox = page.locator('#GeneralTermsAcceptedOnline')
     this.termsText = page.getByText('I agree with our terms and')
     this.completionHeading = page.getByRole('heading', { name: /Welcome to / })
@@ -117,7 +129,14 @@ export class MPSignupPage extends AbstractPage {
 
     await this.fullNameInput.fill(details.fullName)
     await this.emailInput.fill(details.email)
-    await this.companyNameInput.fill(details.companyName)
+
+    if (details.accountType === 'Company') {
+      await expect(this.companyNameInput).toBeVisible()
+      await this.companyNameInput.fill(details.companyName)
+    } else if (await this.companyNameInput.isVisible().catch(() => false)) {
+      await this.companyNameInput.fill(details.companyName)
+    }
+
     await this.billingAddressInput.fill(details.billingAddress)
     await this.billingStateInput.fill(details.billingState)
     await this.billingCityInput.fill(details.billingCity)
@@ -125,36 +144,43 @@ export class MPSignupPage extends AbstractPage {
     await this.billingEmailInput.fill(details.billingEmail)
     await this.taxIdNumberInput.fill(details.taxIdNumber)
     await this.addressInput.fill(details.address)
-    await this.countrySelect.selectOption({ label: details.country })
     await this.stateInput.fill(details.state)
     await this.cityInput.fill(details.city)
     await this.postCodeInput.fill(details.postCode)
     await this.petPreferenceSelect.selectOption({ label: details.petPreference })
   }
 
-  async assertSignupFormVisible() {
+  async assertSignupFormVisible(accountType?: MPSignupAccountType) {
     for (const field of [
       this.accountTypeSelect,
       this.fullNameInput,
       this.emailInput,
-      this.companyNameInput,
-      this.billingAddressInput,
-      this.billingStateInput,
-      this.billingCityInput,
-      this.billingPostCodeInput,
-      this.billingEmailInput,
-      this.taxIdNumberInput,
-      this.addressInput,
-      this.countrySelect,
-      this.stateInput,
-      this.cityInput,
-      this.postCodeInput,
       this.petPreferenceSelect,
       this.termsText,
       this.continueButton,
     ]) {
       await expect(field).toBeVisible()
     }
+
+    for (const sectionHeading of ['Personal details', 'Billing/Company details', 'Personal Address', 'Other Details']) {
+      await expect(this.page.getByRole('heading', { name: sectionHeading })).toBeVisible()
+    }
+
+    for (const optionLabel of ['Individual', 'Company']) {
+      await expect(this.accountTypeSelect.getByRole('option', { name: optionLabel })).toBeAttached()
+    }
+
+    if (accountType === 'Company') {
+      await this.accountTypeSelect.selectOption({ label: accountType })
+      await expect(this.companyNameInput).toBeVisible()
+      return
+    }
+
+    const companyFieldVisible = await this.companyNameInput.isVisible().catch(() => false)
+    expect(
+      typeof companyFieldVisible,
+      'Expected the signup form company field visibility check to complete.',
+    ).toBe('boolean')
   }
 
   async submitSignupForm(details: MPSignupDetails) {

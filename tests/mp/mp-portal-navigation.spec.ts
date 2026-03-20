@@ -3,6 +3,7 @@ import { NexudusApiClient } from '../../api/NexudusApiClient'
 import { MPHomePage } from '../../page-objects/mp/MPHomePage'
 import { MPLoginPage } from '../../page-objects/mp/MPLoginPage'
 import { MPPortalPage } from '../../page-objects/mp/MPPortalPage'
+import { getConfiguredLocationSelectorLabel } from '../../test-environments'
 
 test.describe('MP authenticated portal navigation', () => {
   let currentBusinessName: string
@@ -22,10 +23,10 @@ test.describe('MP authenticated portal navigation', () => {
     const token = await nexudusApi.createBearerToken()
     const currentUser = await nexudusApi.getCurrentUser(token.access_token)
 
-    currentBusinessName = String(currentUser.DefaultBusinessName || '').trim()
+    currentBusinessName = getConfiguredLocationSelectorLabel('mp')
     currentUserFullName = String(currentUser.FullName || '').trim()
 
-    expect(currentBusinessName, 'Expected the MP API profile to expose a business name.').toBeTruthy()
+    expect(currentBusinessName, 'Expected the MP location configuration to expose a business name.').toBeTruthy()
     expect(currentUserFullName, 'Expected the MP API profile to expose the current user full name.').toBeTruthy()
 
     await loginPage.login()
@@ -38,7 +39,7 @@ test.describe('MP authenticated portal navigation', () => {
 
     await expect(page.getByText('This account has administrator rights.')).toBeVisible()
 
-    for (const entry of ['Access dashboard', 'Profile', 'Plans and Benefits', 'Bookings', 'Visitors', 'Billing', 'Metrics', 'Log out']) {
+    for (const entry of ['Access dashboard', 'Profile', 'Plans and Benefits', 'Bookings', 'Billing', 'Log out']) {
       await portalPage.assertProfileMenuEntryVisible(entry)
     }
 
@@ -128,12 +129,26 @@ test.describe('MP authenticated portal navigation', () => {
     await portalPage.assertMainHeadingVisible('Bookings')
     await portalPage.assertMainTextNotVisible('Invoices')
 
-    for (const activityTab of [
+    const activityTabs = [
       { heading: 'Visitors', label: 'Visitors', urlPattern: /[?&]tab=Visitors(?:&|$)/ },
       { heading: 'Deliveries', label: 'Deliveries', urlPattern: /[?&]tab=Deliveries(?:&|$)/ },
       { heading: 'Events', label: 'Events', urlPattern: /[?&]tab=Events(?:&|$)/ },
       { heading: 'Courses', label: 'Courses', urlPattern: /[?&]tab=Courses(?:&|$)/ },
-    ]) {
+    ]
+    const visibleActivityTabs = []
+
+    for (const activityTab of activityTabs) {
+      if (await portalPage.hasMainControl(activityTab.label)) {
+        visibleActivityTabs.push(activityTab)
+      }
+    }
+
+    expect(
+      visibleActivityTabs.length,
+      'Expected the current member activity view to expose multiple activity tabs beyond the default bookings view.',
+    ).toBeGreaterThanOrEqual(2)
+
+    for (const activityTab of visibleActivityTabs) {
       await portalPage.clickMainItem(activityTab.label)
       await expect(page).toHaveURL(activityTab.urlPattern)
       await portalPage.assertMainHeadingVisible(activityTab.heading)

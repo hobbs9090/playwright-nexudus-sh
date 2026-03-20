@@ -94,14 +94,23 @@ export class CoursePage extends AbstractPage {
   }
 
   async uploadCourseImages(largeImagePath: string, smallImagePath: string) {
-    if (await this.setCourseImage(this.largeImageInput, largeImagePath)) {
+    const largeImageSaved = await this.setCourseImage(this.largeImageInput, largeImagePath)
+
+    if (largeImageSaved) {
       await this.saveCourseChanges()
     }
 
     await this.openCurrentCourse()
 
-    if (await this.setCourseImage(this.smallImageInput, smallImagePath)) {
+    const smallImageSaved = await this.setCourseImage(this.smallImageInput, smallImagePath)
+
+    if (smallImageSaved) {
       await this.saveCourseChanges()
+    }
+
+    return {
+      largeImageSaved,
+      smallImageSaved,
     }
   }
 

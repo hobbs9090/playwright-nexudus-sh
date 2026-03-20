@@ -99,6 +99,10 @@ export class MPPortalPage extends AbstractPage {
     await expect(await this.getVisibleControl(this.main, label)).toBeVisible()
   }
 
+  async hasMainControl(label: string) {
+    return this.hasVisibleControl(this.main, label)
+  }
+
   private async getVisibleControl(container: Locator, label: string) {
     const roleNamePattern = new RegExp(`\\b${escapeRegExp(label)}\\b`, 'i')
     const candidates = [
