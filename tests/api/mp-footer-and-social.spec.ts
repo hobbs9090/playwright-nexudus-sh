@@ -16,6 +16,7 @@ type FooterLanguageExpectation = {
 }
 
 type SocialSettingExpectation = {
+  expectedFailureReason?: string
   name: string
   title: string
   url: string
@@ -50,7 +51,20 @@ const footerLanguageExpectations: FooterLanguageExpectation[] = [
 
 const socialSettingExpectations: SocialSettingExpectation[] = [
   { name: 'Social.Facebook', title: 'Social.Facebook', url: 'http://www.facebook.com' },
+  {
+    expectedFailureReason: 'Current MP staging does not render a Flickr footer link after Social.Flickr is updated.',
+    name: 'Social.Flickr',
+    title: 'Social.Flickr',
+    url: 'http://www.flickr.com',
+  },
   { name: 'Social.Instagram', title: 'Social.Instagram', url: 'http://www.instagram.com' },
+  {
+    expectedFailureReason:
+      'Current MP staging rewrites the Twitter/X footer href instead of preserving http://www.x.com.',
+    name: 'Social.Twitter',
+    title: 'Social.Twitter',
+    url: 'http://www.x.com',
+  },
 ]
 
 test.describe('MP footer and social settings', () => {
@@ -218,6 +232,10 @@ test.describe('MP footer and social settings', () => {
       accessToken,
       nexudusApi,
     }) => {
+      if (socialSettingExpectation.expectedFailureReason) {
+        test.fail(true, socialSettingExpectation.expectedFailureReason)
+      }
+
       const socialSetting = await nexudusApi.getBusinessSetting(accessToken, {
         businessId: currentBusinessId,
         name: socialSettingExpectation.name,
