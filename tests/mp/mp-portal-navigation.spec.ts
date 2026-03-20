@@ -118,4 +118,118 @@ test.describe('MP authenticated portal navigation', () => {
     await portalPage.assertMainHeadingVisible('Notifications')
     await portalPage.assertMainTextVisible('When to receive notifications')
   })
+
+  test('access my activity drills through the current member activity tabs', async ({ page }) => {
+    await portalPage.clickSidebarItem('My activity')
+
+    await expect(page).toHaveURL(/\/my-activity(?:\?.*)?$/)
+    await expect(page).toHaveTitle(/My Activity/i)
+    await portalPage.assertMainHeadingVisible('My Activity')
+    await portalPage.assertMainHeadingVisible('Bookings')
+    await portalPage.assertMainTextNotVisible('Invoices')
+
+    for (const activityTab of [
+      { heading: 'Visitors', label: 'Visitors', urlPattern: /[?&]tab=Visitors(?:&|$)/ },
+      { heading: 'Deliveries', label: 'Deliveries', urlPattern: /[?&]tab=Deliveries(?:&|$)/ },
+      { heading: 'Events', label: 'Events', urlPattern: /[?&]tab=Events(?:&|$)/ },
+      { heading: 'Courses', label: 'Courses', urlPattern: /[?&]tab=Courses(?:&|$)/ },
+    ]) {
+      await portalPage.clickMainItem(activityTab.label)
+      await expect(page).toHaveURL(activityTab.urlPattern)
+      await portalPage.assertMainHeadingVisible(activityTab.heading)
+    }
+  })
+
+  test('access building opens availability and confirms environment is not exposed in the current member navigation', async ({
+    page,
+  }) => {
+    await portalPage.clickSidebarItem('Building')
+    await portalPage.assertSidebarItemVisible('Availability')
+    await portalPage.assertSidebarItemNotVisible('Environment')
+
+    await portalPage.clickSidebarItem('Availability')
+    await expect(page).toHaveURL(/\/my-building\/capacity(?:\?.*)?$/)
+    await expect(page).toHaveTitle(/Availability/i)
+    await portalPage.assertMainHeadingVisible('Availability')
+  })
+
+  test('access account opens the current profile page and confirms the legacy account tabs are not exposed', async ({
+    page,
+  }) => {
+    await portalPage.clickProfileMenuEntry(currentUserFullName, 'Profile')
+
+    await expect(page).toHaveURL(/\/account\/profile(?:\?.*)?$/)
+    await expect(page).toHaveTitle(/Profile/i)
+    await portalPage.assertMainHeadingVisible('Profile')
+    await portalPage.assertMainHeadingVisible('Personal details')
+    await portalPage.assertMainHeadingVisible('Personal Address')
+    await portalPage.assertMainHeadingVisible('Social networks')
+
+    for (const legacyAccountTab of ['Billing details', 'Plans and benefits', 'Directory profile', 'Identity checks', 'Files']) {
+      await portalPage.assertMainTextNotVisible(legacyAccountTab)
+    }
+  })
+
+  test('sign out returns to an anonymous MP page with public entry points back into the portal', async ({ page }) => {
+    await portalPage.clickProfileMenuEntry(currentUserFullName, 'Log out')
+
+    await expect
+      .poll(
+        async () => {
+          const url = page.url()
+
+          return /\/login(?:\?.*)?$/.test(url) || /\/home(?:\?.*)?$/.test(url)
+        },
+        {
+          message: 'Expected logout to return the user to an anonymous MP page.',
+        },
+      )
+      .toBe(true)
+
+    if (/\/login(?:\?.*)?$/.test(page.url())) {
+      await expect
+        .poll(async () => decodeURIComponent(page.url()), {
+          message: 'Expected the logged-out login page to preserve a returnUrl back to the public MP home page.',
+        })
+        .toContain('/home')
+
+      await loginPage.assertAnonymousEntryPointsVisible(currentBusinessName)
+      await loginPage.assertLoggedOutFooterVisible(currentBusinessName)
+    } else {
+      await homePage.dismissStartupNoticeIfPresent()
+      await homePage.assertPublicMarketingEntryPointsVisible(currentBusinessName)
+      await homePage.assertFooterBrandingVisible(currentBusinessName)
+    }
+
+    await expect(
+      page.getByRole('button', { name: new RegExp(currentUserFullName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') }).first(),
+    ).not.toBeVisible()
+  })
+
+  test('access marketing uses the anonymous brand link to reach or keep the public member home page', async ({ page }) => {
+    await portalPage.clickProfileMenuEntry(currentUserFullName, 'Log out')
+
+    await expect
+      .poll(async () => /\/login(?:\?.*)?$/.test(page.url()) || /\/home(?:\?.*)?$/.test(page.url()), {
+        message: 'Expected logout to land on an anonymous MP route before using the brand link.',
+      })
+      .toBe(true)
+
+    if (/\/login(?:\?.*)?$/.test(page.url())) {
+      await loginPage.assertAnonymousEntryPointsVisible(currentBusinessName)
+      await loginPage.goToMarketingHomeFromBrandLink(currentBusinessName)
+    } else {
+      await homePage.dismissStartupNoticeIfPresent()
+      await homePage.clickAnonymousBrandLink(currentBusinessName)
+    }
+
+    await expect
+      .poll(async () => /\/(?:home)?(?:\?.*)?$/.test(page.url()), {
+        message: 'Expected the anonymous brand link to keep or return the user to the public MP home page.',
+      })
+      .toBe(true)
+    await homePage.dismissStartupNoticeIfPresent()
+    await homePage.assertPublicMarketingEntryPointsVisible(currentBusinessName)
+    await homePage.assertFooterBrandingVisible(currentBusinessName)
+  })
 })

@@ -5,21 +5,27 @@ import { AbstractPage } from '../shared/AbstractPage'
 type LoginOutcome = 'success' | 'error' | 'disabled'
 
 export class MPLoginPage extends AbstractPage {
+  readonly createAccountLink: Locator
   readonly dashboardButton: Locator
   readonly emailInput: Locator
   readonly passwordInput: Locator
   readonly signInButton: Locator
   readonly errorMessage: Locator
   readonly dashboardGreeting: Locator
+  readonly keepMeLoggedInCheckbox: Locator
+  readonly requestTourLink: Locator
 
   constructor(page: Page) {
     super(page)
+    this.createAccountLink = page.getByRole('link', { name: 'Create an account' })
     this.dashboardButton = page.getByRole('button', { name: /Dashboard/ }).first()
     this.dashboardGreeting = page.getByRole('heading', { name: /Hello .+,/ }).first()
     this.emailInput = page.getByLabel('Email')
     this.passwordInput = page.getByLabel('Password')
     this.signInButton = page.getByRole('button', { name: 'Sign in' })
     this.errorMessage = page.locator('[role="alert"]')
+    this.keepMeLoggedInCheckbox = page.getByRole('checkbox', { name: 'Keep me logged in' })
+    this.requestTourLink = page.getByRole('link', { name: 'request a tour.' })
   }
 
   async login(email?: string, password?: string, expectedOutcome: LoginOutcome = 'success') {
@@ -72,6 +78,35 @@ export class MPLoginPage extends AbstractPage {
     await expect(this.emailInput).toBeVisible()
     await expect(this.passwordInput).toBeVisible()
     await expect(this.signInButton).toBeVisible()
+  }
+
+  async assertAnonymousEntryPointsVisible(businessName: string) {
+    await expect(
+      this.page.getByRole('heading', { name: new RegExp(`^Sign in to ${escapeRegExp(businessName)}$`, 'i') }),
+    ).toBeVisible()
+    await this.assertLoginFormVisible()
+    await expect(this.keepMeLoggedInCheckbox).toBeVisible()
+    await expect(this.createAccountLink).toBeVisible()
+    await expect(this.requestTourLink).toBeVisible()
+  }
+
+  async assertLoggedOutFooterVisible(businessName: string) {
+    const currentYear = new Date().getFullYear().toString()
+
+    await expect(this.page.getByRole('img', { name: businessName }).first()).toBeVisible()
+    await expect(this.page.getByText(new RegExp(`${escapeRegExp(businessName)}.*Copyright © ${currentYear}`, 'i')).first()).toBeVisible()
+
+    for (const legalLink of ['Terms and conditions', 'Privacy policy', 'Cookies policy']) {
+      await expect(this.page.getByRole('link', { exact: true, name: legalLink }).first()).toBeVisible()
+    }
+  }
+
+  async goToMarketingHomeFromBrandLink(businessName: string) {
+    await this.page
+      .getByRole('navigation')
+      .getByRole('link', { name: new RegExp(escapeRegExp(businessName), 'i') })
+      .first()
+      .click()
   }
 
   async assertErrorMessage() {

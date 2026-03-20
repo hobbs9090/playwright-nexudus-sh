@@ -115,6 +115,14 @@ export class MPHomePage extends AbstractPage {
     await this.headerSignInLink.click()
   }
 
+  async clickAnonymousBrandLink(businessName: string) {
+    await this.page
+      .getByRole('navigation')
+      .getByRole('link', { name: new RegExp(escapeRegExp(businessName), 'i') })
+      .first()
+      .click()
+  }
+
   async assertFooterBrandingVisible(businessName: string) {
     const currentYear = new Date().getFullYear().toString()
 
