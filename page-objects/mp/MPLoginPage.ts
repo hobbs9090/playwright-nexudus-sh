@@ -136,6 +136,15 @@ export class MPLoginPage extends AbstractPage {
     }
   }
 
+  async getDashboardGreetingName() {
+    await expect(this.dashboardGreeting).toBeVisible()
+
+    const greetingText = (await this.dashboardGreeting.innerText()).trim()
+    const match = greetingText.match(/^Hello\s+(.+?)(?:,|$)/i)
+
+    return (match?.[1] || '').trim()
+  }
+
   async assertProfileMenuContains(fullName: string) {
     await expect(
       this.page.getByRole('button', { name: new RegExp(escapeRegExp(fullName), 'i') }).first(),
