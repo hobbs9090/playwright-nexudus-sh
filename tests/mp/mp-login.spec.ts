@@ -1,11 +1,20 @@
 import { expect, test } from '@playwright/test'
+import { NexudusApiClient } from '../../api/NexudusApiClient'
 import { MPLoginPage } from '../../page-objects/mp/MPLoginPage'
 
 test.describe('MP staging login', () => {
   let loginPage: MPLoginPage
+  let currentUserFullName: string
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, request }) => {
     loginPage = new MPLoginPage(page)
+
+    const nexudusApi = new NexudusApiClient(request)
+    const token = await nexudusApi.createBearerToken()
+    const currentUser = await nexudusApi.getCurrentUser(token.access_token)
+
+    currentUserFullName = String(currentUser.FullName || '').trim()
+    expect(currentUserFullName, 'Expected the MP API profile to expose the current user full name.').toBeTruthy()
   })
 
   test('shows a clear error message when invalid MP details are provided', async () => {
@@ -23,9 +32,10 @@ test.describe('MP staging login', () => {
     await loginPage.assertErrorMessage()
   })
 
-  test('logs into MP staging with the configured MP credentials @smoke', async ({ page }) => {
+  test('login loads the dashboard and shows the current MP user in the profile menu @smoke', async ({ page }) => {
     await loginPage.login()
     await expect(page).toHaveURL(/\/(?:dashboards\/now|home)(?:\?.*)?$/)
-    await loginPage.assertDashboardVisible()
+    await loginPage.assertDashboardVisible(currentUserFullName)
+    await loginPage.assertProfileMenuContains(currentUserFullName)
   })
 })

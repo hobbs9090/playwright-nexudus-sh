@@ -72,6 +72,10 @@ export class MPLoginPage extends AbstractPage {
     await expect(this.errorMessage.first()).toBeVisible()
   }
 
+  async assertErrorMessageContains(expectedText: string) {
+    await expect(this.errorMessage.first()).toContainText(expectedText)
+  }
+
   async assertSignInDisabled() {
     await expect(this.signInButton).toBeDisabled()
   }
@@ -90,4 +94,14 @@ export class MPLoginPage extends AbstractPage {
       ).toBeTruthy()
     }
   }
+
+  async assertProfileMenuContains(fullName: string) {
+    await expect(
+      this.page.getByRole('button', { name: new RegExp(escapeRegExp(fullName), 'i') }).first(),
+    ).toBeVisible()
+  }
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
