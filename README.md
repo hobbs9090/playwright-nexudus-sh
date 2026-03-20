@@ -535,11 +535,11 @@ To use the workflow, configure these GitHub settings:
 
 The workflow installs dependencies, computes a Playwright shard matrix, installs the Playwright Chromium browser on each selected runner, and runs five CI jobs:
 
-- `Plan Playwright runner fan-out` decides whether the workflow should run the full suite or only the changed spec files for the current branch, then builds the Playwright execution matrix
-- `Run Playwright tests` runs either the full AP, MP, and API Playwright suite on `main`, or only the changed `tests/ap`, `tests/mp`, and `tests/api` spec files on other branches, and uploads one blob report artifact per job
+- `Plan Playwright runner fan-out` builds the Playwright execution matrix for the full suite
+- `Run Playwright tests` runs the full AP, MP, and API Playwright suite on both `main` and branch builds, and uploads one blob report artifact per job
 - `Merge Playwright reports` merges the blob report into the Playwright HTML and JUnit outputs, uploads the merged report, and writes a GitHub job summary
-- `Run Lighthouse audits` runs the full authenticated AP and MP Lighthouse suite on `main`, or only the changed Lighthouse spec files on other branches when any were modified
-- `Publish CI reports` publishes a combined GitHub Pages site on non-PR pushes and manual runs, including branch runs that only executed a single changed test
+- `Run Lighthouse audits` runs the full authenticated AP and MP Lighthouse suite
+- `Publish CI reports` publishes a combined GitHub Pages site on non-PR pushes and manual runs, including branch runs
 
 If the optional API CI variables are not set, the API project falls back to the MP staging host origin and MP credentials that are already configured for the main Playwright run.
 
@@ -548,9 +548,8 @@ By default the Playwright planner targets roughly five minutes of in-run test ex
 The branch policy is:
 
 - `main` runs the full functional Playwright suite and the full Lighthouse suite
-- non-`main` branches compare themselves against `main` and run only the added or changed `*.spec.ts` files
-- branch runs still publish the Pages report site, even if only one changed test was executed
-- if a branch did not change any Lighthouse specs, the published report site will still include the Playwright report and show the Lighthouse report as unavailable for that run
+- non-`main` branches also run the full functional Playwright suite and the full Lighthouse suite
+- branch runs still publish the Pages report site
 
 On non-PR pushes and manual runs, the published GitHub Pages site includes:
 

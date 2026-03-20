@@ -1,12 +1,9 @@
-import { execSync } from 'node:child_process'
-
 const defaultTargetMinutes = 5
 const defaultFixedOverheadMinutes = 1.25
 const defaultMaxShardsPerProject = 4
 const defaultBranch = getStringEnvVar('GITHUB_DEFAULT_BRANCH', 'main')
-const currentBranch = getStringEnvVar('GITHUB_REF_NAME', '')
-const comparisonBaseBranch = getStringEnvVar('GITHUB_BASE_REF', defaultBranch)
-const branchMode = currentBranch && currentBranch !== defaultBranch ? 'changed-tests' : 'full-suite'
+const comparisonBaseBranch = defaultBranch
+const branchMode = 'full-suite'
 
 const projectPlans = [
   {
@@ -29,24 +26,12 @@ const projectPlans = [
   },
 ]
 
-const changedSpecFiles = branchMode === 'changed-tests' ? getChangedSpecFiles(comparisonBaseBranch) : []
-const changedPlaywrightSpecs = changedSpecFiles.filter(isPlaywrightSpec)
-const changedLighthouseSpecs = changedSpecFiles.filter(isLighthouseSpec)
-const matrix =
-  branchMode === 'changed-tests'
-    ? changedPlaywrightSpecs.map((specFile) => buildChangedTestMatrixEntry(specFile))
-    : buildFullSuiteMatrix()
-const targetMinutes =
-  branchMode === 'changed-tests'
-    ? matrix.length > 0
-      ? 1
-      : 0
-    : getNumericEnvVar('PLAYWRIGHT_CI_TARGET_MINUTES', defaultTargetMinutes)
-const fixedOverheadMinutes =
-  branchMode === 'changed-tests' ? 0 : getNumericEnvVar('PLAYWRIGHT_CI_FIXED_OVERHEAD_MINUTES', defaultFixedOverheadMinutes)
-const executionBudgetMinutes =
-  branchMode === 'changed-tests' ? (matrix.length > 0 ? 1 : 0) : Math.max(1, targetMinutes - fixedOverheadMinutes)
-const runLighthouse = branchMode === 'full-suite' || changedLighthouseSpecs.length > 0
+const changedLighthouseSpecs = []
+const matrix = buildFullSuiteMatrix()
+const targetMinutes = getNumericEnvVar('PLAYWRIGHT_CI_TARGET_MINUTES', defaultTargetMinutes)
+const fixedOverheadMinutes = getNumericEnvVar('PLAYWRIGHT_CI_FIXED_OVERHEAD_MINUTES', defaultFixedOverheadMinutes)
+const executionBudgetMinutes = Math.max(1, targetMinutes - fixedOverheadMinutes)
+const runLighthouse = true
 const runPlaywright = matrix.length > 0
 const publishReports = runPlaywright || runLighthouse
 
@@ -103,74 +88,9 @@ function buildFullSuiteMatrix() {
   return matrix
 }
 
-function buildChangedTestMatrixEntry(specFile) {
-  const { project, slug } = getPlaywrightProjectForSpec(specFile)
-
-  return {
-    artifact_suffix: normalizeFileSlug(specFile),
-    job_label: normalizeFileSlug(specFile),
-    project,
-    project_slug: slug,
-    shard_index: 1,
-    shard_total: 1,
-    test_slug: normalizeFileSlug(specFile),
-    test_target: specFile,
-  }
-}
-
 function clampShardCount(value, maxShardsPerProject) {
   const normalizedValue = Number.isFinite(value) ? Math.floor(value) : 1
   return Math.max(1, Math.min(maxShardsPerProject, normalizedValue))
-}
-
-function getChangedSpecFiles(baseBranch) {
-  const diffRange = `origin/${baseBranch}...HEAD`
-  const changedFilesOutput = execSync(`git diff --name-only --diff-filter=ACMR ${diffRange} -- tests`, {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  }).trim()
-
-  if (!changedFilesOutput) {
-    return []
-  }
-
-  return changedFilesOutput
-    .split('\n')
-    .map((filePath) => filePath.trim())
-    .filter((filePath) => filePath.endsWith('.spec.ts'))
-}
-
-function getPlaywrightProjectForSpec(specFile) {
-  if (specFile.startsWith('tests/ap/')) {
-    return {
-      project: 'AP Chromium',
-      slug: 'ap',
-    }
-  }
-
-  if (specFile.startsWith('tests/mp/')) {
-    return {
-      project: 'MP Staging Chromium',
-      slug: 'mp',
-    }
-  }
-
-  if (specFile.startsWith('tests/api/')) {
-    return {
-      project: 'API',
-      slug: 'api',
-    }
-  }
-
-  throw new Error(`Could not map changed spec "${specFile}" to a Playwright project.`)
-}
-
-function isLighthouseSpec(specFile) {
-  return /^tests\/lighthouse\/(?:ap|mp)\/.+\.spec\.ts$/.test(specFile)
-}
-
-function isPlaywrightSpec(specFile) {
-  return /^tests\/(?:ap|mp|api)\/.+\.spec\.ts$/.test(specFile)
 }
 
 function getIntegerEnvVar(name, fallbackValue) {
@@ -208,13 +128,4 @@ function getOptionalIntegerEnvVar(name) {
 
 function getStringEnvVar(name, fallbackValue) {
   return process.env[name]?.trim() || fallbackValue
-}
-
-function normalizeFileSlug(filePath) {
-  return filePath
-    .replace(/^tests\//, '')
-    .replace(/\.spec\.ts$/, '')
-    .replace(/[^a-z0-9]+/gi, '-')
-    .replace(/^-+|-+$/g, '')
-    .toLowerCase()
 }
