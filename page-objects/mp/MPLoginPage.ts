@@ -68,6 +68,12 @@ export class MPLoginPage extends AbstractPage {
     await this.assertErrorMessage()
   }
 
+  async assertLoginFormVisible() {
+    await expect(this.emailInput).toBeVisible()
+    await expect(this.passwordInput).toBeVisible()
+    await expect(this.signInButton).toBeVisible()
+  }
+
   async assertErrorMessage() {
     await expect(this.errorMessage.first()).toBeVisible()
   }

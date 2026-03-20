@@ -16,12 +16,18 @@ type MPHomeContentData = {
 }
 
 export class MPHomePage extends AbstractPage {
+  readonly heroSignInLink: Locator
+  readonly heroWelcomeHeading: Locator
+  readonly headerSignInLink: Locator
   readonly dismissStartupNoticeButton: Locator
   readonly footer: Locator
   readonly footerLanguageSelector: Locator
 
   constructor(page: Page) {
     super(page)
+    this.heroSignInLink = page.getByRole('link', { name: 'Sign in here' }).first()
+    this.heroWelcomeHeading = page.getByRole('heading', { name: /Welcome to / }).first()
+    this.headerSignInLink = page.getByRole('link', { name: 'Sign in' }).first()
     this.dismissStartupNoticeButton = page.getByRole('button', { name: 'Okay, got it!' })
     this.footer = page.getByRole('contentinfo')
     this.footerLanguageSelector = this.footer.getByRole('combobox').first()
@@ -93,6 +99,20 @@ export class MPHomePage extends AbstractPage {
         await this.dismissStartupNoticeButton.click()
       })
       .catch(() => {})
+  }
+
+  async assertPublicMarketingEntryPointsVisible(businessName: string) {
+    await expect(this.heroWelcomeHeading).toHaveText(new RegExp(`^Welcome to ${escapeRegExp(businessName)}$`))
+    await expect(this.headerSignInLink).toBeVisible()
+    await expect(this.heroSignInLink).toBeVisible()
+
+    for (const quickAccessLink of ['Events', 'Members', 'Bookings', 'Community']) {
+      await expect(this.page.getByRole('link', { name: quickAccessLink }).first()).toBeVisible()
+    }
+  }
+
+  async goToHeaderSignIn() {
+    await this.headerSignInLink.click()
   }
 
   async assertFooterBrandingVisible(businessName: string) {
