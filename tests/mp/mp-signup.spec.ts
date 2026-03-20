@@ -1,14 +1,18 @@
 import { test } from '@playwright/test'
+import { generateUniqueName, getContributorInitials } from '../../helpers'
+import { MPLoginPage } from '../../page-objects/mp/MPLoginPage'
+import { MPPortalPage } from '../../page-objects/mp/MPPortalPage'
 import { MPSignupAccountType, MPSignupDetails, MPSignupPage } from '../../page-objects/mp/MPSignupPage'
 
 function createSignupDetails(accountType: MPSignupAccountType): MPSignupDetails {
-  const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  const uniqueSuffix = generateUniqueName(accountType === 'Individual' ? 'Playwright Individual' : 'Playwright Company Admin', getContributorInitials())
+  const emailSlug = uniqueSuffix.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.+|\.+$/g, '')
   const slug = accountType.toLowerCase()
-  const email = `pw.signup.${slug}.${uniqueSuffix}@gmail.com`
+  const email = `pw.signup.${slug}.${emailSlug}@gmail.com`
 
   return {
     accountType,
-    fullName: accountType === 'Individual' ? `Playwright Individual ${uniqueSuffix}` : `Playwright Company Admin ${uniqueSuffix}`,
+    fullName: uniqueSuffix,
     email,
     companyName: accountType === 'Individual' ? `Playwright Individual Co ${uniqueSuffix}` : `Playwright Company ${uniqueSuffix}`,
     billingAddress: '1 Testing Street',
@@ -27,17 +31,38 @@ function createSignupDetails(accountType: MPSignupAccountType): MPSignupDetails 
 }
 
 test.describe('MP staging account creation', () => {
+  let loginPage: MPLoginPage
+  let portalPage: MPPortalPage
   let signupPage: MPSignupPage
 
   test.beforeEach(async ({ page }) => {
+    loginPage = new MPLoginPage(page)
+    portalPage = new MPPortalPage(page)
     signupPage = new MPSignupPage(page)
+    await portalPage.installBlockingDialogSuppression()
   })
 
-  test('creates an individual MP account from the public signup journey', async () => {
-    await signupPage.createAccount(createSignupDetails('Individual'))
+  test('individual account opens create account, shows the signup fields, and reaches the dashboard with the new full name', async () => {
+    const details = createSignupDetails('Individual')
+
+    await signupPage.openSignupForm()
+    await signupPage.assertSignupFormVisible()
+    await signupPage.submitSignupForm(details)
+    await signupPage.goToDashboard()
+    await loginPage.assertDashboardVisible(details.fullName)
+    await portalPage.dismissOnboardingModalIfPresent()
+    await loginPage.assertProfileMenuContains(details.fullName)
   })
 
-  test('creates a company MP account from the public signup journey', async () => {
-    await signupPage.createAccount(createSignupDetails('Company'))
+  test('company account opens create account, shows the signup fields, and reaches the dashboard with the new full name', async () => {
+    const details = createSignupDetails('Company')
+
+    await signupPage.openSignupForm()
+    await signupPage.assertSignupFormVisible()
+    await signupPage.submitSignupForm(details)
+    await signupPage.goToDashboard()
+    await loginPage.assertDashboardVisible(details.fullName)
+    await portalPage.dismissOnboardingModalIfPresent()
+    await loginPage.assertProfileMenuContains(details.fullName)
   })
 })

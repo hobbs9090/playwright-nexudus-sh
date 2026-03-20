@@ -18,7 +18,7 @@ export class MPLoginPage extends AbstractPage {
   constructor(page: Page) {
     super(page)
     this.createAccountLink = page.getByRole('link', { name: 'Create an account' })
-    this.dashboardButton = page.getByRole('button', { name: /Dashboard/ }).first()
+    this.dashboardButton = page.getByRole('button', { name: /dashboard/i }).first()
     this.dashboardGreeting = page.getByRole('heading', { name: /Hello .+,/ }).first()
     this.emailInput = page.getByLabel('Email')
     this.passwordInput = page.getByLabel('Password')
