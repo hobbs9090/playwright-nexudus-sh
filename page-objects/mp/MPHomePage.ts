@@ -138,7 +138,15 @@ export class MPHomePage extends AbstractPage {
   }
 
   async assertFooterSocialLinkVisible(href: string) {
-    await expect(this.footer.locator(`a[href="${href}"]`).first()).toBeVisible()
+    await expect(this.footer.locator(`a[href="${href}"], a[href="${href}/"]`).first()).toBeVisible()
+  }
+
+  async hasFooterSocialLink(href: string) {
+    return await this.footer
+      .locator(`a[href="${href}"], a[href="${href}/"]`)
+      .first()
+      .isVisible()
+      .catch(() => false)
   }
 
   async getSelectedFooterLanguageLabel() {

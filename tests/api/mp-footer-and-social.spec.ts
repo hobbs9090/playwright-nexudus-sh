@@ -15,6 +15,12 @@ type FooterLanguageExpectation = {
   requestedLabel: string
 }
 
+type SocialSettingExpectation = {
+  name: string
+  title: string
+  url: string
+}
+
 const footerHeadingExpectations: FooterHeadingExpectation[] = [
   { requestedLabel: 'Contact', candidateLabels: ['Contact', 'Company'] },
   { requestedLabel: 'Services', candidateLabels: ['Services', 'Explore'] },
@@ -40,6 +46,11 @@ const footerLanguageExpectations: FooterLanguageExpectation[] = [
   { requestedLabel: 'Spanish', candidateLabels: ['Spanish', 'Español'] },
   { requestedLabel: 'English (US)', candidateLabels: ['English (US)'] },
   { requestedLabel: 'English (Int.)', candidateLabels: ['English (Int.)', 'English (GB)'] },
+]
+
+const socialSettingExpectations: SocialSettingExpectation[] = [
+  { name: 'Social.Facebook', title: 'Social.Facebook', url: 'http://www.facebook.com' },
+  { name: 'Social.Instagram', title: 'Social.Instagram', url: 'http://www.instagram.com' },
 ]
 
 test.describe('MP footer and social settings', () => {
@@ -201,6 +212,55 @@ test.describe('MP footer and social settings', () => {
       })
     }
   })
+
+  for (const socialSettingExpectation of socialSettingExpectations) {
+    test(`${socialSettingExpectation.title} updates the social URL by API and shows the matching footer link in MP @api`, async ({
+      accessToken,
+      nexudusApi,
+    }) => {
+      const socialSetting = await nexudusApi.getBusinessSetting(accessToken, {
+        businessId: currentBusinessId,
+        name: socialSettingExpectation.name,
+      })
+      const originalValue = socialSetting.Value
+
+      expect(
+        socialSettingExpectation.url,
+        `Expected the ${socialSettingExpectation.name} URL to differ from the current setting.`,
+      ).not.toBe(originalValue)
+
+      try {
+        const updateResponse = await nexudusApi.updateBusinessSettingMutation(accessToken, {
+          BusinessId: socialSetting.BusinessId,
+          Id: socialSetting.Id,
+          Name: socialSetting.Name,
+          Value: socialSettingExpectation.url,
+        })
+
+        expect(updateResponse.Message).toBe(`Space Setting "${currentBusinessName}" was successfully updated.`)
+
+        const updatedSetting = await nexudusApi.getBusinessSettingById(accessToken, socialSetting.Id)
+
+        expect(updatedSetting.Value).toBe(socialSettingExpectation.url)
+
+        await expect
+          .poll(async () => {
+            await homePage.goto(buildCacheBustedMPURL('/home'))
+            return await homePage.hasFooterSocialLink(socialSettingExpectation.url)
+          }, { timeout: 45000 })
+          .toBe(true)
+
+        await homePage.assertFooterSocialLinkVisible(socialSettingExpectation.url)
+      } finally {
+        await nexudusApi.updateBusinessSetting(accessToken, {
+          BusinessId: socialSetting.BusinessId,
+          Id: socialSetting.Id,
+          Name: socialSetting.Name,
+          Value: originalValue,
+        })
+      }
+    })
+  }
 })
 
 function buildCacheBustedMPURL(path: string) {
