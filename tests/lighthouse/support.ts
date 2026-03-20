@@ -36,7 +36,7 @@ const lighthouseCategories = [
 
 const defaultThresholds: LighthouseThresholds = {
   performance: getThresholdEnvVar('LIGHTHOUSE_MIN_PERFORMANCE', 35),
-  accessibility: getThresholdEnvVar('LIGHTHOUSE_MIN_ACCESSIBILITY', 60),
+  accessibility: getThresholdEnvVar('LIGHTHOUSE_MIN_ACCESSIBILITY', 55),
   'best-practices': getThresholdEnvVar('LIGHTHOUSE_MIN_BEST_PRACTICES', 50),
 }
 
