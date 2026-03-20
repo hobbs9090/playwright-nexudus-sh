@@ -24,6 +24,7 @@ export type MPSignupDetails = {
 }
 
 export class MPSignupPage extends AbstractPage {
+  readonly createAccountLink: Locator
   readonly dismissStartupNoticeButton: Locator
   readonly continueWithoutPlanButton: Locator
   readonly continueButton: Locator
@@ -44,11 +45,13 @@ export class MPSignupPage extends AbstractPage {
   readonly postCodeInput: Locator
   readonly petPreferenceSelect: Locator
   readonly termsCheckbox: Locator
+  readonly termsText: Locator
   readonly completionHeading: Locator
   readonly goToDashboardLink: Locator
 
   constructor(page: Page) {
     super(page)
+    this.createAccountLink = page.getByRole('link', { name: 'Create an account' })
     this.dismissStartupNoticeButton = page.getByRole('button', { name: 'Okay, got it!' })
     this.continueWithoutPlanButton = page.getByRole('button', { name: 'Continue without a plan' })
     this.continueButton = page.getByRole('button', { name: 'Continue' })
@@ -69,21 +72,25 @@ export class MPSignupPage extends AbstractPage {
     this.postCodeInput = page.locator('input[name="PostCode"]')
     this.petPreferenceSelect = page.locator('select[name="Custom1"]')
     this.termsCheckbox = page.locator('#GeneralTermsAcceptedOnline')
+    this.termsText = page.getByText('I agree with our terms and')
     this.completionHeading = page.getByRole('heading', { name: /Welcome to / })
     this.goToDashboardLink = page.getByText('Go to dashboard')
   }
 
   async createAccount(details: MPSignupDetails) {
     await this.openSignupForm()
-    await this.fillSignupForm(details)
-    await this.continueButton.click()
-    await this.assertCompletionVisible()
+    await this.submitSignupForm(details)
   }
 
   async openSignupForm() {
-    await this.page.goto('/signup/plans?returnurl=')
+    await this.page.goto('/login')
+    await expect(this.createAccountLink).toBeVisible()
+    await this.createAccountLink.click()
+    await expect(this.page).toHaveURL(/\/signup\/plans(?:\?.*)?$/)
     await this.dismissStartupNoticeIfPresent()
+    await expect(this.continueWithoutPlanButton).toBeVisible()
     await this.continueWithoutPlanButton.click()
+    await expect(this.continueButton).toBeVisible()
     await this.continueButton.click()
   }
 
@@ -105,7 +112,7 @@ export class MPSignupPage extends AbstractPage {
 
   async fillSignupForm(details: MPSignupDetails) {
     await this.accountTypeSelect.selectOption({ label: details.accountType })
-    await this.page.getByText('I agree with our terms and').click()
+    await this.termsText.click()
     await expect(this.termsCheckbox).toBeChecked()
 
     await this.fullNameInput.fill(details.fullName)
@@ -125,9 +132,45 @@ export class MPSignupPage extends AbstractPage {
     await this.petPreferenceSelect.selectOption({ label: details.petPreference })
   }
 
+  async assertSignupFormVisible() {
+    for (const field of [
+      this.accountTypeSelect,
+      this.fullNameInput,
+      this.emailInput,
+      this.companyNameInput,
+      this.billingAddressInput,
+      this.billingStateInput,
+      this.billingCityInput,
+      this.billingPostCodeInput,
+      this.billingEmailInput,
+      this.taxIdNumberInput,
+      this.addressInput,
+      this.countrySelect,
+      this.stateInput,
+      this.cityInput,
+      this.postCodeInput,
+      this.petPreferenceSelect,
+      this.termsText,
+      this.continueButton,
+    ]) {
+      await expect(field).toBeVisible()
+    }
+  }
+
+  async submitSignupForm(details: MPSignupDetails) {
+    await this.fillSignupForm(details)
+    await this.continueButton.click()
+    await this.assertCompletionVisible()
+  }
+
   async assertCompletionVisible() {
     await expect(this.page).toHaveURL(/\/signup\/payment\/complete(?:\?.*)?$/)
     await expect(this.completionHeading).toBeVisible()
     await expect(this.goToDashboardLink).toBeVisible()
+  }
+
+  async goToDashboard() {
+    await expect(this.goToDashboardLink).toBeVisible()
+    await this.goToDashboardLink.click()
   }
 }

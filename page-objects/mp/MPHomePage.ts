@@ -16,13 +16,21 @@ type MPHomeContentData = {
 }
 
 export class MPHomePage extends AbstractPage {
+  readonly heroSignInLink: Locator
+  readonly heroWelcomeHeading: Locator
+  readonly headerSignInLink: Locator
   readonly dismissStartupNoticeButton: Locator
   readonly footer: Locator
+  readonly footerLanguageSelector: Locator
 
   constructor(page: Page) {
     super(page)
+    this.heroSignInLink = page.getByRole('link', { name: 'Sign in here' }).first()
+    this.heroWelcomeHeading = page.getByRole('heading', { name: /Welcome to / }).first()
+    this.headerSignInLink = page.getByRole('link', { name: 'Sign in' }).first()
     this.dismissStartupNoticeButton = page.getByRole('button', { name: 'Okay, got it!' })
     this.footer = page.getByRole('contentinfo')
+    this.footerLanguageSelector = this.footer.getByRole('combobox').first()
   }
 
   async goto(pathOrUrl: string = '/home') {
@@ -93,6 +101,28 @@ export class MPHomePage extends AbstractPage {
       .catch(() => {})
   }
 
+  async assertPublicMarketingEntryPointsVisible(businessName: string) {
+    await expect(this.heroWelcomeHeading).toHaveText(new RegExp(`^Welcome to ${escapeRegExp(businessName)}$`))
+    await expect(this.headerSignInLink).toBeVisible()
+    await expect(this.heroSignInLink).toBeVisible()
+
+    for (const quickAccessLink of ['Events', 'Members', 'Bookings', 'Community']) {
+      await expect(this.page.getByRole('link', { name: quickAccessLink }).first()).toBeVisible()
+    }
+  }
+
+  async goToHeaderSignIn() {
+    await this.headerSignInLink.click()
+  }
+
+  async clickAnonymousBrandLink(businessName: string) {
+    await this.page
+      .getByRole('navigation')
+      .getByRole('link', { name: new RegExp(escapeRegExp(businessName), 'i') })
+      .first()
+      .click()
+  }
+
   async assertFooterBrandingVisible(businessName: string) {
     const currentYear = new Date().getFullYear().toString()
 
@@ -105,12 +135,89 @@ export class MPHomePage extends AbstractPage {
     return (await this.footer.innerText()).trim()
   }
 
+  async assertFooterHeadingVisible(...candidateLabels: string[]) {
+    await expect(
+      this.footer.getByRole('heading', {
+        name: new RegExp(`^(${candidateLabels.map(escapeRegExp).join('|')})$`, 'i'),
+      }).first(),
+    ).toBeVisible()
+  }
+
+  async assertFooterLinkVisible(linkLabel: string) {
+    await expect(this.footer.getByRole('link', { exact: true, name: linkLabel }).first()).toBeVisible()
+  }
+
+  async assertFooterLinksVisible(linkLabels: string[]) {
+    for (const linkLabel of linkLabels) {
+      await this.assertFooterLinkVisible(linkLabel)
+    }
+  }
+
+  async clickFooterLink(linkLabel: string) {
+    await this.footer.getByRole('link', { exact: true, name: linkLabel }).first().click()
+  }
+
   async assertFooterSayingVisible(sayingText: string) {
     await expect(this.footer).toContainText(sayingText)
   }
 
   async assertFooterSayingAuthorVisible(authorText: string) {
     await expect(this.footer).toContainText(authorText)
+  }
+
+  async assertFooterSocialLinkVisible(href: string) {
+    await expect(this.footer.locator(`a[href="${href}"], a[href="${href}/"]`).first()).toBeVisible()
+  }
+
+  async hasFooterSocialLink(href: string) {
+    return await this.footer
+      .locator(`a[href="${href}"], a[href="${href}/"]`)
+      .first()
+      .isVisible()
+      .catch(() => false)
+  }
+
+  async getSelectedFooterLanguageLabel() {
+    await expect(this.footerLanguageSelector).toBeVisible()
+
+    return (
+      (await this.footerLanguageSelector.evaluate((element) => {
+        if (!(element instanceof HTMLSelectElement)) {
+          return ''
+        }
+
+        return element.selectedOptions[0]?.textContent?.trim() || ''
+      })) || ''
+    ).trim()
+  }
+
+  async selectFooterLanguage(candidateLabels: string[]) {
+    await expect(this.footerLanguageSelector).toBeVisible()
+
+    const availableLabels = (
+      await this.footerLanguageSelector.evaluate((element) => {
+        if (!(element instanceof HTMLSelectElement)) {
+          return []
+        }
+
+        return Array.from(element.options).map((option) => option.textContent?.trim() || '')
+      })
+    ).filter(Boolean)
+    const targetLabel = candidateLabels.find((candidateLabel) => availableLabels.includes(candidateLabel))
+
+    if (!targetLabel) {
+      throw new Error(
+        `Could not find any footer language option matching: ${candidateLabels.join(', ')}. Available: ${availableLabels.join(', ')}.`,
+      )
+    }
+
+    await this.footerLanguageSelector.selectOption({ label: targetLabel })
+
+    await expect
+      .poll(async () => await this.getSelectedFooterLanguageLabel(), { timeout: 10000 })
+      .toBe(targetLabel)
+
+    return targetLabel
   }
 
   async scrollToFooterAndPause(pauseMs: number = 15000) {
@@ -165,4 +272,8 @@ export class MPHomePage extends AbstractPage {
       'Expected the home page to expose at least one map link per configured location.',
     ).toBeGreaterThanOrEqual(Math.max(data.locations.length, 1))
   }
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }

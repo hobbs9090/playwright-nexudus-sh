@@ -1,10 +1,10 @@
 import { test } from '@playwright/test'
+import { generateUniqueName, getContributorInitials } from '../../helpers'
 import { MPHelpRequestsPage } from '../../page-objects/mp/MPHelpRequestsPage'
 import { MPLoginPage } from '../../page-objects/mp/MPLoginPage'
 
 function buildUniqueHelpRequestSubject() {
-  const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-  return `Playwright MP help request ${uniqueSuffix}`
+  return generateUniqueName('Playwright MP help request', getContributorInitials())
 }
 
 test.describe('MP help requests', () => {

@@ -134,7 +134,7 @@ type NexudusBusinessSettingIdentifier = {
   name: string
 }
 
-type NexudusMutationResponse<TValue = unknown> = {
+export type NexudusMutationResponse<TValue = unknown> = {
   Errors?: unknown
   Message?: string | null
   Status: number
@@ -379,6 +379,15 @@ export class NexudusApiClient {
     accessToken: string,
     businessSetting: Pick<NexudusBusinessSettingResponse, 'BusinessId' | 'Id' | 'Name' | 'Value'>,
   ) {
+    await this.updateBusinessSettingMutation(accessToken, businessSetting)
+
+    return this.getBusinessSettingById(accessToken, businessSetting.Id)
+  }
+
+  async updateBusinessSettingMutation(
+    accessToken: string,
+    businessSetting: Pick<NexudusBusinessSettingResponse, 'BusinessId' | 'Id' | 'Name' | 'Value'>,
+  ) {
     const response = await this.request.put('/api/sys/businesssettings', {
       data: businessSetting,
       headers: {
@@ -392,7 +401,7 @@ export class NexudusApiClient {
     const updateResponse = (await response.json()) as NexudusMutationResponse
     expectSuccessfulMutation(updateResponse, `update business setting "${businessSetting.Name}"`)
 
-    return this.getBusinessSettingById(accessToken, businessSetting.Id)
+    return updateResponse
   }
 }
 

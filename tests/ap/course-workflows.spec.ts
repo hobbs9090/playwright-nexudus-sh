@@ -224,7 +224,17 @@ test.describe('Course workflows', () => {
         await coursePage.expectTextContaining(participant.FullName!.trim())
       }
 
-      await expect.poll(() => coursePage.isCourseVisible(courseTitle), { timeout: 30000 }).toBe(true)
+      const persistedCourse = await nexudusApi.getCourse(accessToken, courseId)
+      expect(persistedCourse.Title).toBe(courseTitle)
+      expect(persistedCourse.SummaryText).toBe(courseSummary)
+      expect(persistedCourse.FullDescription).toBe(courseFullDescription)
+      expect(persistedCourse.OverviewText).toBe(courseOverviewHtml)
+      expect(persistedCourse.Visibility).toBe(1)
+      expect(persistedCourse.Active).toBe(true)
+      expect(persistedCourse.ShowOverview).toBe(true)
+      expect(persistedCourse.ShowInHomePage).toBe(true)
+      expect(persistedCourse.HasCommunityGroup).toBe(true)
+      expect(persistedCourse.HostId, 'Expected the created course to keep a selected host.').toBeTruthy()
     } finally {
       await apiRequest.dispose()
     }
