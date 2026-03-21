@@ -1,3 +1,9 @@
+import {
+  defaultSharedStagingLocation,
+  sharedStagingLocationLabels,
+  type SharedStagingLocationLabel,
+} from './shared-staging-locations'
+
 export type ConfiguredLocationSelector = 'ap' | 'mp'
 
 export const configuredLocationSelectorEnvVars: Record<ConfiguredLocationSelector, string> = {
@@ -5,17 +11,13 @@ export const configuredLocationSelectorEnvVars: Record<ConfiguredLocationSelecto
   mp: 'NEXUDUS_MP_LOCATION_SELECTOR_LABEL',
 }
 
-export const commonLocationSelectorLabels = [
-  'Coworking Network (STEVEN)',
-  'Coworking Central Street (STEVEN)',
-  'Coworking Soho (STEVEN)',
-] as const
+export const commonLocationSelectorLabels = sharedStagingLocationLabels
 
-export type CommonLocationSelectorLabel = (typeof commonLocationSelectorLabels)[number]
+export type CommonLocationSelectorLabel = SharedStagingLocationLabel
 
 export const defaultLocationSelectorLabels: Record<ConfiguredLocationSelector, CommonLocationSelectorLabel> = {
-  ap: commonLocationSelectorLabels[2],
-  mp: commonLocationSelectorLabels[2],
+  ap: defaultSharedStagingLocation.label,
+  mp: defaultSharedStagingLocation.label,
 }
 
 export function getConfiguredLocationSelectorLabel(target: ConfiguredLocationSelector) {

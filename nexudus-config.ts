@@ -1,15 +1,12 @@
 import { defaultLocationSelectorLabels, getConfiguredLocationSelectorLabel } from './location-selectors'
+import { sharedStagingMpBaseURLsByLocationLabel } from './shared-staging-locations'
 
 export const nexudusBaseURLs = {
   ap: 'https://dashboard-staging.nexudus.com/',
   mp: 'https://coworkingsohosteven.spacesstaging.nexudus.com/',
 } as const
 
-export const nexudusMpBaseURLsByLocationLabel: Record<string, string> = {
-  'Coworking Network (STEVEN)': 'https://coworkingnetworksteven.spacesstaging.nexudus.com/',
-  'Coworking Central Street (STEVEN)': 'https://coworkingcentralstreetsteven.spacesstaging.nexudus.com/',
-  'Coworking Soho (STEVEN)': 'https://coworkingsohosteven.spacesstaging.nexudus.com/',
-} as const
+export const nexudusMpBaseURLsByLocationLabel = sharedStagingMpBaseURLsByLocationLabel
 
 const defaultBaseURLsByEnvVar: Record<string, string> = {
   NEXUDUS_AP_BASE_URL: nexudusBaseURLs.ap,
