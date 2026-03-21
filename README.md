@@ -59,6 +59,7 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   `-- shared/
 |       `-- AbstractPage.ts
 |-- playwright.config.ts
+|-- playwright.gremlins.config.ts
 |-- playwright.lighthouse.config.ts
 |-- scripts/
 |   |-- build-lighthouse-report-index.mjs
@@ -87,6 +88,11 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   |   |-- ap-course-cake-decorations-small.png
 |   |   |-- collection-signature.png
 |   |   `-- delivery-label.pdf
+|   |-- gremlins/
+|   |   |-- mp-portal.gremlins.spec.ts
+|   |   |-- mp-public.gremlins.spec.ts
+|   |   `-- support/
+|   |       `-- gremlins.ts
 |   |-- lighthouse/
 |   |   |-- ap/
 |   |   |   `-- ap-dashboard-lighthouse.spec.ts
@@ -279,6 +285,11 @@ The suite supports the following environment variables:
 | `LIGHTHOUSE_MIN_PERFORMANCE`    | No                            | `35`                                                        | Minimum Lighthouse performance score for the AP and MP dashboard audits         |
 | `LIGHTHOUSE_MIN_ACCESSIBILITY`  | No                            | `55`                                                        | Minimum Lighthouse accessibility score for the AP and MP dashboard audits       |
 | `LIGHTHOUSE_MIN_BEST_PRACTICES` | No                            | `50`                                                        | Minimum Lighthouse best-practices score for the AP and MP dashboard audits      |
+| `GREMLINS_SEED`                 | No                            | `1337`                                                      | Seed used to replay an exploratory gremlins run                                 |
+| `GREMLINS_ACTIONS`              | No                            | `60`                                                        | Default number of gremlin actions for public exploratory targets                |
+| `GREMLINS_DELAY_MS`             | No                            | `35`                                                        | Delay between gremlin actions in milliseconds                                   |
+| `GREMLINS_MAX_ERRORS`           | No                            | `5`                                                         | Maximum browser-side gremlins errors before the helper stops the horde          |
+| `GREMLINS_SPECIES`              | No                            | `clicker,toucher,formFiller,scroller`                       | Optional comma-separated species override for exploratory gremlins runs         |
 
 The suite currently runs AP admin coverage on the AP dashboard, MP coverage on the resolved MP staging host, and authenticated API smoke plus mutation coverage against the resolved Nexudus API host. It fails fast if the credential pair required for the selected project is missing.
 
@@ -365,6 +376,9 @@ npm run test:bdd:gen
 # Run the BDD proof of concept
 npm run test:bdd
 
+# Run the opt-in gremlins exploratory pack
+npm run test:gremlins
+
 # Run only the API project
 npm run test:api
 
@@ -376,6 +390,9 @@ npx playwright test --project "MP iPhone Safari"
 
 # Run in headed mode
 npm run test:headed
+
+# Run the gremlins pack in headed mode
+npm run test:gremlins:headed
 
 # Run only the delivery workflow tagged with @3093
 npx playwright test -g @3093
@@ -467,6 +484,58 @@ To extend the proof of concept:
 - add matching step definitions under `tests/bdd/steps`
 - keep the step definitions thin and reuse existing page objects from `page-objects/mp`
 - rerun `npm run test:bdd`
+
+### Gremlins exploratory testing
+
+The repo now includes a small opt-in `gremlins.js` layer for exploratory MP robustness checks. This sits alongside the deterministic `@playwright/test` suite and does not run as part of `npm test`.
+
+The gremlins coverage lives under [tests/gremlins](tests/gremlins), uses its own config in [playwright.gremlins.config.ts](playwright.gremlins.config.ts), and injects `node_modules/gremlins.js/dist/gremlins.min.js` with `page.addInitScript(...)` before starting each horde.
+
+The first safe targets are:
+
+- MP public home page
+- MP public FAQ page
+- MP authenticated language settings page
+
+The helper in [tests/gremlins/support/gremlins.ts](tests/gremlins/support/gremlins.ts) keeps the default horde conservative and reproducible:
+
+- prints the chosen seed so a failure can be replayed
+- defaults to a small action count and pace
+- captures browser `console.error`, uncaught page errors, crashes, and meaningful same-origin request failures
+- fails if the page becomes unusable after the attack
+
+Example usage:
+
+```bash
+# Run the default opt-in gremlins pack
+npm run test:gremlins
+
+# Run the same pack in headed mode
+npm run test:gremlins:headed
+
+# Run the gremlins MP project explicitly
+npm run test:gremlins:mp
+
+# Replay a failure with the same seed
+GREMLINS_SEED=1337 npm run test:gremlins
+
+# Tune the horde locally
+GREMLINS_SEED=20260321 GREMLINS_ACTIONS=90 GREMLINS_DELAY_MS=20 npm run test:gremlins
+
+# Open the dedicated gremlins HTML report
+npm run test:gremlins:report
+```
+
+These tests are intentionally opt-in because they are exploratory rather than deterministic product assertions. They are useful for finding client-side brittleness, but they should not replace the normal AP, MP, API, Lighthouse, or BDD coverage.
+
+For the current authenticated MP target, the helper ignores the specific OneSignal native-push unsupported-environment error that Playwright can trigger during exploratory runs. That keeps the signal focused on portal survivability rather than browser-push support.
+
+Do not target the following with gremlins in this repo:
+
+- AP create, update, or delete workflows
+- payment, checkout, or invoice collection paths
+- account/profile mutation forms unless the test is purpose-built to isolate them
+- notification opt-in or other browser-permission flows
 
 ### AP tests
 

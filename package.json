@@ -14,6 +14,10 @@
     "test:bdd": "npm run test:bdd:gen && node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts",
     "test:bdd:headed": "npm run test:bdd:gen && node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts --headed",
     "test:bdd:report": "node scripts/run-with-dotenv.mjs -- npx playwright show-report playwright-report/bdd",
+    "test:gremlins": "node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.gremlins.config.ts",
+    "test:gremlins:headed": "node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.gremlins.config.ts --headed",
+    "test:gremlins:mp": "node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.gremlins.config.ts --project \"MP Gremlins Chromium\"",
+    "test:gremlins:report": "node scripts/run-with-dotenv.mjs -- npx playwright show-report playwright-report/gremlins",
     "test:report": "node scripts/run-with-dotenv.mjs -- npx playwright show-report",
     "test:lighthouse": "node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.lighthouse.config.ts",
     "test:lighthouse:ap": "node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.lighthouse.config.ts --project \"AP Lighthouse\"",
@@ -32,6 +36,7 @@
     "playwright": "^1.58.2"
   },
   "devDependencies": {
+    "gremlins.js": "^2.2.0",
     "lighthouse": "^12.8.2",
     "playwright-bdd": "^8.5.0",
     "playwright-lighthouse": "^4.0.0"
