@@ -75,6 +75,13 @@ This project is written in TypeScript, uses `@playwright/test` as the test runne
 |   |   |-- api-test.ts
 |   |   |-- business-settings.spec.ts
 |   |   `-- user-info.spec.ts
+|   |-- bdd/
+|   |   |-- features/
+|   |   |   `-- mp/
+|   |   |       |-- public-footer-faq.feature
+|   |   |       `-- public-home-hero-sign-in.feature
+|   |   `-- steps/
+|   |       `-- mp-public-navigation.steps.ts
 |   |-- fixtures/
 |   |   |-- ap-course-cake-decorations-large.png
 |   |   |-- ap-course-cake-decorations-small.png
@@ -347,6 +354,12 @@ If initials cannot be resolved, the CRUD flows still get the standard random see
 # Run the suite
 npm test
 
+# Generate the BDD proof-of-concept tests from Gherkin
+npm run test:bdd:gen
+
+# Run the BDD proof of concept
+npm run test:bdd
+
 # Run only the API project
 npm run test:api
 
@@ -371,6 +384,53 @@ The environment split is explicit in code:
   MP-specific page objects live in [page-objects/mp](page-objects/mp).
 - Shared low-level behavior stays in
   [AbstractPage.ts](page-objects/shared/AbstractPage.ts).
+
+### BDD proof of concept
+
+The repo now includes a small `playwright-bdd` proof of concept that sits alongside the existing `@playwright/test` suite rather than replacing it. It lives under [tests/bdd](tests/bdd), uses its own config in [playwright.bdd.config.ts](playwright.bdd.config.ts), and currently covers two public MP documentation flows:
+
+- hero sign-in from the public home page reaches `/login`
+- footer `FAQ` from the public home page reaches `/faq`
+
+The generated Playwright specs are written to `tests/bdd/.features-gen/` and are ignored by git.
+
+Example Gherkin for the login proof of concept:
+
+```gherkin
+@bdd @mp @public
+Feature: MP public home hero sign in
+  As an anonymous visitor
+  I want the hero sign-in link to reach the login form
+  So that I can start signing into the member portal
+
+  Scenario: public home hero sign-in reaches login
+    Given I am on the public member portal home page
+    When I open the hero sign-in link
+    Then I should reach the anonymous login page
+```
+
+Example usage:
+
+```bash
+# Generate the Playwright specs from the feature files
+npm run test:bdd:gen
+
+# Generate and run the BDD examples
+npm run test:bdd
+
+# Generate and run the BDD examples in headed mode
+npm run test:bdd:headed
+
+# Open the dedicated BDD HTML report
+npm run test:bdd:report
+```
+
+To extend the proof of concept:
+
+- add a new `.feature` file under `tests/bdd/features`
+- add matching step definitions under `tests/bdd/steps`
+- keep the step definitions thin and reuse existing page objects from `page-objects/mp`
+- rerun `npm run test:bdd`
 
 ### AP tests
 
