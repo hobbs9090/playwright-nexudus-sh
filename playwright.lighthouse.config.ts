@@ -1,17 +1,18 @@
 import type { PlaywrightTestConfig } from '@playwright/test'
 import { devices } from '@playwright/test'
 import { loadEnvironmentFiles, shouldUseHeadlessBrowser } from './helpers'
-import { getBaseURL, getRequiredCredentialEnvVars, testEnvironments } from './test-environments'
+import { getBaseURL, getMissingRequiredCredentialGroups, testEnvironments } from './test-environments'
 
 loadEnvironmentFiles()
 
-const requiredEnvVars = getRequiredCredentialEnvVars()
-const missingRequiredEnvVars = requiredEnvVars.filter((name) => !process.env[name]?.trim())
+const missingRequiredCredentialGroups = getMissingRequiredCredentialGroups()
 const viewport = { width: 1280, height: 1200 }
 
-if (missingRequiredEnvVars.length > 0) {
+if (missingRequiredCredentialGroups.length > 0) {
   throw new Error(
-    `Missing required environment variables: ${missingRequiredEnvVars.join(', ')}. Set them before running the Lighthouse suite.`,
+    `Missing required credential configuration: ${missingRequiredCredentialGroups.join(
+      '; ',
+    )}. Set one complete credential pair for each group before running the Lighthouse suite.`,
   )
 }
 

@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { getConfiguredBaseURL } from '../../nexudus-config'
 import { MPBookingsPage } from '../../page-objects/mp/MPBookingsPage'
-import { getCredentials } from '../../test-environments'
+import { getConfiguredUserCredentials } from '../../test-environments'
 import { expect, test } from './api-test'
 import { getConfiguredMpBusinessContext } from './configured-mp-business'
 
@@ -101,7 +101,7 @@ function getUpdatedCalendarDefaultView(currentCalendarDefaultView: string | null
 }
 
 async function loginToMPForCalendarVerification(page: Page) {
-  const credentials = getCredentials('NEXUDUS_MP_EMAIL', 'NEXUDUS_MP_PASSWORD')
+  const credentials = getConfiguredUserCredentials('member')
 
   await page.goto('/login')
   await page.getByLabel('Email').fill(credentials.email)

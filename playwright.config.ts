@@ -1,19 +1,20 @@
 import type { PlaywrightTestConfig } from '@playwright/test'
 import { devices } from '@playwright/test'
 import { loadEnvironmentFiles, shouldUseHeadlessBrowser } from './helpers'
-import { getBaseURL, getRequiredCredentialEnvVars, testEnvironments } from './test-environments'
+import { getBaseURL, getMissingRequiredCredentialGroups, testEnvironments } from './test-environments'
 
 loadEnvironmentFiles()
 
-const requiredEnvVars = getRequiredCredentialEnvVars()
-const missingRequiredEnvVars = requiredEnvVars.filter((name) => !process.env[name]?.trim())
+const missingRequiredCredentialGroups = getMissingRequiredCredentialGroups()
 const viewport = { width: 1280, height: 1200 }
 const headedWindowChromeHeight = 100
 const headedWindowSize = `${viewport.width},${viewport.height + headedWindowChromeHeight}`
 
-if (missingRequiredEnvVars.length > 0) {
+if (missingRequiredCredentialGroups.length > 0) {
   throw new Error(
-    `Missing required environment variables: ${missingRequiredEnvVars.join(', ')}. Set them before running the Playwright suite.`,
+    `Missing required credential configuration: ${missingRequiredCredentialGroups.join(
+      '; ',
+    )}. Set one complete credential pair for each group before running the Playwright suite.`,
   )
 }
 
@@ -79,7 +80,26 @@ const config: PlaywrightTestConfig = {
             },
           }),
     },
-  })),
+  })).concat([
+    {
+      name: 'MP Android Chrome',
+      testMatch: ['tests/mp/**/*.spec.ts'],
+      use: {
+        ...devices['Pixel 5'],
+        browserName: 'chromium',
+        baseURL: getBaseURL(testEnvironments[1]),
+      },
+    },
+    {
+      name: 'MP iPhone Safari',
+      testMatch: ['tests/mp/**/*.spec.ts'],
+      use: {
+        ...devices['iPhone 12'],
+        browserName: 'webkit',
+        baseURL: getBaseURL(testEnvironments[1]),
+      },
+    },
+  ]),
   // {
   //   name: 'Google Chrome',
   //   use: {

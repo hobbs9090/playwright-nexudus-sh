@@ -1,6 +1,5 @@
 import { APIRequestContext, APIResponse, expect } from '@playwright/test'
-
-type CredentialName = 'username' | 'password'
+import { getConfiguredApiCredentials } from '../test-environments'
 
 export type NexudusBearerTokenResponse = {
   access_token: string
@@ -148,6 +147,7 @@ export class NexudusApiClient {
   constructor(private readonly request: APIRequestContext) {}
 
   async createBearerToken() {
+    const credentials = getConfiguredApiCredentials()
     const response = await this.request.post('/api/token', {
       headers: {
         accept: 'application/json',
@@ -155,8 +155,8 @@ export class NexudusApiClient {
       },
       form: {
         grant_type: 'password',
-        username: getApiCredential('username'),
-        password: getApiCredential('password'),
+        username: credentials.username,
+        password: credentials.password,
       },
     })
 
@@ -411,25 +411,6 @@ async function expectOk(response: APIResponse, actionDescription: string) {
 
 function expectSuccessfulMutation(response: NexudusMutationResponse, actionDescription: string) {
   expect(response.WasSuccessful, `Expected Nexudus API to ${actionDescription} successfully.`).toBeTruthy()
-}
-
-function getApiCredential(name: CredentialName) {
-  const envVarNames =
-    name === 'username'
-      ? ['NEXUDUS_API_USERNAME', 'NEXUDUS_MP_EMAIL', 'NEXUDUS_AP_EMAIL']
-      : ['NEXUDUS_API_PASSWORD', 'NEXUDUS_MP_PASSWORD', 'NEXUDUS_AP_PASSWORD']
-
-  for (const envVarName of envVarNames) {
-    const value = process.env[envVarName]?.trim()
-
-    if (value) {
-      return value
-    }
-  }
-
-  throw new Error(
-    `Missing Nexudus API ${name}. Set ${envVarNames[0]} or make sure one of ${envVarNames.slice(1).join(', ')} is available.`,
-  )
 }
 
 function getAuthorizationHeaders(accessToken: string) {

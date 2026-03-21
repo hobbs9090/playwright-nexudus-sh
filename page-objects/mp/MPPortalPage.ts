@@ -63,6 +63,10 @@ export class MPPortalPage extends AbstractPage {
     await this.dismissOnboardingModalIfPresent()
   }
 
+  async hasSidebarItem(label: string) {
+    return this.hasVisibleControl(this.sidebar, label)
+  }
+
   async assertSidebarItemVisible(label: string) {
     await expect(await this.getVisibleControl(this.sidebar, label)).toBeVisible()
   }

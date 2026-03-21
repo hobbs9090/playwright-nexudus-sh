@@ -113,7 +113,7 @@ To get fully up and running, a QA would usually need:
 - npm.
 - Playwright Chromium installed with `npx playwright install chromium`.
 - A local `.env` copied from `.env.example`.
-- Working Nexudus staging credentials for AP and MP.
+- Working Nexudus staging credentials for AP and for an MP member or coworker account.
 - Optional separate API credentials only if the API tests should not reuse the MP credentials.
 
 The repo already loads `.env.shared` first and `.env` second, so team defaults remain available while your local secrets override them. In practice that means a new QA will usually only need to add the AP and MP login credentials unless they want to override the shared defaults for delivery, course, event, or API work.
@@ -258,16 +258,16 @@ The suite supports the following environment variables:
 | `NEXUDUS_AP_EVENT_NAME`         | No                            | `Astronomy Night` via `.env.shared`                         | Base name used when generating AP event titles                                  |
 | `NEXUDUS_CONTRIBUTOR_INITIALS`  | No                            | Derived from Git user name when available                   | Prefix applied to the CRUD random seed, for example `shabcde`                   |
 | `NEXUDUS_MP_BASE_URL`           | No                            | Derived from `NEXUDUS_MP_LOCATION_SELECTOR_LABEL` for the shared staging hosts | Optional explicit custom base URL override for non-standard MP environments     |
-| `NEXUDUS_MP_EMAIL`              | Yes                           | None                                                        | Username for the MP staging project                                             |
-| `NEXUDUS_MP_PASSWORD`           | Yes                           | None                                                        | Password for the MP staging project                                             |
+| `NEXUDUS_MP_EMAIL`              | Yes                           | None                                                        | Default member or coworker username for the MP staging project                  |
+| `NEXUDUS_MP_PASSWORD`           | Yes                           | None                                                        | Default member or coworker password for the MP staging project                  |
 | `NEXUDUS_MP_LOCATION_SELECTOR_LABEL` | No                      | `Coworking Soho (STEVEN)` via `.env.shared`                 | MP location label used to derive the default MP host for public, authenticated, and API-linked flows |
-| `NEXUDUS_MEMBER_EMAIL`          | No                            | `NEXUDUS_MP_EMAIL`                                          | Optional dedicated member-user email for role-based tests                       |
-| `NEXUDUS_MEMBER_PASSWORD`       | No                            | `NEXUDUS_MP_PASSWORD`                                       | Optional dedicated member-user password for role-based tests                    |
+| `NEXUDUS_MEMBER_EMAIL`          | No                            | `NEXUDUS_MP_EMAIL`                                          | Optional dedicated member-user email override for role-based tests              |
+| `NEXUDUS_MEMBER_PASSWORD`       | No                            | `NEXUDUS_MP_PASSWORD`                                       | Optional dedicated member-user password override for role-based tests           |
 | `NEXUDUS_CONTACT_EMAIL`         | No                            | None                                                        | Optional dedicated contact-user email for role-based tests                      |
 | `NEXUDUS_CONTACT_PASSWORD`      | No                            | None                                                        | Optional dedicated contact-user password for role-based tests                   |
 | `NEXUDUS_API_BASE_URL`          | No                            | Derived from the resolved MP host origin                    | Optional explicit custom base URL override for API tests, for example `https://your-space.spacesstaging.nexudus.com` |
-| `NEXUDUS_API_USERNAME`          | No                            | `NEXUDUS_MP_EMAIL`, then `NEXUDUS_AP_EMAIL`                | Optional username override for API authentication                               |
-| `NEXUDUS_API_PASSWORD`          | No                            | `NEXUDUS_MP_PASSWORD`, then `NEXUDUS_AP_PASSWORD`          | Optional password override for API authentication                               |
+| `NEXUDUS_API_USERNAME`          | No                            | `NEXUDUS_MEMBER_EMAIL`, then `NEXUDUS_MP_EMAIL`, then `NEXUDUS_AP_EMAIL` | Optional username override for API authentication                               |
+| `NEXUDUS_API_PASSWORD`          | No                            | `NEXUDUS_MEMBER_PASSWORD`, then `NEXUDUS_MP_PASSWORD`, then `NEXUDUS_AP_PASSWORD` | Optional password override for API authentication                               |
 | `PLAYWRIGHT_HEADLESS`           | No                            | `false` locally, `true` on CI                               | Forces headless browser execution                                               |
 | `LIGHTHOUSE_MIN_PERFORMANCE`    | No                            | `35`                                                        | Minimum Lighthouse performance score for the AP and MP dashboard audits         |
 | `LIGHTHOUSE_MIN_ACCESSIBILITY`  | No                            | `55`                                                        | Minimum Lighthouse accessibility score for the AP and MP dashboard audits       |
@@ -282,8 +282,8 @@ Example local setup:
 ```bash
 NEXUDUS_AP_EMAIL='your-ap-user@example.com'
 NEXUDUS_AP_PASSWORD='your-ap-password'
-NEXUDUS_MP_EMAIL='your-mp-staging-user@example.com'
-NEXUDUS_MP_PASSWORD='your-mp-staging-password'
+NEXUDUS_MP_EMAIL='your-mp-member@example.com'
+NEXUDUS_MP_PASSWORD='your-mp-member-password'
 NEXUDUS_AP_LOCATION_SELECTOR_LABEL='Coworking Soho (STEVEN)'
 NEXUDUS_MP_LOCATION_SELECTOR_LABEL='Coworking Soho (STEVEN)'
 NEXUDUS_ADMIN_EMAIL='your-admin-user@example.com'
@@ -295,11 +295,16 @@ NEXUDUS_CONTACT_PASSWORD='your-contact-password'
 NEXUDUS_AP_BASE_URL='https://dashboard-staging.nexudus.com/'
 ```
 
+Use `NEXUDUS_MP_EMAIL` and `NEXUDUS_MP_PASSWORD` for the default MP member or
+coworker account. If you also need contact coverage, keep that separate in
+`NEXUDUS_CONTACT_EMAIL` and `NEXUDUS_CONTACT_PASSWORD` rather than reusing the
+default MP pair.
+
 For role-based test helpers, the repo now exposes
 `getConfiguredUserCredentials('admin' | 'member' | 'contact')` from
 [test-environments.ts](test-environments.ts). `admin` falls back to the AP
-credential pair, `member` falls back to the MP credential pair, and `contact`
-must be configured explicitly when a test needs it.
+credential pair, `member` falls back to the default MP member credential pair,
+and `contact` must be configured explicitly when a test needs it.
 
 For location-selector helpers, the repo now exposes
 `getConfiguredLocationSelectorLabel('ap' | 'mp')` from
@@ -350,6 +355,12 @@ npm test
 # Run only the API project
 npm run test:api
 
+# Run the MP mobile-view smoke checks in Android Chrome
+npx playwright test --project "MP Android Chrome"
+
+# Run the MP mobile-view smoke checks in iPhone Safari
+npx playwright test --project "MP iPhone Safari"
+
 # Run in headed mode
 npm run test:headed
 
@@ -365,6 +376,13 @@ npm run test:report
 
 By default the suite runs three projects: `AP Chromium`, `MP Staging Chromium`, and `API`. `AP Chromium` includes the admin overview, admin workflow, AP login, and AP course-creation specs against the dashboard application. `MP Staging Chromium` covers the member-portal login flow, public signup coverage, signed-in help-request coverage, public request-a-tour coverage, and public home-content checks against the spaces staging application. `API` uses the configured MP host origin by default, authenticates against `/api/token`, and runs API-only coverage under `tests/api`, including business-setting mutation checks and MP footer verification. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "API"`.
 
+The repo also includes two opt-in MP mobile browser projects:
+
+- `MP Android Chrome` uses Playwright's `Pixel 5` device profile with Chromium to exercise MP flows in an Android Chrome-style mobile view.
+- `MP iPhone Safari` uses Playwright's `iPhone 12` device profile with WebKit to exercise MP flows in an iPhone Safari-style mobile view.
+
+These projects are intended for responsive browser coverage of the member portal. They are useful for checking layout, navigation, and core journeys in mobile-sized Chrome and Safari browser contexts without changing the default desktop-first suite.
+
 The environment split is explicit in code:
 
 - AP-specific page objects live in [page-objects/ap](page-objects/ap), while
@@ -372,18 +390,23 @@ The environment split is explicit in code:
 - Shared low-level behavior stays in
   [AbstractPage.ts](page-objects/shared/AbstractPage.ts).
 
-### iOS and Android recommendations
+### Mobile views and native-device testing
 
-If you want mobile confidence in this repo, the most practical approach is to treat iOS and Android as an additional layer rather than expanding the default desktop suite blindly.
+If you want mobile confidence in this repo, the most practical approach is to treat mobile browser coverage and native-device coverage as two related but different layers.
 
-- Start with Playwright device emulation for MP flows that matter on phones, such as the public home page, login, signup, FAQ, bookings, and other member-facing navigation.
-- Keep the current default suite desktop-first unless there is a clear product reason to run mobile coverage on every commit.
-- Prefer adding opt-in mobile projects or a separate mobile config instead of mixing phone coverage into the existing AP, MP, and API defaults.
+- Start with the included Playwright mobile browser projects for MP flows that matter on phones, such as the public home page, hero sign-in, FAQ, and authenticated login.
+- `MP Android Chrome` is the Android-facing mobile browser project and `MP iPhone Safari` is the iOS-facing mobile browser project. They give us responsive browser coverage for Chrome- and Safari-style mobile views inside Playwright.
+- Keep the default suite desktop-first unless there is a clear product reason to run mobile browser coverage on every commit.
+- Prefer opt-in mobile projects instead of mixing phone coverage into the existing AP, MP, and API defaults.
 - Focus AP mobile checks on responsive sanity only, because the AP dashboard is primarily a desktop workflow.
-- Use real-device or cloud-device validation when a change is sensitive to true mobile browser behavior, especially iOS Safari quirks, Android Chrome input behavior, camera or file-upload flows, or touch-specific regressions.
 - Reuse the existing MP page objects where possible, but keep mobile assertions looser and centered on visible outcomes rather than brittle layout details.
 
-In practice, a good first step would be a small mobile-only MP smoke pack that checks the public home page, hero sign-in, footer FAQ, and authenticated login journey before adding broader mobile coverage.
+These mobile Playwright projects are still browser tests. They help us validate MP in mobile-sized Chrome and Safari contexts, but they do not replace true native-device testing.
+
+- Use real iOS and Android devices, or a device cloud, when a change depends on true mobile browser behavior such as iOS Safari quirks, Android Chrome keyboard/input behavior, touch handling, camera access, file uploads, permissions, or install-to-home-screen behavior.
+- If the product also ships as a native mobile app, keep Playwright for web and mobile-web coverage and add a separate native automation layer for app-specific behavior. Reuse the business scenarios and test data, but do not try to reuse raw web selectors directly in native tests.
+
+In practice, a good first step is a small MP mobile smoke pack that checks the public home page, hero sign-in, footer FAQ, and authenticated login journey in both `MP Android Chrome` and `MP iPhone Safari`, then expand device coverage only where the extra signal is worth it.
 
 ### AP tests
 

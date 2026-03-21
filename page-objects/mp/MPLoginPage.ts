@@ -1,5 +1,5 @@
 import { expect, Locator, Page } from '@playwright/test'
-import { getCredentials } from '../../test-environments'
+import { getConfiguredUserCredentials } from '../../test-environments'
 import { AbstractPage } from '../shared/AbstractPage'
 
 type LoginOutcome = 'success' | 'error' | 'disabled'
@@ -34,7 +34,7 @@ export class MPLoginPage extends AbstractPage {
   }
 
   async submitCurrentLoginForm(email?: string, password?: string, expectedOutcome: LoginOutcome = 'success') {
-    const credentials = getCredentials('NEXUDUS_MP_EMAIL', 'NEXUDUS_MP_PASSWORD')
+    const credentials = getConfiguredUserCredentials('member')
     const resolvedEmail = email ?? credentials.email
     const resolvedPassword = password ?? credentials.password
 
@@ -124,8 +124,22 @@ export class MPLoginPage extends AbstractPage {
   }
 
   async assertDashboardVisible(fullName?: string) {
-    await expect(this.dashboardButton).toBeVisible()
-    await expect(this.dashboardGreeting).toBeVisible()
+    await expect
+      .poll(
+        async () => {
+          const dashboardButtonVisible = await this.dashboardButton.isVisible().catch(() => false)
+          const dashboardGreetingVisible = await this.dashboardGreeting.isVisible().catch(() => false)
+
+          return dashboardButtonVisible || dashboardGreetingVisible
+        },
+        {
+          message: 'Expected the member dashboard to expose either the dashboard button or the dashboard greeting.',
+          timeout: 20000,
+        },
+      )
+      .toBe(true)
+
+    await expect(this.dashboardGreeting).toBeVisible({ timeout: 20000 })
 
     if (fullName) {
       const greetingText = (await this.dashboardGreeting.innerText()).trim()

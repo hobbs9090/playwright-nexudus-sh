@@ -25,6 +25,11 @@ type RoleCredentialConfig = {
   passwordEnvVar: string
 }
 
+type CredentialEnvPair = {
+  emailEnvVar: string
+  passwordEnvVar: string
+}
+
 export const testEnvironments: TestEnvironment[] = [
   {
     projectName: 'AP Chromium',
@@ -68,12 +73,24 @@ export const configuredUserCredentialEnvVars: Record<ConfiguredUserRole, RoleCre
   },
 }
 
+const requiredCredentialGroups: CredentialEnvPair[][] = [
+  [{ emailEnvVar: 'NEXUDUS_AP_EMAIL', passwordEnvVar: 'NEXUDUS_AP_PASSWORD' }],
+  [
+    { emailEnvVar: 'NEXUDUS_MEMBER_EMAIL', passwordEnvVar: 'NEXUDUS_MEMBER_PASSWORD' },
+    { emailEnvVar: 'NEXUDUS_MP_EMAIL', passwordEnvVar: 'NEXUDUS_MP_PASSWORD' },
+  ],
+]
+
 export function getBaseURL(environment: TestEnvironment) {
   return getConfiguredBaseURL(environment.baseUrlEnvVar)
 }
 
-export function getRequiredCredentialEnvVars() {
-  return [...new Set(testEnvironments.flatMap((environment) => [environment.emailEnvVar, environment.passwordEnvVar]))]
+export function getMissingRequiredCredentialGroups() {
+  return requiredCredentialGroups
+    .filter((credentialGroup) => !credentialGroup.some((credentialPair) => hasCredentialPair(credentialPair)))
+    .map((credentialGroup) =>
+      credentialGroup.map((credentialPair) => `${credentialPair.emailEnvVar} and ${credentialPair.passwordEnvVar}`).join(' or '),
+    )
 }
 
 export function getCredentials(emailEnvVar: string, passwordEnvVar: string) {
@@ -106,6 +123,40 @@ export function getConfiguredUserCredentials(role: ConfiguredUserRole) {
   }
 }
 
+export function getConfiguredApiCredentials() {
+  if (process.env.NEXUDUS_API_USERNAME?.trim() || process.env.NEXUDUS_API_PASSWORD?.trim()) {
+    const credentials = getCredentials('NEXUDUS_API_USERNAME', 'NEXUDUS_API_PASSWORD')
+
+    return {
+      username: credentials.email,
+      password: credentials.password,
+    }
+  }
+
+  if (
+    hasCredentialPair({ emailEnvVar: 'NEXUDUS_MEMBER_EMAIL', passwordEnvVar: 'NEXUDUS_MEMBER_PASSWORD' }) ||
+    hasCredentialPair({ emailEnvVar: 'NEXUDUS_MP_EMAIL', passwordEnvVar: 'NEXUDUS_MP_PASSWORD' })
+  ) {
+    const credentials = getConfiguredUserCredentials('member')
+
+    return {
+      username: credentials.email,
+      password: credentials.password,
+    }
+  }
+
+  const credentials = getCredentials('NEXUDUS_AP_EMAIL', 'NEXUDUS_AP_PASSWORD')
+
+  return {
+    username: credentials.email,
+    password: credentials.password,
+  }
+}
+
 export function getConfiguredMemberName(memberEnvVar: string) {
   return requireEnvVar(memberEnvVar)
+}
+
+function hasCredentialPair(credentialPair: CredentialEnvPair) {
+  return Boolean(process.env[credentialPair.emailEnvVar]?.trim()) && Boolean(process.env[credentialPair.passwordEnvVar]?.trim())
 }

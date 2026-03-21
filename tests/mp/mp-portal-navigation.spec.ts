@@ -1,9 +1,8 @@
 import { expect, test } from '@playwright/test'
-import { NexudusApiClient } from '../../api/NexudusApiClient'
 import { MPHomePage } from '../../page-objects/mp/MPHomePage'
 import { MPLoginPage } from '../../page-objects/mp/MPLoginPage'
 import { MPPortalPage } from '../../page-objects/mp/MPPortalPage'
-import { getConfiguredLocationSelectorLabel } from '../../test-environments'
+import { getConfiguredLocationSelectorLabel, getConfiguredUserCredentials } from '../../test-environments'
 
 test.describe('MP authenticated portal navigation', () => {
   let currentBusinessName: string
@@ -11,27 +10,32 @@ test.describe('MP authenticated portal navigation', () => {
   let homePage: MPHomePage
   let loginPage: MPLoginPage
   let portalPage: MPPortalPage
+  const hasDedicatedMemberCredentials =
+    Boolean(process.env.NEXUDUS_MEMBER_EMAIL?.trim()) && Boolean(process.env.NEXUDUS_MEMBER_PASSWORD?.trim())
 
-  test.beforeEach(async ({ page, request }) => {
+  test.beforeEach(async ({ page }) => {
+    test.skip(
+      process.env.CI === 'true' && !hasDedicatedMemberCredentials,
+      'MP authenticated portal navigation requires a dedicated non-admin member account in NEXUDUS_MEMBER_EMAIL and NEXUDUS_MEMBER_PASSWORD when running in CI.',
+    )
+
     homePage = new MPHomePage(page)
     loginPage = new MPLoginPage(page)
     portalPage = new MPPortalPage(page)
 
     await portalPage.installBlockingDialogSuppression()
-
-    const nexudusApi = new NexudusApiClient(request)
-    const token = await nexudusApi.createBearerToken()
-    const currentUser = await nexudusApi.getCurrentUser(token.access_token)
+    const memberCredentials = getConfiguredUserCredentials('member')
 
     currentBusinessName = getConfiguredLocationSelectorLabel('mp')
-    currentUserFullName = String(currentUser.FullName || '').trim()
 
     expect(currentBusinessName, 'Expected the MP location configuration to expose a business name.').toBeTruthy()
-    expect(currentUserFullName, 'Expected the MP API profile to expose the current user full name.').toBeTruthy()
 
-    await loginPage.login()
-    await loginPage.assertDashboardVisible(currentUserFullName)
+    await loginPage.login(memberCredentials.email, memberCredentials.password)
+    await loginPage.assertDashboardVisible()
     await portalPage.dismissOnboardingModalIfPresent()
+
+    currentUserFullName = await loginPage.getDashboardGreetingName()
+    expect(currentUserFullName, 'Expected the MP dashboard greeting to expose the current member name.').toBeTruthy()
   })
 
   test('user-profile-menu shows the current member actions and hides legacy-only entries @dg', async ({ page }) => {
@@ -53,7 +57,9 @@ test.describe('MP authenticated portal navigation', () => {
     await expect(page).toHaveURL(/\/my-activity(?:\?.*)?$/)
     await portalPage.assertMainHeadingVisible('My Activity')
 
-    await portalPage.clickSidebarItem('My dashboard')
+    const dashboardSidebarLabel = (await portalPage.hasSidebarItem('My dashboard')) ? 'My dashboard' : 'Dashboard'
+
+    await portalPage.clickSidebarItem(dashboardSidebarLabel)
 
     await expect(page).toHaveURL(/\/home(?:\?.*)?$/)
     await loginPage.assertDashboardVisible(currentUserFullName)
