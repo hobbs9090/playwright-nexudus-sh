@@ -22,13 +22,13 @@ export class APLoginPage extends AbstractPage {
     this.locationMenu = page.locator('[aria-label="Locations menu"]').first()
   }
 
-  async login(email?: string, password?: string, valid: boolean = true) {
+  async login(email?: string, password?: string, valid: boolean = true, startURL: string = '') {
     const credentials = getCredentials('NEXUDUS_AP_EMAIL', 'NEXUDUS_AP_PASSWORD')
     const resolvedEmail = email ?? credentials.email
     const resolvedPassword = password ?? credentials.password
 
     await this.installBlockingDialogSuppression()
-    await this.page.goto('')
+    await this.page.goto(startURL)
     await this.emailInput.fill(resolvedEmail)
     await this.passwordInput.fill(resolvedPassword)
     await this.signInButton.click()

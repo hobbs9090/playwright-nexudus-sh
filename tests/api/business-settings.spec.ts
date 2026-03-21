@@ -7,7 +7,7 @@ import { getConfiguredMpBusinessContext } from './configured-mp-business'
 
 test.describe('Nexudus API business settings', () => {
   test('can update Footer.SayingText and verify it in MP @api', async (
-    { nexudusApi, accessToken, page },
+    { nexudusApi, backofficeApi, accessToken, page },
     testInfo,
   ) => {
     test.slow()
@@ -17,11 +17,11 @@ test.describe('Nexudus API business settings', () => {
     const footerSeed = buildFooterSeed()
     const homePage = new MPHomePage(page)
     const mpHomeURL = buildMPHomeURL()
-    const footerSayingText = await nexudusApi.getBusinessSetting(accessToken, {
+    const footerSayingText = await backofficeApi.getBusinessSetting({
       businessId: currentBusinessId,
       name: 'Footer.SayingText',
     })
-    const footerSayingAuthor = await nexudusApi.getBusinessSetting(accessToken, {
+    const footerSayingAuthor = await backofficeApi.getBusinessSetting({
       businessId: currentBusinessId,
       name: 'Footer.SayingAuthor',
     })
@@ -47,13 +47,13 @@ test.describe('Nexudus API business settings', () => {
       'Expected the updated footer saying author to include Playwright and the shared seed.',
     ).toBe(`Playwright ${footerSeed}`)
 
-    const updatedBusinessSetting = await nexudusApi.updateBusinessSetting(accessToken, {
+    const updatedBusinessSetting = await backofficeApi.updateBusinessSetting({
       BusinessId: footerSayingText.BusinessId,
       Id: footerSayingText.Id,
       Name: footerSayingText.Name,
       Value: updatedFooterSayingText,
     })
-    const updatedAuthorSetting = await nexudusApi.updateBusinessSetting(accessToken, {
+    const updatedAuthorSetting = await backofficeApi.updateBusinessSetting({
       BusinessId: footerSayingAuthor.BusinessId,
       Id: footerSayingAuthor.Id,
       Name: footerSayingAuthor.Name,
@@ -64,10 +64,10 @@ test.describe('Nexudus API business settings', () => {
     expect(updatedAuthorSetting.Value).toBe(updatedFooterSayingAuthor)
 
     await expect
-      .poll(() => nexudusApi.getBusinessSettingById(accessToken, footerSayingText.Id).then((setting) => setting.Value))
+      .poll(() => backofficeApi.getBusinessSettingById(footerSayingText.Id).then((setting) => setting.Value))
       .toBe(updatedFooterSayingText)
     await expect
-      .poll(() => nexudusApi.getBusinessSettingById(accessToken, footerSayingAuthor.Id).then((setting) => setting.Value))
+      .poll(() => backofficeApi.getBusinessSettingById(footerSayingAuthor.Id).then((setting) => setting.Value))
       .toBe(updatedFooterSayingAuthor)
 
     await expect
@@ -96,13 +96,14 @@ test.describe('Nexudus API business settings', () => {
 
   test('can update Calendars.DefaultView for the current business and restore it afterwards @api', async ({
     nexudusApi,
+    backofficeApi,
     accessToken,
   }) => {
     test.slow()
 
     const currentUser = await nexudusApi.getCurrentUser(accessToken)
     const { businessId: currentBusinessId } = await getConfiguredMpBusinessContext(nexudusApi, accessToken, currentUser)
-    const calendarDefaultView = await nexudusApi.getBusinessSetting(accessToken, {
+    const calendarDefaultView = await backofficeApi.getBusinessSetting({
       businessId: currentBusinessId,
       name: 'Calendars.DefaultView',
     })
@@ -115,7 +116,7 @@ test.describe('Nexudus API business settings', () => {
     ).not.toBe(originalCalendarDefaultView)
 
     try {
-      const updatedBusinessSetting = await nexudusApi.updateBusinessSetting(accessToken, {
+      const updatedBusinessSetting = await backofficeApi.updateBusinessSetting({
         BusinessId: calendarDefaultView.BusinessId,
         Id: calendarDefaultView.Id,
         Name: calendarDefaultView.Name,
@@ -125,12 +126,10 @@ test.describe('Nexudus API business settings', () => {
       expect(updatedBusinessSetting.Value).toBe(updatedCalendarDefaultView)
 
       await expect
-        .poll(() =>
-          nexudusApi.getBusinessSettingById(accessToken, calendarDefaultView.Id).then((setting) => setting.Value),
-        )
+        .poll(() => backofficeApi.getBusinessSettingById(calendarDefaultView.Id).then((setting) => setting.Value))
         .toBe(updatedCalendarDefaultView)
     } finally {
-      const restoredBusinessSetting = await nexudusApi.updateBusinessSetting(accessToken, {
+      const restoredBusinessSetting = await backofficeApi.updateBusinessSetting({
         BusinessId: calendarDefaultView.BusinessId,
         Id: calendarDefaultView.Id,
         Name: calendarDefaultView.Name,
@@ -140,9 +139,7 @@ test.describe('Nexudus API business settings', () => {
       expect(restoredBusinessSetting.Value).toBe(originalCalendarDefaultView)
 
       await expect
-        .poll(() =>
-          nexudusApi.getBusinessSettingById(accessToken, calendarDefaultView.Id).then((setting) => setting.Value),
-        )
+        .poll(() => backofficeApi.getBusinessSettingById(calendarDefaultView.Id).then((setting) => setting.Value))
         .toBe(originalCalendarDefaultView)
     }
   })

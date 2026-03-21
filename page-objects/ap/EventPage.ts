@@ -106,8 +106,28 @@ export class EventPage extends AbstractPage {
   }
 
   async fillRichTextField(input: Locator, value: string) {
-    await input.fill(value)
-    await expect(input).toHaveValue(value)
+    await input.click({ force: true })
+
+    await input.fill(value).catch(() => null)
+
+    const currentValue = await input.inputValue().catch(() => '')
+    if (currentValue === value) {
+      return
+    }
+
+    await input.evaluate((element, newValue) => {
+      if (!(element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement)) {
+        throw new Error('Expected a text input element')
+      }
+
+      element.focus()
+      element.value = newValue
+      element.dispatchEvent(new Event('input', { bubbles: true }))
+      element.dispatchEvent(new Event('change', { bubbles: true }))
+      element.blur()
+    }, value)
+
+    await expect.poll(async () => input.inputValue()).toBe(value)
   }
 
   async setRsvpOptions(ticketNotes: string) {

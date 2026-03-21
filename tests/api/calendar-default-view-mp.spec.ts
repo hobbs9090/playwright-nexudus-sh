@@ -24,6 +24,7 @@ test.describe('MP calendar business settings', () => {
   test('Calendars.DefaultView updates the business setting by API and shows the configured view in MP bookings @api @dg', async ({
     accessToken,
     nexudusApi,
+    backofficeApi,
     page,
   }) => {
     test.slow()
@@ -32,7 +33,7 @@ test.describe('MP calendar business settings', () => {
       'Current MP bookings routes do not expose a distinguishable Calendars.DefaultView value in the rendered portal state after the API mutation.',
     )
 
-    const calendarDefaultView = await nexudusApi.getBusinessSetting(accessToken, {
+    const calendarDefaultView = await backofficeApi.getBusinessSetting({
       businessId: currentBusinessId,
       name: 'Calendars.DefaultView',
     })
@@ -45,7 +46,7 @@ test.describe('MP calendar business settings', () => {
     ).not.toBe(originalCalendarDefaultView)
 
     try {
-      const updateResponse = await nexudusApi.updateBusinessSettingMutation(accessToken, {
+      const updateResponse = await backofficeApi.updateBusinessSettingMutation({
         BusinessId: calendarDefaultView.BusinessId,
         Id: calendarDefaultView.Id,
         Name: calendarDefaultView.Name,
@@ -54,7 +55,7 @@ test.describe('MP calendar business settings', () => {
 
       expect(updateResponse.Message).toBe(`Space Setting "${currentBusinessName}" was successfully updated.`)
 
-      const updatedBusinessSetting = await nexudusApi.getBusinessSettingById(accessToken, calendarDefaultView.Id)
+      const updatedBusinessSetting = await backofficeApi.getBusinessSettingById(calendarDefaultView.Id)
 
       expect(updatedBusinessSetting.Value).toBe(updatedCalendarDefaultView)
 
@@ -72,7 +73,7 @@ test.describe('MP calendar business settings', () => {
         'Expected the MP bookings HTML bootstrap payload to include the updated Calendars.DefaultView value.',
       ).toBe(updatedCalendarDefaultView)
     } finally {
-      const restoredBusinessSetting = await nexudusApi.updateBusinessSetting(accessToken, {
+      const restoredBusinessSetting = await backofficeApi.updateBusinessSetting({
         BusinessId: calendarDefaultView.BusinessId,
         Id: calendarDefaultView.Id,
         Name: calendarDefaultView.Name,
@@ -82,9 +83,7 @@ test.describe('MP calendar business settings', () => {
       expect(restoredBusinessSetting.Value).toBe(originalCalendarDefaultView)
 
       await expect
-        .poll(() =>
-          nexudusApi.getBusinessSettingById(accessToken, calendarDefaultView.Id).then((setting) => setting.Value),
-        )
+        .poll(() => backofficeApi.getBusinessSettingById(calendarDefaultView.Id).then((setting) => setting.Value))
         .toBe(originalCalendarDefaultView)
     }
   })

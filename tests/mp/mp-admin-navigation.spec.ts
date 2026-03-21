@@ -33,11 +33,11 @@ test.describe('MP admin portal navigation', () => {
 
     await expect(page.getByText('This account has administrator rights.')).toBeVisible()
 
-    for (const adminEntry of ['Admin', 'Page Editor', 'Switch account']) {
+    for (const adminEntry of ['Access dashboard']) {
       await portalPage.assertProfileMenuEntryVisible(adminEntry)
     }
 
-    for (const sharedEntry of ['Access dashboard', 'Profile', 'Log out']) {
+    for (const sharedEntry of ['Profile', 'Plans and Benefits', 'Bookings', 'Billing', 'Metrics', 'Log out']) {
       await portalPage.assertProfileMenuEntryVisible(sharedEntry)
     }
   })

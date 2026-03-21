@@ -140,10 +140,9 @@ test.describe('MP footer and social settings', () => {
   })
 
   test('Footer.SayingText updates the business setting by API and shows the new footer text in MP @api @dg', async ({
-    accessToken,
-    nexudusApi,
+    backofficeApi,
   }, testInfo) => {
-    const footerSayingText = await nexudusApi.getBusinessSetting(accessToken, {
+    const footerSayingText = await backofficeApi.getBusinessSetting({
       businessId: currentBusinessId,
       name: 'Footer.SayingText',
     })
@@ -153,7 +152,7 @@ test.describe('MP footer and social settings', () => {
     expect(updatedValue, 'Expected the footer saying text update value to differ from the current setting.').not.toBe(originalValue)
 
     try {
-      const updateResponse = await nexudusApi.updateBusinessSettingMutation(accessToken, {
+      const updateResponse = await backofficeApi.updateBusinessSettingMutation({
         BusinessId: footerSayingText.BusinessId,
         Id: footerSayingText.Id,
         Name: footerSayingText.Name,
@@ -162,7 +161,7 @@ test.describe('MP footer and social settings', () => {
 
       expect(updateResponse.Message).toBe(`Space Setting "${currentBusinessName}" was successfully updated.`)
 
-      const updatedSetting = await nexudusApi.getBusinessSettingById(accessToken, footerSayingText.Id)
+      const updatedSetting = await backofficeApi.getBusinessSettingById(footerSayingText.Id)
 
       expect(updatedSetting.Value).toBe(updatedValue)
 
@@ -175,7 +174,7 @@ test.describe('MP footer and social settings', () => {
 
       await homePage.assertFooterSayingVisible(updatedValue)
     } finally {
-      await nexudusApi.updateBusinessSetting(accessToken, {
+      await backofficeApi.updateBusinessSetting({
         BusinessId: footerSayingText.BusinessId,
         Id: footerSayingText.Id,
         Name: footerSayingText.Name,
@@ -185,10 +184,9 @@ test.describe('MP footer and social settings', () => {
   })
 
   test('Footer.SayingAuthor updates the business setting by API and shows the new author text in MP @api @dg', async ({
-    accessToken,
-    nexudusApi,
+    backofficeApi,
   }, testInfo) => {
-    const footerSayingAuthor = await nexudusApi.getBusinessSetting(accessToken, {
+    const footerSayingAuthor = await backofficeApi.getBusinessSetting({
       businessId: currentBusinessId,
       name: 'Footer.SayingAuthor',
     })
@@ -198,7 +196,7 @@ test.describe('MP footer and social settings', () => {
     expect(updatedValue, 'Expected the footer saying author update value to differ from the current setting.').not.toBe(originalValue)
 
     try {
-      const updateResponse = await nexudusApi.updateBusinessSettingMutation(accessToken, {
+      const updateResponse = await backofficeApi.updateBusinessSettingMutation({
         BusinessId: footerSayingAuthor.BusinessId,
         Id: footerSayingAuthor.Id,
         Name: footerSayingAuthor.Name,
@@ -207,7 +205,7 @@ test.describe('MP footer and social settings', () => {
 
       expect(updateResponse.Message).toBe(`Space Setting "${currentBusinessName}" was successfully updated.`)
 
-      const updatedSetting = await nexudusApi.getBusinessSettingById(accessToken, footerSayingAuthor.Id)
+      const updatedSetting = await backofficeApi.getBusinessSettingById(footerSayingAuthor.Id)
 
       expect(updatedSetting.Value).toBe(updatedValue)
 
@@ -220,7 +218,7 @@ test.describe('MP footer and social settings', () => {
 
       await homePage.assertFooterSayingAuthorVisible(updatedValue)
     } finally {
-      await nexudusApi.updateBusinessSetting(accessToken, {
+      await backofficeApi.updateBusinessSetting({
         BusinessId: footerSayingAuthor.BusinessId,
         Id: footerSayingAuthor.Id,
         Name: footerSayingAuthor.Name,
@@ -231,14 +229,13 @@ test.describe('MP footer and social settings', () => {
 
   for (const socialSettingExpectation of socialSettingExpectations) {
     test(`${socialSettingExpectation.title} updates the social URL by API and shows the matching footer link in MP @api @dg`, async ({
-      accessToken,
-      nexudusApi,
+      backofficeApi,
     }) => {
       if (socialSettingExpectation.expectedFailureReason) {
         test.fail(true, socialSettingExpectation.expectedFailureReason)
       }
 
-      const socialSetting = await nexudusApi.getBusinessSetting(accessToken, {
+      const socialSetting = await backofficeApi.getBusinessSetting({
         businessId: currentBusinessId,
         name: socialSettingExpectation.name,
       })
@@ -250,7 +247,7 @@ test.describe('MP footer and social settings', () => {
       ).not.toBe(originalValue)
 
       try {
-        const updateResponse = await nexudusApi.updateBusinessSettingMutation(accessToken, {
+        const updateResponse = await backofficeApi.updateBusinessSettingMutation({
           BusinessId: socialSetting.BusinessId,
           Id: socialSetting.Id,
           Name: socialSetting.Name,
@@ -259,7 +256,7 @@ test.describe('MP footer and social settings', () => {
 
         expect(updateResponse.Message).toBe(`Space Setting "${currentBusinessName}" was successfully updated.`)
 
-        const updatedSetting = await nexudusApi.getBusinessSettingById(accessToken, socialSetting.Id)
+        const updatedSetting = await backofficeApi.getBusinessSettingById(socialSetting.Id)
 
         expect(updatedSetting.Value).toBe(socialSettingExpectation.url)
 
@@ -272,7 +269,7 @@ test.describe('MP footer and social settings', () => {
 
         await homePage.assertFooterSocialLinkVisible(socialSettingExpectation.url)
       } finally {
-        await nexudusApi.updateBusinessSetting(accessToken, {
+        await backofficeApi.updateBusinessSetting({
           BusinessId: socialSetting.BusinessId,
           Id: socialSetting.Id,
           Name: socialSetting.Name,

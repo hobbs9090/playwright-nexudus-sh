@@ -37,13 +37,13 @@ test.describe('MP authenticated portal navigation', () => {
   test('user-profile-menu shows the current member actions and hides legacy-only entries @dg', async ({ page }) => {
     await portalPage.openProfileMenu(currentUserFullName)
 
-    await expect(page.getByText('This account has administrator rights.')).toBeVisible()
+    await expect(page.getByText('This account has administrator rights.')).not.toBeVisible()
 
-    for (const entry of ['Access dashboard', 'Profile', 'Plans and Benefits', 'Bookings', 'Billing', 'Log out']) {
+    for (const entry of ['Profile', 'Plans and Benefits', 'Bookings', 'Billing', 'Metrics', 'Refer a friend', 'Log out']) {
       await portalPage.assertProfileMenuEntryVisible(entry)
     }
 
-    for (const legacyOnlyEntry of ['Switch account', 'Page Editor']) {
+    for (const legacyOnlyEntry of ['Access dashboard', 'Switch account', 'Page Editor']) {
       await portalPage.assertProfileMenuEntryNotVisible(legacyOnlyEntry)
     }
   })
@@ -53,8 +53,7 @@ test.describe('MP authenticated portal navigation', () => {
     await expect(page).toHaveURL(/\/my-activity(?:\?.*)?$/)
     await portalPage.assertMainHeadingVisible('My Activity')
 
-    await portalPage.clickSidebarItem('Dashboard')
-    await portalPage.clickSidebarItem('Individual')
+    await portalPage.clickSidebarItem('My dashboard')
 
     await expect(page).toHaveURL(/\/home(?:\?.*)?$/)
     await loginPage.assertDashboardVisible(currentUserFullName)
