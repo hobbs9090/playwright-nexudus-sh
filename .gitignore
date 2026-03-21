@@ -5,6 +5,7 @@ node_modules/
 /pages-report/
 /playwright-screenshots/
 /playwright/.cache/
+/tests/bdd/.features-gen/
 .env
 .env.*
 !.env.example
