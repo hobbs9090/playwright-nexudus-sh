@@ -372,6 +372,19 @@ The environment split is explicit in code:
 - Shared low-level behavior stays in
   [AbstractPage.ts](page-objects/shared/AbstractPage.ts).
 
+### iOS and Android recommendations
+
+If you want mobile confidence in this repo, the most practical approach is to treat iOS and Android as an additional layer rather than expanding the default desktop suite blindly.
+
+- Start with Playwright device emulation for MP flows that matter on phones, such as the public home page, login, signup, FAQ, bookings, and other member-facing navigation.
+- Keep the current default suite desktop-first unless there is a clear product reason to run mobile coverage on every commit.
+- Prefer adding opt-in mobile projects or a separate mobile config instead of mixing phone coverage into the existing AP, MP, and API defaults.
+- Focus AP mobile checks on responsive sanity only, because the AP dashboard is primarily a desktop workflow.
+- Use real-device or cloud-device validation when a change is sensitive to true mobile browser behavior, especially iOS Safari quirks, Android Chrome input behavior, camera or file-upload flows, or touch-specific regressions.
+- Reuse the existing MP page objects where possible, but keep mobile assertions looser and centered on visible outcomes rather than brittle layout details.
+
+In practice, a good first step would be a small mobile-only MP smoke pack that checks the public home page, hero sign-in, footer FAQ, and authenticated login journey before adding broader mobile coverage.
+
 ### AP tests
 
 - [ap-login.spec.ts](tests/ap/ap-login.spec.ts) covers invalid and valid AP login
