@@ -16,6 +16,8 @@ jobs:
   plan-playwright:
     name: Plan Playwright runner fan-out
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     permissions:
       contents: read
     outputs:
@@ -68,6 +70,7 @@ jobs:
         include: ${{ fromJSON(needs.plan-playwright.outputs.matrix) }}
     env:
       CI: true
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
       PLAYWRIGHT_HEADLESS: true
       NEXUDUS_AP_BASE_URL: ${{ vars.NEXUDUS_AP_BASE_URL }}
       NEXUDUS_AP_EMAIL: ${{ secrets.NEXUDUS_AP_EMAIL }}
@@ -115,6 +118,8 @@ jobs:
       - plan-playwright
       - playwright
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     permissions:
       contents: read
 
@@ -202,6 +207,7 @@ jobs:
       contents: read
     env:
       CI: true
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
       PLAYWRIGHT_HEADLESS: true
       NEXUDUS_AP_BASE_URL: ${{ vars.NEXUDUS_AP_BASE_URL }}
       NEXUDUS_AP_EMAIL: ${{ secrets.NEXUDUS_AP_EMAIL }}
@@ -259,6 +265,8 @@ jobs:
       - report
       - lighthouse
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
     permissions:
       contents: read
       pages: write
@@ -290,15 +298,21 @@ jobs:
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: pages-report
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
       - name: Deploy reports to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
       - name: Add published report links to GitHub UI
         run: |
