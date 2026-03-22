@@ -601,10 +601,14 @@ The scenario outline parameters mean:
 
 The current feature file uses rows like these:
 
-- `Bob Younger | Large Meeting Room #1 | next Tuesday | 9am | 30 minutes | Does not repeat | true`
-- `Bob Younger | Large Meeting Room #1 | tomorrow | 7pm | 30 minutes | Does not repeat | false`
-- `Bob Younger | Large Meeting Room #1 | next Wednesday | 7pm | 30 minutes | Every workday | false`
-- `Bob Younger | Large Meeting Room #1 | 23/03/2026 | 7:30pm | 30 minutes | Every day on Monday | false`
+```gherkin
+Examples:
+  | Member Name | Resource name         | Date           | Start time | Length     | Repeat options      | Alternative |
+  | Bob Younger | Large Meeting Room #1 | next Tuesday   | 9am        | 30 minutes | Does not repeat     | true        |
+  | Bob Younger | Large Meeting Room #1 | tomorrow       | 7pm        | 30 minutes | Does not repeat     | false       |
+  | Bob Younger | Large Meeting Room #1 | next Wednesday | 7pm        | 30 minutes | Every workday       | false       |
+  | Bob Younger | Large Meeting Room #1 | 23/03/2026     | 7:30pm     | 30 minutes | Every day on Monday | false       |
+```
 
 For `Every day on <weekday>`, the helper maps that input to the portal's built-in weekly repeat option for the selected weekday, for example `Every week on Monday`. The requested booking date must already fall on that weekday.
 
