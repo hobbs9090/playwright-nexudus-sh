@@ -7,6 +7,7 @@
 The repository includes authenticated Lighthouse checks for both AP and MP. These audits run through [playwright.lighthouse.config.ts](../playwright.lighthouse.config.ts) so the regular functional suite stays focused on end-to-end behavior while Lighthouse keeps its own config, retries, thresholds, and report output.
 
 For GitHub Actions workflow setup, required secrets, sharding, and Pages publishing, see [CI](ci.md).
+For local report folder locations, see [Running tests](running-tests.md).
 
 For the underlying audit model, categories, and scoring guidance, see the official Lighthouse documentation from Chrome for Developers: <https://developer.chrome.com/docs/lighthouse/>.
 
@@ -94,11 +95,3 @@ K6_LOGIN_VUS=1 K6_LOGIN_ITERATIONS=3 K6_LOGIN_MAX_DURATION=3m npm run perf:login
 ```
 
 The login test uses a browser scenario, so it is intentionally lightweight by default. It verifies that valid credentials reach `/dashboards/now` and that the Dashboard navigation link becomes visible after sign-in.
-
-## Reports and artifacts
-
-- Playwright HTML report output: `playwright-report/`
-- Playwright raw result output: `test-results/`
-- Native Lighthouse HTML bundle output: `lighthouse-report/`
-- Lighthouse JSON and HTML audit output: `test-results/lighthouse/`
-- Combined Pages bundle output: `pages-report/`

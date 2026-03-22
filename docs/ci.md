@@ -63,11 +63,16 @@ The branch policy is:
 - non-`main` branches also run the full functional Playwright suite and the full Lighthouse suite
 - branch runs still publish the Pages report site
 
-On non-PR pushes and manual runs, the published GitHub Pages site includes:
+## Published reports and artifacts
 
-- the merged Playwright HTML report at `/playwright/`
-- the native Lighthouse HTML bundle at `/lighthouse/`
-- an index page linking to both reports
+The CI publishing flow is responsible for the combined report outputs rather than the local test commands.
+
+- `pages-report/`: combined GitHub Pages bundle assembled by the workflow before deployment
+- merged Playwright HTML report: published at `/playwright/`
+- native Lighthouse HTML bundle: published at `/lighthouse/`
+- report index page: published at the site root and links to both report areas
+
+These are published on non-PR pushes and manual runs.
 
 The current published GitHub Pages URLs for this repository are:
 
