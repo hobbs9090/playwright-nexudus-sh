@@ -1,7 +1,8 @@
 import { test as base } from 'playwright-bdd'
 import type { MPBookableResource, MPBookingSelection } from '../../../page-objects/mp/MPBookingsPage'
+import type { NexudusBackofficeBookingResponse } from '../../support/backoffice-api'
 import type { MPBookingWindow, MPRepeatPattern } from '../../support/mp-bookings'
-import type { MPBookingUtilityAction } from './booking-utility'
+import type { BookingUtilityMode, MPBookingUtilityAction } from './booking-utility'
 import type { ResolvedMemberCredentials } from './member-resolver'
 
 export type BookingUtilityRequest = {
@@ -19,12 +20,14 @@ export type BookingScenarioState = {
   actualSelection: MPBookingSelection | null
   activityBookingIdsBefore: number[]
   allowAlternative: boolean
+  createdBackofficeBookings: NexudusBackofficeBookingResponse[]
   createdBookingIds: number[]
   createdBookingLinks: Array<{ href: string; id: number; text: string }>
   currentMemberId: number | null
   currentMemberName: string
   deletedBookingIds: number[]
   matchedBookingLinks: Array<{ href: string; id: number; text: string }>
+  matchedBackofficeBookings: NexudusBackofficeBookingResponse[]
   purchaseCompleted: boolean
   repeatPattern: MPRepeatPattern | null
   requestedBookingWindow: MPBookingWindow | null
@@ -33,6 +36,7 @@ export type BookingScenarioState = {
   resource: MPBookableResource | null
   resourceName: string
   utilityAction: MPBookingUtilityAction | null
+  utilityMode: BookingUtilityMode | null
   usedAlternative: boolean
 }
 
@@ -49,12 +53,14 @@ function createBookingScenarioState(): BookingScenarioState {
     actualSelection: null,
     activityBookingIdsBefore: [],
     allowAlternative: false,
+    createdBackofficeBookings: [],
     createdBookingIds: [],
     createdBookingLinks: [],
     currentMemberId: null,
     currentMemberName: '',
     deletedBookingIds: [],
     matchedBookingLinks: [],
+    matchedBackofficeBookings: [],
     purchaseCompleted: false,
     repeatPattern: null,
     requestedBookingWindow: null,
@@ -63,6 +69,7 @@ function createBookingScenarioState(): BookingScenarioState {
     resource: null,
     resourceName: '',
     utilityAction: null,
+    utilityMode: null,
     usedAlternative: false,
   }
 }

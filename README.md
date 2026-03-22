@@ -506,27 +506,31 @@ To extend the proof of concept:
 
 #### Testing utilities
 
-The MP booking outline in [tests/bdd/features/mp/member-bookings.feature](tests/bdd/features/mp/member-bookings.feature) is a testing utility rather than a normal CI-style assertion pack. It is tagged `@utility` and `@mode:serial` so it stands out in reports and the example rows run one at a time instead of competing for the same booking data.
+The booking outline in [tests/bdd/features/mp/member-bookings.feature](tests/bdd/features/mp/member-bookings.feature) is a testing utility rather than a normal CI-style assertion pack. It is tagged `@utility` and `@mode:serial` so it stands out in reports and the example rows run one at a time instead of competing for the same booking data.
 
 This utility is best used to save time during manual testing:
 
-- create realistic member-portal booking data quickly
+- create realistic booking data quickly through either the MP portal or AP
 - verify a path with known bookings in place
 - remove those same bookings later without repeating the work manually in the UI
 
-The step file explicitly skips this utility in CI. Outside CI, the utility defaults to `add` mode when `NEXUDUS_BDD_BOOKING_ACTION` is unset.
+The step file explicitly skips this utility in CI. Outside CI, the utility defaults to `add` mode when `NEXUDUS_BDD_BOOKING_ACTION` is unset. The booking path itself is chosen in the Gherkin `Mode` column so each example row can use `mp` or `ap` explicitly.
 
-The utility is controlled by one optional env var, `NEXUDUS_BDD_BOOKING_ACTION`, which is also documented in [`.env.example`](.env.example):
+The utility is mainly controlled by one optional env var plus the `Mode` column in the outline. The env var is also documented in [`.env.example`](.env.example):
 
 - `add`: create the bookings described by the `Examples` rows and leave them in place for manual testing
 - `delete`: cancel the booking ids stored by the most recent add run for the same example rows
 - unset: use the default `add` mode
 
+- `Mode=mp`: run that example row through the member-portal flow and MP UI assertions
+- `Mode=ap`: run that example row through the authenticated AP back-office API
+- `NEXUDUS_BDD_BOOKING_MODE`: optional fallback default only if a utility scenario omits the mode step entirely; the current feature file sets mode per row in Gherkin
+
 Utility commands:
 
 ```bash
 # Add the example bookings and leave them in place
-# This is also the default if you omit NEXUDUS_BDD_BOOKING_ACTION
+# This is also the default if you omit both utility env vars
 node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/mp/member-bookings.feature.spec.js --project "MP BDD Chromium" --workers=1
 
 # Delete the bookings created by the most recent add run for the same rows
@@ -536,29 +540,30 @@ NEXUDUS_BDD_BOOKING_ACTION=delete node scripts/run-with-dotenv.mjs -- npx playwr
 node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/mp/member-bookings.feature.spec.js --project "MP BDD Chromium" --workers=1 --headed
 ```
 
-The utility stores created booking ids under `playwright/.cache/mp-booking-utility-state.json`, so the later `delete` run can remove those same bookings instead of matching broadly against every similar booking in the portal. If that stored state is missing, delete mode falls back to finding active bookings that still match the example row so you can recover from an interrupted utility session.
+The utility stores created booking ids under `playwright/.cache/booking-utility-state.json`, so the later `delete` run can remove those same bookings instead of matching broadly against every similar booking. Records are stored per mode, so an AP add run and an MP add run for the same row do not overwrite each other. If that stored state is missing, delete mode falls back to finding active bookings that still match the example row so you can recover from an interrupted utility session.
 
-The current outline is intentionally formatted as a serial utility outline:
+The current outline is intentionally formatted as a serial utility outline, with the booking path chosen directly in Gherkin:
 
 ```gherkin
-@bdd @mp @bookings @utility @mode:serial
-Feature: MP booking utility
+@bdd @mp @ap @bookings @utility @mode:serial
+Feature: Booking utility
   As a tester
-  I want to add or delete MP booking data from example rows
+  I want to add or delete booking data from example rows through MP or AP
   So that I can prepare or remove manual test data quickly
 
   Background:
-    Given the MP booking utility action is configured
+    Given the booking utility configuration is ready
 
-  Scenario Outline: utility manages "<Resource name>" for "<Member Name>" on "<Date>" at "<Start time>" with "<Repeat options>" and alternative "<Alternative>"
+  Scenario Outline: utility uses "<Mode>" to manage "<Resource name>" for "<Member Name>" on "<Date>" at "<Start time>" with "<Repeat options>" and alternative "<Alternative>"
     Given member "<Member Name>" can access the member portal
+    And the booking utility mode is "<Mode>"
     When they prepare a booking utility request for "<Resource name>"
     And the requested date is "<Date>"
     And the requested start time is "<Start time>"
     And the requested length is "<Length>"
     And the requested repeat option is "<Repeat options>"
     And alternative booking is "<Alternative>"
-    And they run the MP booking utility
+    And they run the booking utility
     Then the booking utility should finish successfully
 ```
 
@@ -581,6 +586,13 @@ The password resolution order is:
 - `NEXUDUS_MEMBER_DEFAULT_PASSWORD` when set
 - otherwise the configured default member password from `NEXUDUS_MEMBER_PASSWORD` or `NEXUDUS_MP_PASSWORD`
 
+The `Mode` parameter behaves like this:
+
+- `mp` mode uses the member-portal UI and the built-in MP repeat control
+- `ap` mode uses the authenticated AP back-office API
+- for recurring rows in `ap` mode, the helper expands the requested recurrence into concrete one-time bookings and creates each occurrence individually
+- both modes use the same date, duration, repeat, and alternative-slot business rules from the outline
+
 The utility supports these scenario outline parameters:
 
 - `Date`: `dd/mm/yyyy`, `today`, `tomorrow`, and `next <weekday>`
@@ -592,6 +604,7 @@ The utility supports these scenario outline parameters:
 The scenario outline parameters mean:
 
 - `Member Name`: full member display name as it appears in Nexudus, for example `Bob Younger`
+- `Mode`: whether that row uses the MP portal path or the AP back-office API path
 - `Resource name`: exact MP resource label, for example `Large Meeting Room #1`
 - `Date`: the requested booking date in exact or natural-language form
 - `Start time`: the requested start time for the booking window
@@ -603,14 +616,16 @@ The current feature file uses rows like these:
 
 ```gherkin
 Examples:
-  | Member Name | Resource name         | Date           | Start time | Length     | Repeat options      | Alternative |
-  | Bob Younger | Large Meeting Room #1 | next Tuesday   | 9am        | 30 minutes | Does not repeat     | true        |
-  | Bob Younger | Large Meeting Room #1 | tomorrow       | 7pm        | 30 minutes | Does not repeat     | false       |
-  | Bob Younger | Large Meeting Room #1 | next Wednesday | 7pm        | 30 minutes | Every workday       | false       |
-  | Bob Younger | Large Meeting Room #1 | 23/03/2026     | 7:30pm     | 30 minutes | Every day on Monday | false       |
+  | Member Name | Mode | Resource name         | Date           | Start time | Length     | Repeat options      | Alternative |
+  | Bob Younger | mp   | Large Meeting Room #1 | next Tuesday   | 9am        | 30 minutes | Does not repeat     | true        |
+  | Bob Younger | mp   | Large Meeting Room #1 | tomorrow       | 7pm        | 30 minutes | Does not repeat     | false       |
+  | Bob Younger | ap   | Large Meeting Room #1 | next Wednesday | 7pm        | 30 minutes | Every workday       | false       |
+  | Bob Younger | ap   | Large Meeting Room #1 | 23/03/2026     | 7:30pm     | 30 minutes | Every day on Monday | false       |
 ```
 
 For `Every day on <weekday>`, the helper maps that input to the portal's built-in weekly repeat option for the selected weekday, for example `Every week on Monday`. The requested booking date must already fall on that weekday.
+
+In `ap` mode, the same repeat rule is expanded into explicit one-time occurrences before calling the back-office API, so the resulting booking data still matches the outline even though it is not using the MP repeat widget.
 
 For `Alternative=true`, the helper applies this fallback rule:
 

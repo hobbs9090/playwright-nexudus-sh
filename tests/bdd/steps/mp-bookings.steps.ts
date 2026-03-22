@@ -4,9 +4,18 @@ import { NexudusApiClient } from '../../../api/NexudusApiClient'
 import { MPBookingsPage } from '../../../page-objects/mp/MPBookingsPage'
 import { MPLoginPage } from '../../../page-objects/mp/MPLoginPage'
 import { MPPortalPage } from '../../../page-objects/mp/MPPortalPage'
+import { buildBackofficeBookingPayload, findBackofficeBookingsMatchingWindows } from '../../support/ap-bookings'
+import {
+  createBackofficeApiClientWithAPLogin,
+  type NexudusBackofficeApiClient,
+  type NexudusBackofficeBookingResponse,
+  type NexudusBackofficeResourceResponse,
+} from '../../support/backoffice-api'
 import {
   createMpBookingWindow,
+  expandMpBookingWindowsForRepeatPattern,
   expandMpUtilityCandidateBookingWindows,
+  getUtcIsoRangeForMpBookingWindow,
   parseAlternativeBookingPreference,
   parseMpRepeatPattern,
   shiftMpBookingWindowByDays,
@@ -17,32 +26,35 @@ import { test, type BookingScenarioState } from '../support/bdd-test'
 import {
   createBookingUtilityScenarioKey,
   deleteBookingUtilityRecord,
+  parseBookingUtilityMode,
   readBookingUtilityRecord,
   resolveBookingUtilityAction,
+  resolveBookingUtilityMode,
   writeBookingUtilityRecord,
 } from '../support/booking-utility'
 import { resolveMemberCredentialsByName } from '../support/member-resolver'
 
 const alternativeFutureDaySearchWindow = 7
 const configuredUtilityAction = resolveBookingUtilityAction()
+const configuredUtilityMode = resolveBookingUtilityMode()
 const hasDedicatedMemberCredentials =
   Boolean(process.env.NEXUDUS_MEMBER_EMAIL?.trim()) && Boolean(process.env.NEXUDUS_MEMBER_PASSWORD?.trim())
 const { Given, Then, When } = createBdd(test)
 
-Given('the MP booking utility action is configured', async ({ bookingScenario }) => {
+Given('the booking utility configuration is ready', async ({ bookingScenario }) => {
   test.slow()
-  test.skip(process.env.CI === 'true', 'MP booking utility scenarios are intended for manual utility runs, not CI.')
+  test.skip(process.env.CI === 'true', 'Booking utility scenarios are intended for manual utility runs, not CI.')
 
   bookingScenario.utilityAction = configuredUtilityAction
+  bookingScenario.utilityMode = configuredUtilityMode
 })
 
-Given('member {string} can access the member portal', async ({ bookingScenario, page, request }, memberName: string) => {
+Given('member {string} can access the member portal', async ({ bookingScenario, request }, memberName: string) => {
   test.skip(
     process.env.CI === 'true' && !hasDedicatedMemberCredentials,
-    'MP booking utility scenarios require a dedicated non-admin member account in NEXUDUS_MEMBER_EMAIL and NEXUDUS_MEMBER_PASSWORD when running in CI.',
+    'Booking utility scenarios require a dedicated non-admin member account in NEXUDUS_MEMBER_EMAIL and NEXUDUS_MEMBER_PASSWORD when running in CI.',
   )
 
-  const loginPage = new MPLoginPage(page)
   const nexudusApi = new NexudusApiClient(request)
   const resolvedMember = await resolveMemberCredentialsByName(request, memberName)
   const memberToken = await nexudusApi.createBearerTokenForCredentials(resolvedMember.email, resolvedMember.password)
@@ -56,9 +68,10 @@ Given('member {string} can access the member portal', async ({ bookingScenario, 
   bookingScenario.currentMemberId = currentMemberId
   bookingScenario.currentMemberName = currentMemberName
   bookingScenario.requestedMember = resolvedMember
+})
 
-  await loginPage.login(resolvedMember.email, resolvedMember.password)
-  await loginPage.assertDashboardVisible(currentMemberName)
+Given('the booking utility mode is {string}', async ({ bookingScenario }, rawUtilityMode: string) => {
+  bookingScenario.utilityMode = parseBookingUtilityMode(rawUtilityMode, 'booking utility Mode column')
 })
 
 When('they prepare a booking utility request for {string}', async ({ bookingScenario }, resourceName: string) => {
@@ -98,83 +111,173 @@ When('alternative booking is {string}', async ({ bookingScenario }, alternativeP
   bookingScenario.requestedUtilityRequest!.alternativePreference = alternativePreference
 })
 
-When('they run the MP booking utility', async ({ bookingScenario, page, request }) => {
-  expect(bookingScenario.utilityAction, 'Expected the MP booking utility action to be configured before running the utility.').toBeTruthy()
-  expect(bookingScenario.requestedUtilityRequest, 'Expected the MP booking utility request to be fully prepared before running the utility.').toBeTruthy()
+When('they run the booking utility', async ({ bookingScenario, page, request }) => {
+  expect(bookingScenario.utilityAction, 'Expected the booking utility action to be configured before running the utility.').toBeTruthy()
+  expect(bookingScenario.utilityMode, 'Expected the booking utility mode to be configured before running the utility.').toBeTruthy()
+  expect(bookingScenario.requestedUtilityRequest, 'Expected the booking utility request to be fully prepared before running the utility.').toBeTruthy()
 
-  const bookingsPage = new MPBookingsPage(page)
-  const portalPage = new MPPortalPage(page)
   const requestedUtilityRequest = bookingScenario.requestedUtilityRequest!
+  let businessTimeZone = ''
+  let backofficeApi: NexudusBackofficeApiClient | null = null
 
-  await portalPage.dismissOnboardingModalIfPresent()
-  await page.goto('/bookings?tab=Resources&view=card', { waitUntil: 'domcontentloaded' })
-  await bookingsPage.assertLoaded()
+  try {
+    if (bookingScenario.utilityMode === 'mp') {
+      const requestedMember = bookingScenario.requestedMember
 
-  const businessTimeZone = await bookingsPage.getBusinessTimeZone()
-  const requestedBookingWindow = createMpBookingWindow({
-    businessTimeZone,
-    dateInput: requestedUtilityRequest.bookingDate,
-    lengthInput: requestedUtilityRequest.bookingLength,
-    startTimeInput: requestedUtilityRequest.startTime,
-  })
-  const repeatPattern = parseMpRepeatPattern(requestedUtilityRequest.repeatOptions, requestedBookingWindow)
-  const allowAlternative = parseAlternativeBookingPreference(requestedUtilityRequest.alternativePreference)
+      expect(requestedMember, 'Expected the booking utility to resolve member credentials before running the MP utility mode.').toBeTruthy()
 
-  bookingScenario.allowAlternative = allowAlternative
-  bookingScenario.repeatPattern = repeatPattern
-  bookingScenario.requestedBookingWindow = requestedBookingWindow
+      const loginPage = new MPLoginPage(page)
+      const bookingsPage = new MPBookingsPage(page)
+      const portalPage = new MPPortalPage(page)
 
-  if (bookingScenario.utilityAction === 'add') {
-    await runAddBookingUtility({ bookingScenario, page })
-    return
+      await loginPage.login(requestedMember!.email, requestedMember!.password)
+      await loginPage.assertDashboardVisible(bookingScenario.currentMemberName)
+      await portalPage.dismissOnboardingModalIfPresent()
+      await page.goto('/bookings?tab=Resources&view=card', { waitUntil: 'domcontentloaded' })
+      await bookingsPage.assertLoaded()
+      businessTimeZone = await bookingsPage.getBusinessTimeZone()
+    } else {
+      backofficeApi = await createBackofficeApiClientWithAPLogin(page)
+      const authenticatedApUser = await backofficeApi.getAuthenticatedUser()
+
+      businessTimeZone = String(authenticatedApUser.DefaultSimpleTimeZoneNameIana || '').trim()
+      expect(businessTimeZone, 'Expected the authenticated AP user payload to expose the current business IANA timezone.').toBeTruthy()
+    }
+
+    const requestedBookingWindow = createMpBookingWindow({
+      businessTimeZone,
+      dateInput: requestedUtilityRequest.bookingDate,
+      lengthInput: requestedUtilityRequest.bookingLength,
+      startTimeInput: requestedUtilityRequest.startTime,
+    })
+    const repeatPattern = parseMpRepeatPattern(requestedUtilityRequest.repeatOptions, requestedBookingWindow)
+    const allowAlternative = parseAlternativeBookingPreference(requestedUtilityRequest.alternativePreference)
+
+    bookingScenario.allowAlternative = allowAlternative
+    bookingScenario.repeatPattern = repeatPattern
+    bookingScenario.requestedBookingWindow = requestedBookingWindow
+
+    if (bookingScenario.utilityAction === 'add') {
+      await runAddBookingUtility({ backofficeApi, bookingScenario, page })
+      return
+    }
+
+    await runDeleteBookingUtility({ backofficeApi, bookingScenario, page, request })
+  } finally {
+    await backofficeApi?.dispose()
   }
-
-  await runDeleteBookingUtility({ bookingScenario, page, request })
 })
 
-Then('the booking utility should finish successfully', async ({ bookingScenario, page }) => {
-  expect(bookingScenario.utilityAction, 'Expected the MP booking utility to record which action was executed.').toBeTruthy()
+Then('the booking utility should finish successfully', async ({ bookingScenario }) => {
+  expect(bookingScenario.utilityAction, 'Expected the booking utility to record which action was executed.').toBeTruthy()
 
   if (bookingScenario.utilityAction === 'add') {
     expect(bookingScenario.actualBookingWindow, 'Expected add mode to capture the actual booking window.').toBeTruthy()
-    expect(bookingScenario.actualSelection, 'Expected add mode to capture the booking editor selection.').toBeTruthy()
     expect(bookingScenario.repeatPattern, 'Expected add mode to capture the repeat pattern.').toBeTruthy()
-    expect(bookingScenario.createdBookingLinks.length, 'Expected add mode to create at least one booking in My Activity.').toBeGreaterThan(0)
 
-    const expectedMinimumCreatedBookings = bookingScenario.repeatPattern!.mode === 'none' ? 1 : 2
-    const createdBookingText = bookingScenario.createdBookingLinks.map((bookingLink) => bookingLink.text).join(' ')
+    if (bookingScenario.utilityMode === 'mp') {
+      expect(bookingScenario.actualSelection, 'Expected MP add mode to capture the booking editor selection.').toBeTruthy()
+      expect(bookingScenario.createdBookingLinks.length, 'Expected MP add mode to create at least one booking in My Activity.').toBeGreaterThan(0)
 
-    expect(bookingScenario.createdBookingLinks.length).toBeGreaterThanOrEqual(expectedMinimumCreatedBookings)
-    expect(createdBookingText.includes(bookingScenario.resourceName)).toBe(true)
-    expect(
-      getExpectedBookingDateTexts(bookingScenario.actualBookingWindow!).some((candidateDateText) => createdBookingText.includes(candidateDateText)),
-    ).toBe(true)
-    expect(createdBookingText.includes(bookingScenario.actualBookingWindow!.startTimeLabel)).toBe(true)
-    expect(bookingScenario.actualSelection!.resourceName).toBe(bookingScenario.resourceName)
-    expect(bookingScenario.actualSelection!.repeatLabel).toBe(bookingScenario.repeatPattern!.uiOptionLabel)
+      const expectedMinimumCreatedBookings = bookingScenario.repeatPattern!.mode === 'none' ? 1 : 2
+      const createdBookingText = bookingScenario.createdBookingLinks.map((bookingLink) => bookingLink.text).join(' ')
 
-    if (!bookingScenario.usedAlternative) {
-      expect(bookingScenario.actualSelection!.startTimeLabel).toBe(bookingScenario.requestedBookingWindow!.startTimeLabel)
-      expect(bookingScenario.actualSelection!.endTimeLabel).toBe(bookingScenario.requestedBookingWindow!.endTimeLabel)
-    } else {
-      expect(bookingScenario.actualSelection!.startTimeLabel).toBe(bookingScenario.actualBookingWindow!.startTimeLabel)
-      expect(bookingScenario.actualSelection!.endTimeLabel).toBe(bookingScenario.actualBookingWindow!.endTimeLabel)
+      expect(bookingScenario.createdBookingLinks.length).toBeGreaterThanOrEqual(expectedMinimumCreatedBookings)
+      expect(createdBookingText.includes(bookingScenario.resourceName)).toBe(true)
       expect(
-        getDayDifference(bookingScenario.requestedBookingWindow!.dateISO, bookingScenario.actualBookingWindow!.dateISO),
-      ).toBeLessThanOrEqual(alternativeFutureDaySearchWindow)
-      expect(
-        getDayDifference(bookingScenario.requestedBookingWindow!.dateISO, bookingScenario.actualBookingWindow!.dateISO),
-      ).toBeGreaterThanOrEqual(0)
+        getExpectedBookingDateTexts(bookingScenario.actualBookingWindow!).some((candidateDateText) => createdBookingText.includes(candidateDateText)),
+      ).toBe(true)
+      expect(createdBookingText.includes(bookingScenario.actualBookingWindow!.startTimeLabel)).toBe(true)
+      expect(bookingScenario.actualSelection!.resourceName).toBe(bookingScenario.resourceName)
+      expect(bookingScenario.actualSelection!.repeatLabel).toBe(bookingScenario.repeatPattern!.uiOptionLabel)
+
+      if (!bookingScenario.usedAlternative) {
+        expect(bookingScenario.actualSelection!.startTimeLabel).toBe(bookingScenario.requestedBookingWindow!.startTimeLabel)
+        expect(bookingScenario.actualSelection!.endTimeLabel).toBe(bookingScenario.requestedBookingWindow!.endTimeLabel)
+      } else {
+        expect(bookingScenario.actualSelection!.startTimeLabel).toBe(bookingScenario.actualBookingWindow!.startTimeLabel)
+        expect(bookingScenario.actualSelection!.endTimeLabel).toBe(bookingScenario.actualBookingWindow!.endTimeLabel)
+        expect(
+          getDayDifference(bookingScenario.requestedBookingWindow!.dateISO, bookingScenario.actualBookingWindow!.dateISO),
+        ).toBeLessThanOrEqual(alternativeFutureDaySearchWindow)
+        expect(
+          getDayDifference(bookingScenario.requestedBookingWindow!.dateISO, bookingScenario.actualBookingWindow!.dateISO),
+        ).toBeGreaterThanOrEqual(0)
+      }
+
+      return
     }
 
+    const expectedBookingWindows = expandMpBookingWindowsForRepeatPattern(
+      bookingScenario.actualBookingWindow!,
+      bookingScenario.repeatPattern!,
+    )
+    const expectedBookingKeys = new Set(expectedBookingWindows.map(buildBackofficeBookingWindowKey))
+    const createdBookingKeys = new Set(bookingScenario.createdBackofficeBookings.map(buildBackofficeBookingResponseKey))
+
+    expect(
+      bookingScenario.createdBackofficeBookings.length,
+      'Expected AP add mode to create one back-office booking for each expected occurrence.',
+    ).toBe(expectedBookingWindows.length)
+    expect(bookingScenario.createdBackofficeBookings.every((booking) => booking.ResourceName === bookingScenario.resourceName)).toBe(true)
+    expect(
+      bookingScenario.createdBackofficeBookings.every((booking) => booking.CoworkerId === bookingScenario.currentMemberId),
+      'Expected AP add mode to create bookings for the resolved member id.',
+    ).toBe(true)
+
+    for (const expectedBookingKey of expectedBookingKeys) {
+      expect(createdBookingKeys.has(expectedBookingKey)).toBe(true)
+    }
+
+    expectAlternativeBehavior(bookingScenario)
     return
   }
 
   expect(bookingScenario.deletedBookingIds.length, 'Expected delete mode to cancel at least one matching booking.').toBeGreaterThan(0)
-  await expect(readBookingUtilityRecord(buildBookingUtilityScenarioKey(bookingScenario))).resolves.toBeNull()
+  await expect(
+    readBookingUtilityRecord(buildBookingUtilityScenarioKey(bookingScenario), bookingScenario.utilityMode || 'mp'),
+  ).resolves.toBeNull()
 })
 
 async function runAddBookingUtility({
+  backofficeApi,
+  bookingScenario,
+  page,
+}: {
+  backofficeApi: NexudusBackofficeApiClient | null
+  bookingScenario: BookingScenarioState
+  page: Page
+}) {
+  if (bookingScenario.utilityMode === 'ap') {
+    expect(backofficeApi, 'Expected AP utility mode to create an authenticated back-office API client.').toBeTruthy()
+    await runApAddBookingUtility({ backofficeApi: backofficeApi!, bookingScenario })
+    return
+  }
+
+  await runMpAddBookingUtility({ bookingScenario, page })
+}
+
+async function runDeleteBookingUtility({
+  backofficeApi,
+  bookingScenario,
+  page,
+  request,
+}: {
+  backofficeApi: NexudusBackofficeApiClient | null
+  bookingScenario: BookingScenarioState
+  page: Page
+  request: APIRequestContext
+}) {
+  if (bookingScenario.utilityMode === 'ap') {
+    expect(backofficeApi, 'Expected AP utility mode to create an authenticated back-office API client.').toBeTruthy()
+    await runApDeleteBookingUtility({ backofficeApi: backofficeApi!, bookingScenario })
+    return
+  }
+
+  await runMpDeleteBookingUtility({ bookingScenario, page, request })
+}
+
+async function runMpAddBookingUtility({
   bookingScenario,
   page,
 }: {
@@ -204,9 +307,7 @@ async function runAddBookingUtility({
 
   if (!exactBookingWindowBookable) {
     if (!allowAlternative) {
-      throw new Error(
-        `The requested slot for "${requestedUtilityRequest.resourceName}" on ${requestedBookingWindow.dateISO} at ${requestedBookingWindow.startTimeLabel} is unavailable and alternative booking was disabled.`,
-      )
+      throw new Error(buildUnavailableSlotMessage(requestedUtilityRequest.resourceName, requestedBookingWindow))
     }
 
     const sameDayAlternativeSelection = await bookingsPage
@@ -239,9 +340,7 @@ async function runAddBookingUtility({
       }
 
       if (!futureDayAlternativeWindow) {
-        throw new Error(
-          `The requested slot for "${requestedUtilityRequest.resourceName}" on ${requestedBookingWindow.dateISO} at ${requestedBookingWindow.startTimeLabel} was unavailable, and no acceptable alternative was found within ${alternativeFutureDaySearchWindow} future day(s).`,
-        )
+        throw new Error(buildAlternativeNotFoundMessage(requestedUtilityRequest.resourceName, requestedBookingWindow))
       }
 
       actualBookingWindow = futureDayAlternativeWindow
@@ -275,23 +374,107 @@ async function runAddBookingUtility({
     requestedUtilityRequest.resourceName,
   )
   bookingScenario.createdBookingIds = Array.from(new Set(bookingScenario.createdBookingLinks.map((bookingLink) => bookingLink.id)))
-  await writeBookingUtilityRecord({
-    bookingIds: bookingScenario.createdBookingIds,
-    createdAtISO: new Date().toISOString(),
-    memberName: bookingScenario.requestedMember?.requestedName || bookingScenario.currentMemberName,
-    request: {
-      alternativePreference: requestedUtilityRequest.alternativePreference,
-      bookingDate: requestedUtilityRequest.bookingDate,
-      bookingLength: requestedUtilityRequest.bookingLength,
-      repeatOptions: requestedUtilityRequest.repeatOptions,
-      resourceName: requestedUtilityRequest.resourceName,
-      startTime: requestedUtilityRequest.startTime,
-    },
-    scenarioKey: buildBookingUtilityScenarioKey(bookingScenario),
-  })
+  await persistBookingUtilityRecord(bookingScenario)
 }
 
-async function runDeleteBookingUtility({
+async function runApAddBookingUtility({
+  backofficeApi,
+  bookingScenario,
+}: {
+  backofficeApi: NexudusBackofficeApiClient
+  bookingScenario: BookingScenarioState
+}) {
+  const requestedUtilityRequest = bookingScenario.requestedUtilityRequest!
+  const requestedBookingWindow = bookingScenario.requestedBookingWindow!
+  const repeatPattern = bookingScenario.repeatPattern!
+  const authenticatedApUser = await backofficeApi.getAuthenticatedUser()
+  const currentMemberId = await resolveBackofficeCoworkerId(backofficeApi, bookingScenario)
+  const resource = await backofficeApi.findResourceByName(requestedUtilityRequest.resourceName, authenticatedApUser.DefaultBusinessId)
+  const candidateBaseWindows =
+    bookingScenario.allowAlternative && repeatPattern.mode === 'none'
+      ? expandMpUtilityCandidateBookingWindows({
+          allowAlternative: bookingScenario.allowAlternative,
+          alternativeFutureDaySearchWindow,
+          bookingWindow: requestedBookingWindow,
+          repeatPattern,
+        })
+      : [requestedBookingWindow]
+
+  bookingScenario.resource = {
+    id: resource.Id,
+    name: resource.Name,
+  }
+
+  let actualBookingWindow: MPBookingWindow | null = null
+  let bookingWindowsToCreate: MPBookingWindow[] = []
+
+  for (const candidateBaseWindow of candidateBaseWindows) {
+    const candidateBookingWindows = expandMpBookingWindowsForRepeatPattern(candidateBaseWindow, repeatPattern)
+    const candidateWindowsAvailable = await areBackofficeBookingWindowsAvailable({
+      backofficeApi,
+      bookingWindows: candidateBookingWindows,
+      coworkerId: currentMemberId,
+      coworkerName: bookingScenario.currentMemberName,
+      resource,
+    })
+
+    if (candidateWindowsAvailable) {
+      actualBookingWindow = candidateBaseWindow
+      bookingWindowsToCreate = candidateBookingWindows
+      break
+    }
+  }
+
+  if (!actualBookingWindow) {
+    if (!bookingScenario.allowAlternative) {
+      throw new Error(buildUnavailableSlotMessage(requestedUtilityRequest.resourceName, requestedBookingWindow))
+    }
+
+    throw new Error(buildAlternativeNotFoundMessage(requestedUtilityRequest.resourceName, requestedBookingWindow))
+  }
+
+  bookingScenario.actualBookingWindow = actualBookingWindow
+  bookingScenario.usedAlternative =
+    actualBookingWindow.dateISO !== requestedBookingWindow.dateISO ||
+    actualBookingWindow.startTimeLabel !== requestedBookingWindow.startTimeLabel
+
+  bookingScenario.createdBackofficeBookings = []
+
+  try {
+    for (const bookingWindow of bookingWindowsToCreate) {
+      const createResponse = await backofficeApi.createBooking(
+        buildBackofficeBookingPayload({
+        bookingWindow,
+        coworkerId: currentMemberId,
+        coworkerName: bookingScenario.currentMemberName,
+        resource,
+        }),
+      )
+
+      if (createResponse.Value) {
+        bookingScenario.createdBackofficeBookings.push(createResponse.Value)
+      }
+    }
+
+    expect(
+      bookingScenario.createdBackofficeBookings.length,
+      `Expected AP mode to return one created booking response for each requested occurrence of "${requestedUtilityRequest.resourceName}".`,
+    ).toBe(bookingWindowsToCreate.length)
+
+    bookingScenario.createdBookingIds = Array.from(new Set(bookingScenario.createdBackofficeBookings.map((booking) => booking.Id)))
+    await persistBookingUtilityRecord(bookingScenario)
+  } catch (error) {
+    const createdBookingIds = Array.from(new Set(bookingScenario.createdBackofficeBookings.map((booking) => booking.Id)))
+
+    if (createdBookingIds.length > 0) {
+      await backofficeApi.cancelBookings(createdBookingIds).catch(() => {})
+    }
+
+    throw error
+  }
+}
+
+async function runMpDeleteBookingUtility({
   bookingScenario,
   page,
   request,
@@ -302,7 +485,7 @@ async function runDeleteBookingUtility({
 }) {
   const bookingsPage = new MPBookingsPage(page)
   const scenarioKey = buildBookingUtilityScenarioKey(bookingScenario)
-  const storedRecord = await readBookingUtilityRecord(scenarioKey)
+  const storedRecord = await readBookingUtilityRecord(scenarioKey, 'mp')
   const storedBookingIds = Array.from(new Set(storedRecord?.bookingIds || []))
   let bookingIdsToDelete = storedBookingIds
 
@@ -335,15 +518,66 @@ async function runDeleteBookingUtility({
     await bookingsPage.assertActivityBookingCancelledOrRemoved(bookingId)
   }
 
-  await deleteBookingUtilityRecord(scenarioKey)
+  await deleteBookingUtilityRecord(scenarioKey, 'mp')
+}
+
+async function runApDeleteBookingUtility({
+  backofficeApi,
+  bookingScenario,
+}: {
+  backofficeApi: NexudusBackofficeApiClient
+  bookingScenario: BookingScenarioState
+}) {
+  const scenarioKey = buildBookingUtilityScenarioKey(bookingScenario)
+  const storedRecord = await readBookingUtilityRecord(scenarioKey, 'ap')
+  let bookingIdsToDelete = Array.from(new Set(storedRecord?.bookingIds || []))
+
+  if (bookingIdsToDelete.length === 0) {
+    const authenticatedApUser = await backofficeApi.getAuthenticatedUser()
+    const currentMemberId = await resolveBackofficeCoworkerId(backofficeApi, bookingScenario)
+    const resource = await backofficeApi.findResourceByName(bookingScenario.resourceName, authenticatedApUser.DefaultBusinessId)
+    const candidateBookingWindows = buildCandidateBookingWindows(bookingScenario)
+
+    bookingScenario.resource = {
+      id: resource.Id,
+      name: resource.Name,
+    }
+    bookingScenario.matchedBackofficeBookings = await findBackofficeBookingsMatchingWindows({
+      backofficeApi,
+      bookingWindows: candidateBookingWindows,
+      coworkerId: currentMemberId,
+      resourceId: resource.Id,
+    })
+
+    expect(
+      bookingScenario.matchedBackofficeBookings.length,
+      `Expected AP delete mode to find either stored booking ids or matching active bookings for "${bookingScenario.resourceName}". Run the utility in add mode first or make sure matching bookings still exist in AP.`,
+    ).toBeGreaterThan(0)
+
+    bookingIdsToDelete = bookingScenario.matchedBackofficeBookings.map((booking) => booking.Id)
+  }
+
+  await backofficeApi.cancelBookings(bookingIdsToDelete)
+  bookingScenario.deletedBookingIds.push(...bookingIdsToDelete)
+
+  for (const bookingId of bookingIdsToDelete) {
+    await expect
+      .poll(() => backofficeApi.getBookingIfExists(bookingId), {
+        message: `Expected AP booking ${bookingId} to be removed after the back-office cancel command.`,
+        timeout: 15000,
+      })
+      .toBeNull()
+  }
+
+  await deleteBookingUtilityRecord(scenarioKey, 'ap')
 }
 
 function buildCandidateBookingWindows(bookingScenario: BookingScenarioState) {
   const requestedBookingWindow = bookingScenario.requestedBookingWindow
   const repeatPattern = bookingScenario.repeatPattern
 
-  expect(requestedBookingWindow, 'Expected the MP booking utility to capture the requested booking window before building candidate windows.').toBeTruthy()
-  expect(repeatPattern, 'Expected the MP booking utility to capture the repeat pattern before building candidate windows.').toBeTruthy()
+  expect(requestedBookingWindow, 'Expected the booking utility to capture the requested booking window before building candidate windows.').toBeTruthy()
+  expect(repeatPattern, 'Expected the booking utility to capture the repeat pattern before building candidate windows.').toBeTruthy()
 
   return expandMpUtilityCandidateBookingWindows({
     allowAlternative: bookingScenario.allowAlternative,
@@ -376,10 +610,7 @@ function getDayDifference(leftDateISO: string, rightDateISO: string) {
 function buildBookingUtilityScenarioKey(bookingScenario: BookingScenarioState) {
   const requestedUtilityRequest = bookingScenario.requestedUtilityRequest
 
-  expect(
-    requestedUtilityRequest,
-    'Expected the MP booking utility request to be captured before building the utility scenario key.',
-  ).toBeTruthy()
+  expect(requestedUtilityRequest, 'Expected the booking utility request to be captured before building the utility scenario key.').toBeTruthy()
 
   return createBookingUtilityScenarioKey({
     alternativePreference: requestedUtilityRequest!.alternativePreference,
@@ -390,4 +621,119 @@ function buildBookingUtilityScenarioKey(bookingScenario: BookingScenarioState) {
     resourceName: requestedUtilityRequest!.resourceName,
     startTime: requestedUtilityRequest!.startTime,
   })
+}
+
+async function persistBookingUtilityRecord(bookingScenario: BookingScenarioState) {
+  const requestedUtilityRequest = bookingScenario.requestedUtilityRequest!
+
+  await writeBookingUtilityRecord({
+    bookingIds: bookingScenario.createdBookingIds,
+    bookingMode: bookingScenario.utilityMode || 'mp',
+    createdAtISO: new Date().toISOString(),
+    memberName: bookingScenario.requestedMember?.requestedName || bookingScenario.currentMemberName,
+    request: {
+      alternativePreference: requestedUtilityRequest.alternativePreference,
+      bookingDate: requestedUtilityRequest.bookingDate,
+      bookingLength: requestedUtilityRequest.bookingLength,
+      repeatOptions: requestedUtilityRequest.repeatOptions,
+      resourceName: requestedUtilityRequest.resourceName,
+      startTime: requestedUtilityRequest.startTime,
+    },
+    scenarioKey: buildBookingUtilityScenarioKey(bookingScenario),
+  })
+}
+
+async function areBackofficeBookingWindowsAvailable({
+  backofficeApi,
+  bookingWindows,
+  coworkerId,
+  coworkerName,
+  resource,
+}: {
+  backofficeApi: NexudusBackofficeApiClient
+  bookingWindows: MPBookingWindow[]
+  coworkerId: number
+  coworkerName: string
+  resource: NexudusBackofficeResourceResponse
+}) {
+  for (const bookingWindow of bookingWindows) {
+    const availability = await backofficeApi.checkBookingAvailability(
+      buildBackofficeBookingPayload({
+        bookingWindow,
+        coworkerId,
+        coworkerName,
+        resource,
+      }),
+    )
+
+    if (!availability.available) {
+      return false
+    }
+  }
+
+  return true
+}
+
+function buildUnavailableSlotMessage(resourceName: string, bookingWindow: MPBookingWindow) {
+  return `The requested slot for "${resourceName}" on ${bookingWindow.dateISO} at ${bookingWindow.startTimeLabel} is unavailable and alternative booking was disabled.`
+}
+
+function buildAlternativeNotFoundMessage(resourceName: string, bookingWindow: MPBookingWindow) {
+  return `The requested slot for "${resourceName}" on ${bookingWindow.dateISO} at ${bookingWindow.startTimeLabel} was unavailable, and no acceptable alternative was found within ${alternativeFutureDaySearchWindow} future day(s).`
+}
+
+function expectAlternativeBehavior(bookingScenario: BookingScenarioState) {
+  if (!bookingScenario.usedAlternative) {
+    expect(bookingScenario.actualBookingWindow!.startTimeLabel).toBe(bookingScenario.requestedBookingWindow!.startTimeLabel)
+    expect(bookingScenario.actualBookingWindow!.endTimeLabel).toBe(bookingScenario.requestedBookingWindow!.endTimeLabel)
+    return
+  }
+
+  expect(getDayDifference(bookingScenario.requestedBookingWindow!.dateISO, bookingScenario.actualBookingWindow!.dateISO)).toBeLessThanOrEqual(
+    alternativeFutureDaySearchWindow,
+  )
+  expect(getDayDifference(bookingScenario.requestedBookingWindow!.dateISO, bookingScenario.actualBookingWindow!.dateISO)).toBeGreaterThanOrEqual(0)
+}
+
+function buildBackofficeBookingWindowKey(bookingWindow: MPBookingWindow) {
+  const { endUtcISOString, startUtcISOString } = getUtcIsoRangeForMpBookingWindow(bookingWindow)
+
+  return `${startUtcISOString}|${endUtcISOString}`
+}
+
+function buildBackofficeBookingResponseKey(booking: Pick<NexudusBackofficeBookingResponse, 'FromTime' | 'ToTime'>) {
+  return `${booking.FromTime}|${booking.ToTime}`
+}
+
+function normalizeUtilityName(value: string) {
+  return value.replace(/\s+/g, ' ').trim().toLowerCase()
+}
+
+async function resolveBackofficeCoworkerId(
+  backofficeApi: NexudusBackofficeApiClient,
+  bookingScenario: BookingScenarioState,
+) {
+  const requestedMember = bookingScenario.requestedMember
+  const currentMemberName = bookingScenario.currentMemberName
+  const coworkers = await backofficeApi.listCoworkers()
+  const matchingCoworker = coworkers.find((coworker) => {
+    const coworkerEmail = String(coworker.Email || '').trim().toLowerCase()
+    const coworkerName = normalizeUtilityName(String(coworker.FullName || ''))
+
+    return (
+      (requestedMember?.email && coworkerEmail === requestedMember.email.trim().toLowerCase()) ||
+      coworkerName === normalizeUtilityName(currentMemberName)
+    )
+  })
+
+  const resolvedCoworkerId = Number(matchingCoworker?.Id)
+
+  expect(
+    Number.isInteger(resolvedCoworkerId) && resolvedCoworkerId > 0,
+    `Expected AP mode to resolve a coworker id for "${requestedMember?.requestedName || currentMemberName}" through the back-office coworkers API.`,
+  ).toBeTruthy()
+
+  bookingScenario.currentMemberId = resolvedCoworkerId
+
+  return resolvedCoworkerId
 }

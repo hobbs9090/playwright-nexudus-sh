@@ -33,6 +33,11 @@ export type MPBookingWindow = MPBookingDate &
     startTimeLabel: string
   }
 
+export type MPBookingWindowUtcRange = {
+  endUtcISOString: string
+  startUtcISOString: string
+}
+
 export type MPRepeatPattern = {
   mode: 'none' | 'weekly' | 'workday'
   repeatUntilDateISO?: string
@@ -399,6 +404,26 @@ export function formatMinutesSinceMidnight(minutesSinceMidnight: number): MPBook
   }
 }
 
+export function getUtcIsoRangeForMpBookingWindow(bookingWindow: MPBookingWindow): MPBookingWindowUtcRange {
+  const startUtcDate = getUtcDateForBusinessLocalDateTime({
+    businessTimeZone: bookingWindow.businessTimeZone,
+    dateISO: bookingWindow.dateISO,
+    hour24: Math.floor(bookingWindow.startMinutesSinceMidnight / 60),
+    minute: bookingWindow.startMinutesSinceMidnight % 60,
+  })
+  const endUtcDate = getUtcDateForBusinessLocalDateTime({
+    businessTimeZone: bookingWindow.businessTimeZone,
+    dateISO: bookingWindow.dateISO,
+    hour24: Math.floor(bookingWindow.endMinutesSinceMidnight / 60),
+    minute: bookingWindow.endMinutesSinceMidnight % 60,
+  })
+
+  return {
+    endUtcISOString: formatUtcDateAsIsoString(endUtcDate),
+    startUtcISOString: formatUtcDateAsIsoString(startUtcDate),
+  }
+}
+
 export function shiftMpBookingWindowByDays(bookingWindow: MPBookingWindow, dayOffset: number) {
   const shiftedBookingDate = addDaysToBookingDate(bookingWindow, dayOffset)
 
@@ -678,6 +703,52 @@ function getZonedDateTimeParts(date: Date, timeZone: string) {
   }
 }
 
+function getUtcDateForBusinessLocalDateTime({
+  businessTimeZone,
+  dateISO,
+  hour24,
+  minute,
+}: {
+  businessTimeZone: string
+  dateISO: string
+  hour24: number
+  minute: number
+}) {
+  const match = dateISO.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+
+  if (!match) {
+    throw new Error(`Could not convert booking date "${dateISO}" to UTC because it is not in YYYY-MM-DD format.`)
+  }
+
+  const targetYear = Number(match[1])
+  const targetMonth = Number(match[2])
+  const targetDay = Number(match[3])
+  const targetDateAsUtc = Date.UTC(targetYear, targetMonth - 1, targetDay, hour24, minute, 0, 0)
+  let utcMilliseconds = targetDateAsUtc
+
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const zonedParts = getZonedDateTimeParts(new Date(utcMilliseconds), businessTimeZone)
+    const zonedDateAsUtc = Date.UTC(
+      zonedParts.year,
+      zonedParts.month - 1,
+      zonedParts.day,
+      zonedParts.hour,
+      zonedParts.minute,
+      zonedParts.second,
+      0,
+    )
+    const difference = targetDateAsUtc - zonedDateAsUtc
+
+    if (difference === 0) {
+      return new Date(utcMilliseconds)
+    }
+
+    utcMilliseconds += difference
+  }
+
+  return new Date(utcMilliseconds)
+}
+
 function getNumericPart(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTypes) {
   const partValue = parts.find((part) => part.type === type)?.value || '0'
 
@@ -705,4 +776,10 @@ function capitalizeWord(value: string) {
 
 function padNumber(value: number) {
   return value.toString().padStart(2, '0')
+}
+
+function formatUtcDateAsIsoString(date: Date) {
+  return `${date.getUTCFullYear()}-${padNumber(date.getUTCMonth() + 1)}-${padNumber(date.getUTCDate())}T${padNumber(
+    date.getUTCHours(),
+  )}:${padNumber(date.getUTCMinutes())}:${padNumber(date.getUTCSeconds())}Z`
 }
