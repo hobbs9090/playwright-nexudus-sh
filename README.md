@@ -19,6 +19,7 @@ It is most useful for:
 
 - One TypeScript Playwright framework for AP, MP, and API coverage in a single repo
 - AI-friendly structure and prompt guidance that make it practical to draft, refine, and extend tests with Codex while still keeping the result maintainable
+- Explicit separation between AP, MP, API, and shared layers so page objects, helpers, and tests stay organised by concern
 - small page-object model to keep workflows readable and reusable
 - environment-driven configuration with shared defaults in `.env.shared` and local overrides in `.env`
 - deterministic UI tests backed by API helpers for setup, verification, and cleanup
