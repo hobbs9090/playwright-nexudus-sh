@@ -132,7 +132,7 @@ export class MPBookingsPage extends AbstractPage {
     await this.page.goto('/bookings?tab=Resources&view=card', { waitUntil: 'domcontentloaded' })
     await this.dismissBookingsWelcomeModalIfPresent()
 
-    const resource = await this.getBookableResource(resourceName)
+    const resource = (await this.findBookableResourceInBootstrapState(resourceName)) || (await this.getBookableResource(resourceName))
     const bookingEditorURL = buildBookingEditorURL(this.page.url(), resource.id, bookingWindow)
 
     await this.page.goto(bookingEditorURL, { waitUntil: 'domcontentloaded' })
@@ -472,6 +472,104 @@ export class MPBookingsPage extends AbstractPage {
         bookingWindows.some((bookingWindow) => activityBookingLinkMatchesWindow(bookingLink.text, resourceName, bookingWindow)),
       )
       .sort((leftBookingLink, rightBookingLink) => leftBookingLink.id - rightBookingLink.id)
+  }
+
+  private async findBookableResourceInBootstrapState(resourceName: string): Promise<MPBookableResource | null> {
+    return this.page.evaluate((requestedResourceName) => {
+      const normalizeText = (value: unknown) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().toLowerCase() : '')
+      const normalizedRequestedResourceName = normalizeText(requestedResourceName)
+      const nextData = (window as Window & {
+        __NEXT_DATA__?: {
+          props?: {
+            mobxStore?: Record<string, unknown>
+          }
+        }
+      }).__NEXT_DATA__
+
+      if (!nextData) {
+        return null
+      }
+
+      const roots: Array<{ path: string[]; value: unknown }> = [{ path: ['__NEXT_DATA__'], value: nextData }]
+      const mobxStore = nextData.props?.mobxStore
+
+      if (mobxStore) {
+        roots.push({ path: ['__NEXT_DATA__', 'props', 'mobxStore'], value: mobxStore })
+      }
+
+      const visitedNodes = new WeakSet<object>()
+      const candidates: Array<{ id: number; name: string; path: string; score: number }> = []
+
+      const visit = (node: unknown, path: string[]) => {
+        if (!node || typeof node !== 'object') {
+          return
+        }
+
+        if (visitedNodes.has(node)) {
+          return
+        }
+
+        visitedNodes.add(node)
+
+        if (Array.isArray(node)) {
+          node.forEach((childNode, index) => visit(childNode, [...path, String(index)]))
+          return
+        }
+
+        const record = node as Record<string, unknown>
+        const candidateName =
+          [record.Name, record.ResourceName, record.DisplayName, record.Title, record.name, record.label]
+            .map((value) => (typeof value === 'string' ? value.trim() : ''))
+            .find((value) => normalizeText(value) === normalizedRequestedResourceName) || ''
+        const candidateId =
+          [record.Id, record.ResourceId, record.id, record.resourceId]
+            .map((value) => Number(value))
+            .find((value) => Number.isInteger(value) && value > 0) || 0
+
+        if (candidateName && candidateId > 0) {
+          const pathText = path.join('.').toLowerCase()
+          const score =
+            (pathText.includes('resource') ? 4 : 0) +
+            (pathText.includes('booking') ? 2 : 0) +
+            ('ResourceTypeId' in record ? 1 : 0) +
+            ('Visible' in record ? 1 : 0)
+
+          candidates.push({
+            id: candidateId,
+            name: candidateName,
+            path: path.join('.'),
+            score,
+          })
+        }
+
+        Object.entries(record).forEach(([key, value]) => {
+          visit(value, [...path, key])
+        })
+      }
+
+      roots.forEach((root) => visit(root.value, root.path))
+
+      if (candidates.length === 0) {
+        return null
+      }
+
+      candidates.sort((leftCandidate, rightCandidate) => {
+        if (rightCandidate.score !== leftCandidate.score) {
+          return rightCandidate.score - leftCandidate.score
+        }
+
+        if (leftCandidate.path.length !== rightCandidate.path.length) {
+          return leftCandidate.path.length - rightCandidate.path.length
+        }
+
+        return leftCandidate.id - rightCandidate.id
+      })
+
+      return {
+        id: candidates[0].id,
+        name: candidates[0].name,
+      }
+    }, resourceName)
   }
 
   private async getBookableResource(resourceName: string): Promise<MPBookableResource> {

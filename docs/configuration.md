@@ -21,6 +21,7 @@ The suite supports the following environment variables:
 | `NEXUDUS_MP_EMAIL` | Yes | None | Default member or coworker username for the MP staging project |
 | `NEXUDUS_MP_PASSWORD` | Yes | None | Default member or coworker password for the MP staging project |
 | `NEXUDUS_MP_LOCATION_SELECTOR_LABEL` | No | `Coworking Soho (STEVEN)` via `.env.shared` | MP location label used to derive the default MP host for public, authenticated, and API-linked flows |
+| `NEXUDUS_MP_BOOKING_RESOURCE_NAME` | No | `Large Meeting Room #1` | Optional MP bookings test resource-name override when a different visible room should be booked in staging |
 | `NEXUDUS_MEMBER_EMAIL` | No | `NEXUDUS_MP_EMAIL` | Optional dedicated member-user email override for role-based tests |
 | `NEXUDUS_MEMBER_PASSWORD` | No | `NEXUDUS_MP_PASSWORD` | Optional dedicated member-user password override for role-based tests |
 | `NEXUDUS_CONTACT_EMAIL` | No | None | Optional dedicated contact-user email for role-based tests |

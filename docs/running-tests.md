@@ -118,7 +118,7 @@ For GitHub Pages publishing, PR artifacts, and the combined Pages bundle, see [C
 ### MP tests
 
 - [mp-login.spec.ts](../tests/mp/mp-login.spec.ts) opens the member-portal `/login` page and verifies the authenticated dashboard
-- [mp-bookings.spec.ts](../tests/mp/mp-bookings.spec.ts) signs into MP, creates a one-off two-hour booking for `Large Meeting Room #1`, verifies it completed, and cancels it again through the MP booking API
+- [mp-bookings.spec.ts](../tests/mp/mp-bookings.spec.ts) signs into MP, creates a one-off two-hour booking for `Large Meeting Room #1` by default, verifies it completed, and cancels it again through the MP booking API. Set `NEXUDUS_MP_BOOKING_RESOURCE_NAME` in `.env` if your staging space uses a different visible room name.
 - [mp-signup.spec.ts](../tests/mp/mp-signup.spec.ts) creates new public MP accounts for both individual and company journeys
 - [mp-help-requests.spec.ts](../tests/mp/mp-help-requests.spec.ts) signs into MP, opens the support area, creates a help request, and verifies it appears in the member's request list
 - [mp-home-content.spec.ts](../tests/mp/mp-home-content.spec.ts) verifies the configured public footer branding, plans, add-ons, featured articles, and locations on the MP home page

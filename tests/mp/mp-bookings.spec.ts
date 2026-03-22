@@ -6,7 +6,8 @@ import { MPPortalPage } from '../../page-objects/mp/MPPortalPage'
 import { getFutureMpBookingWindow, type MPBookingWindow } from '../support/mp-bookings'
 import { cancelPortalBooking } from '../support/mp-bookings-api'
 
-const targetMeetingRoomName = 'Large Meeting Room #1'
+const defaultTargetMeetingRoomName = 'Large Meeting Room #1'
+const targetMeetingRoomName = process.env.NEXUDUS_MP_BOOKING_RESOURCE_NAME?.trim() || defaultTargetMeetingRoomName
 const bookingWindowSearchDays = 7
 const hasDedicatedMemberCredentials =
   Boolean(process.env.NEXUDUS_MEMBER_EMAIL?.trim()) && Boolean(process.env.NEXUDUS_MEMBER_PASSWORD?.trim())
@@ -37,7 +38,7 @@ test.describe('MP bookings', () => {
     expect(Number.isInteger(currentMemberId) && currentMemberId > 0, 'Expected the current MP API user to expose a numeric member id.').toBeTruthy()
   })
 
-  test('member can create a one-off 2-hour booking for Large Meeting Room #1 and clean it up by API @dg', async ({ page, request }) => {
+  test(`member can create a one-off 2-hour booking for ${targetMeetingRoomName} and clean it up by API @dg`, async ({ page, request }) => {
     test.slow()
 
     let bookingWindow: MPBookingWindow | null = null
