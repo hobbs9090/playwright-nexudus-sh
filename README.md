@@ -42,9 +42,12 @@ The repo loads `.env.shared` first and `.env` second, so tracked shared defaults
 
 ## Suite at a glance
 
-- AP: login, admin overview, deliveries, products, events, and course workflows
-- MP: login, bookings, signup, help requests, tour requests, public home content, and documentation-derived public navigation flows
-- API: bearer-token auth, user profile reads, and selected business-setting mutations
+- One Playwright framework for AP, MP, and API coverage, so teams can keep UI and API automation in one place instead of splitting it across separate tools
+- AI-friendly structure and prompt guidance that make it practical to draft, refine, and extend tests with Codex while still keeping the end result maintainable
+- Optional BDD support through `playwright-bdd`, so business-readable Gherkin scenarios and scenario outlines can sit alongside normal Playwright specs
+- Testing utilities for repeatable manual data setup and cleanup, useful when QA, support, or implementation teams need bookings and other safe test data without clicking through the UI by hand
+- Performance and robustness tooling beyond basic regression checks, including Lighthouse audits, k6 smoke coverage, and opt-in gremlins exploratory runs
+- CI-friendly by default, with deterministic core coverage kept separate from opt-in utility and exploratory layers
 
 ## Documentation
 
