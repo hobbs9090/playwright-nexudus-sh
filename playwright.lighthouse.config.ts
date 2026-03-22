@@ -18,6 +18,7 @@ if (missingRequiredCredentialGroups.length > 0) {
 
 const isCI = !!process.env.CI
 const headless = shouldUseHeadlessBrowser()
+const grepInvert = isCI ? /@utility/ : undefined
 const reporter = isCI
   ? [['github'], ['html', { outputFolder: 'playwright-report/lighthouse', open: 'never' }]]
   : [['list'], ['html', { outputFolder: 'playwright-report/lighthouse', open: 'never' }]]
@@ -55,6 +56,7 @@ const config: PlaywrightTestConfig = {
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
   workers: 1,
+  grepInvert,
   reporter,
   use: {
     headless,

@@ -425,13 +425,18 @@ export class MPBookingsPage extends AbstractPage {
   }
 
   async assertActivityBookingCancelledOrRemoved(bookingId: number) {
-    const matchingBooking = await this.findActivityBookingById(bookingId)
-
-    if (!matchingBooking) {
-      return
-    }
-
-    throw new Error(`Expected booking ${bookingId} to be removed from the rendered My Activity bookings list after cleanup.`)
+    await expect
+      .poll(
+        async () => {
+          const booking = await this.findActivityBookingById(bookingId)
+          return booking === null || isCancelledActivityBookingText(booking.text)
+        },
+        {
+          message: `Expected booking ${bookingId} to be cancelled or removed from the rendered My Activity bookings list after cleanup.`,
+          timeout: 15000,
+        },
+      )
+      .toBe(true)
   }
 
   async captureRenderedActivityBookingIds() {
@@ -456,6 +461,17 @@ export class MPBookingsPage extends AbstractPage {
     expect(newBookingLinks.length, `Expected MP my activity to show new bookings for "${resourceName}" after checkout.`).toBeGreaterThan(0)
 
     return newBookingLinks
+  }
+
+  async findActivityBookingLinksMatching(resourceName: string, bookingWindows: MPBookingWindow[]) {
+    const bookingLinks = await this.loadActivityBookingLinks(true)
+
+    return bookingLinks
+      .filter((bookingLink) =>
+        !isCancelledActivityBookingText(bookingLink.text) &&
+        bookingWindows.some((bookingWindow) => activityBookingLinkMatchesWindow(bookingLink.text, resourceName, bookingWindow)),
+      )
+      .sort((leftBookingLink, rightBookingLink) => leftBookingLink.id - rightBookingLink.id)
   }
 
   private async getBookableResource(resourceName: string): Promise<MPBookableResource> {
@@ -510,25 +526,18 @@ export class MPBookingsPage extends AbstractPage {
       return Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href*="/bookings/edit?booking="]')).map((link) => {
         const href = link.getAttribute('href') || ''
         const bookingIdMatch = href.match(/booking=(\d+)/)
-        const ancestorTexts: string[] = []
-        let currentElement: HTMLElement | null = link
-
-        for (let depth = 0; depth < 6; depth += 1) {
-          currentElement = currentElement?.parentElement || null
-
-          if (!currentElement) {
-            break
-          }
-
-          ancestorTexts.push(normalizeText(currentElement.textContent))
-        }
-
-        const richestAncestorText = ancestorTexts.sort((leftText, rightText) => rightText.length - leftText.length)[0] || ''
+        const bookingRow =
+          link.closest('tr') ||
+          link.closest('[role="row"]') ||
+          link.closest('article') ||
+          link.closest('.card') ||
+          link.parentElement
+        const bookingText = normalizeText(bookingRow?.textContent || link.textContent)
 
         return {
           href,
           id: Number(bookingIdMatch?.[1] || '0'),
-          text: richestAncestorText,
+          text: bookingText,
         }
       })
     }) as Promise<MPActivityBookingLinkRecord[]>
@@ -540,6 +549,33 @@ function formatDurationLabel(durationMinutes: number) {
   return durationMinutes % 60 === 0
     ? `${durationMinutes / 60} hour${durationMinutes === 60 ? '' : 's'}`
     : `${durationMinutes} minutes`
+}
+
+function activityBookingLinkMatchesWindow(bookingText: string, resourceName: string, bookingWindow: MPBookingWindow) {
+  const expectedDateTexts = getExpectedActivityBookingDateTexts(bookingWindow)
+  const expectedTimeRangeText = `${bookingWindow.startTimeLabel} - ${formatMinutesSinceMidnight(bookingWindow.endMinutesSinceMidnight).meridiemLabel}`
+
+  return (
+    bookingText.includes(resourceName) &&
+    expectedDateTexts.some((expectedDateText) => bookingText.includes(expectedDateText)) &&
+    bookingText.includes(expectedTimeRangeText)
+  )
+}
+
+function isCancelledActivityBookingText(bookingText: string) {
+  return /cancelled/i.test(bookingText)
+}
+
+function getExpectedActivityBookingDateTexts(bookingWindow: MPBookingWindow) {
+  const bookingDate = new Date(Date.UTC(bookingWindow.year, bookingWindow.month - 1, bookingWindow.day))
+  const longUsDate = new Intl.DateTimeFormat('en-US', {
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+    year: 'numeric',
+  }).format(bookingDate)
+
+  return [bookingWindow.datePickerValue, bookingWindow.dateISO, longUsDate]
 }
 
 function parseDatePickerValue(datePickerValue: string) {

@@ -410,6 +410,91 @@ export function shiftMpBookingWindowByDays(bookingWindow: MPBookingWindow, dayOf
   })
 }
 
+export function expandMpBookingWindowsForRepeatPattern(bookingWindow: MPBookingWindow, repeatPattern: MPRepeatPattern) {
+  if (repeatPattern.mode === 'none') {
+    return [bookingWindow]
+  }
+
+  const bookingWindows = [bookingWindow]
+  let nextBookingWindow = bookingWindow
+
+  while (true) {
+    nextBookingWindow = shiftMpBookingWindowByDays(nextBookingWindow, repeatPattern.mode === 'weekly' ? 7 : 1)
+
+    if (nextBookingWindow.dateISO > (repeatPattern.repeatUntilDateISO || '')) {
+      break
+    }
+
+    if (repeatPattern.mode === 'workday' && (nextBookingWindow.weekdayIndex === 0 || nextBookingWindow.weekdayIndex === 6)) {
+      continue
+    }
+
+    bookingWindows.push(nextBookingWindow)
+  }
+
+  return bookingWindows
+}
+
+export function expandMpUtilityCandidateBookingWindows({
+  allowAlternative,
+  alternativeFutureDaySearchWindow = 7,
+  alternativeSameDaySlotRadius = 4,
+  bookingWindow,
+  repeatPattern,
+}: {
+  allowAlternative: boolean
+  alternativeFutureDaySearchWindow?: number
+  alternativeSameDaySlotRadius?: number
+  bookingWindow: MPBookingWindow
+  repeatPattern: MPRepeatPattern
+}) {
+  const exactBookingWindows = expandMpBookingWindowsForRepeatPattern(bookingWindow, repeatPattern)
+  const candidateBookingWindows = [...exactBookingWindows]
+
+  if (allowAlternative && repeatPattern.mode === 'none') {
+    for (let slotOffset = -alternativeSameDaySlotRadius; slotOffset <= alternativeSameDaySlotRadius; slotOffset += 1) {
+      if (slotOffset === 0) {
+        continue
+      }
+
+      const alternativeStartMinutesSinceMidnight = bookingWindow.startMinutesSinceMidnight + slotOffset * minutesPerSlot
+      const alternativeEndMinutesSinceMidnight = alternativeStartMinutesSinceMidnight + bookingWindow.durationMinutes
+
+      if (alternativeStartMinutesSinceMidnight < 0 || alternativeEndMinutesSinceMidnight > 24 * 60) {
+        continue
+      }
+
+      candidateBookingWindows.push(
+        createMpBookingWindow({
+          businessTimeZone: bookingWindow.businessTimeZone,
+          dateInput: bookingWindow.dateISO,
+          lengthInput: bookingWindow.durationLabel,
+          startTimeInput: formatMinutesSinceMidnight(alternativeStartMinutesSinceMidnight).meridiemLabel,
+        }),
+      )
+    }
+
+    for (let dayOffset = 1; dayOffset <= alternativeFutureDaySearchWindow; dayOffset += 1) {
+      candidateBookingWindows.push(shiftMpBookingWindowByDays(bookingWindow, dayOffset))
+    }
+  }
+
+  return Array.from(
+    new Map(
+      candidateBookingWindows.map((candidateBookingWindow) => [
+        `${candidateBookingWindow.dateISO}|${candidateBookingWindow.startMinutesSinceMidnight}|${candidateBookingWindow.durationMinutes}`,
+        candidateBookingWindow,
+      ]),
+    ).values(),
+  ).sort((leftBookingWindow, rightBookingWindow) => {
+    if (leftBookingWindow.dateISO !== rightBookingWindow.dateISO) {
+      return leftBookingWindow.dateISO.localeCompare(rightBookingWindow.dateISO)
+    }
+
+    return leftBookingWindow.startMinutesSinceMidnight - rightBookingWindow.startMinutesSinceMidnight
+  })
+}
+
 function parseRelativeMpBookingDate(input: string, businessTimeZone: string, now: Date): MPBookingDate {
   const normalizedInput = input.trim().toLowerCase()
   const nowInBusinessTime = getZonedDateTimeParts(now, businessTimeZone)

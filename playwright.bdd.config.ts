@@ -11,6 +11,7 @@ const headedWindowChromeHeight = 100
 const headedWindowSize = `${viewport.width},${viewport.height + headedWindowChromeHeight}`
 const isCI = !!process.env.CI
 const headless = shouldUseHeadlessBrowser()
+const grepInvert = isCI ? /@utility/ : undefined
 const testDir = defineBddConfig({
   features: 'tests/bdd/features/**/*.feature',
   featuresRoot: 'tests/bdd/features',
@@ -32,6 +33,7 @@ const config: PlaywrightTestConfig = {
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
   workers: isCI ? 1 : undefined,
+  grepInvert,
   reporter,
   use: {
     actionTimeout: 0,

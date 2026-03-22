@@ -456,13 +456,15 @@ In practice, a good first step is a small MP mobile smoke pack that checks the p
 
 ### BDD proof of concept
 
-The repo has a small `playwright-bdd` proof of concept that sits alongside the existing `@playwright/test` suite rather than replacing it. It lives under [tests/bdd](tests/bdd), uses its own config in [playwright.bdd.config.ts](playwright.bdd.config.ts), and currently covers two public MP documentation flows:
+The repo has a small `playwright-bdd` proof of concept that sits alongside the existing `@playwright/test` suite rather than replacing it. It lives under [tests/bdd](tests/bdd), uses its own config in [playwright.bdd.config.ts](playwright.bdd.config.ts), and currently covers two public MP documentation flows plus one opt-in booking utility:
 
 - hero sign-in from the public home page reaches `/login`
 - footer `FAQ` from the public home page reaches `/faq`
-- serial MP booking coverage in [tests/bdd/features/mp/member-bookings.feature](tests/bdd/features/mp/member-bookings.feature) using a `Scenario Outline` and `Examples` table
+- an opt-in MP booking utility in [tests/bdd/features/mp/member-bookings.feature](tests/bdd/features/mp/member-bookings.feature) using a tagged serial `Scenario Outline` and `Examples` table
 
 The generated Playwright specs are written to `tests/bdd/.features-gen/` and are ignored by git.
+
+#### Public examples
 
 Example Gherkin for the login proof of concept:
 
@@ -485,11 +487,8 @@ Example usage:
 # Generate the Playwright specs from the feature files
 npm run test:bdd:gen
 
-# Generate and run the BDD examples
+# Generate and run the default BDD examples
 npm run test:bdd
-
-# Run just the serial MP booking outline
-node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/mp/member-bookings.feature.spec.js --project "MP BDD Chromium" --workers=1
 
 # Generate and run the BDD examples in headed mode
 npm run test:bdd:headed
@@ -505,18 +504,72 @@ To extend the proof of concept:
 - keep the step definitions thin and reuse existing page objects from `page-objects/mp`
 - rerun `npm run test:bdd`
 
-The MP booking outline in [tests/bdd/features/mp/member-bookings.feature](tests/bdd/features/mp/member-bookings.feature) is tagged `@mode:serial` so the example rows run one at a time and do not compete with each other for the same booking data.
+#### Testing utilities
 
-In practice, these booking BDD scenarios are better treated as simple utilities for manual testing than as a normal CI gate. They are useful when you want to create realistic member-portal booking data quickly, verify a path, and clean it up again without spending time manually setting up the same bookings through the UI.
+The MP booking outline in [tests/bdd/features/mp/member-bookings.feature](tests/bdd/features/mp/member-bookings.feature) is a testing utility rather than a normal CI-style assertion pack. It is tagged `@utility` and `@mode:serial` so it stands out in reports and the example rows run one at a time instead of competing for the same booking data.
 
-The current outline is a good example of that utility style. It covers:
+This utility is best used to save time during manual testing:
+
+- create realistic member-portal booking data quickly
+- verify a path with known bookings in place
+- remove those same bookings later without repeating the work manually in the UI
+
+The step file explicitly skips this utility in CI. Outside CI, the utility defaults to `add` mode when `NEXUDUS_BDD_BOOKING_ACTION` is unset.
+
+The utility is controlled by one optional env var, `NEXUDUS_BDD_BOOKING_ACTION`, which is also documented in [`.env.example`](.env.example):
+
+- `add`: create the bookings described by the `Examples` rows and leave them in place for manual testing
+- `delete`: cancel the booking ids stored by the most recent add run for the same example rows
+- unset: use the default `add` mode
+
+Utility commands:
+
+```bash
+# Add the example bookings and leave them in place
+# This is also the default if you omit NEXUDUS_BDD_BOOKING_ACTION
+node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/mp/member-bookings.feature.spec.js --project "MP BDD Chromium" --workers=1
+
+# Delete the bookings created by the most recent add run for the same rows
+NEXUDUS_BDD_BOOKING_ACTION=delete node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/mp/member-bookings.feature.spec.js --project "MP BDD Chromium" --workers=1
+
+# Run the utility in headed mode if you want to watch it
+node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/mp/member-bookings.feature.spec.js --project "MP BDD Chromium" --workers=1 --headed
+```
+
+The utility stores created booking ids under `playwright/.cache/mp-booking-utility-state.json`, so the later `delete` run can remove those same bookings instead of matching broadly against every similar booking in the portal. If that stored state is missing, delete mode falls back to finding active bookings that still match the example row so you can recover from an interrupted utility session.
+
+The current outline is intentionally formatted as a serial utility outline:
+
+```gherkin
+@bdd @mp @bookings @utility @mode:serial
+Feature: MP booking utility
+  As a tester
+  I want to add or delete MP booking data from example rows
+  So that I can prepare or remove manual test data quickly
+
+  Background:
+    Given the MP booking utility action is configured
+
+  Scenario Outline: utility manages "<Resource name>" for "<Member Name>" on "<Date>" at "<Start time>" with "<Repeat options>" and alternative "<Alternative>"
+    Given member "<Member Name>" can access the member portal
+    When they prepare a booking utility request for "<Resource name>"
+    And the requested date is "<Date>"
+    And the requested start time is "<Start time>"
+    And the requested length is "<Length>"
+    And the requested repeat option is "<Repeat options>"
+    And alternative booking is "<Alternative>"
+    And they run the MP booking utility
+    Then the booking utility should finish successfully
+```
+
+The current example rows cover:
 
 - an exact non-repeating booking
 - an alternative-enabled booking where the requested slot can move to a nearby acceptable fallback
 - a workday recurrence
 - a weekly weekday recurrence
 
-The booking outline resolves `Member Name` by:
+The booking utility resolves `Member Name` by:
 
 - matching the configured default MP member if the requested full name is the same user
 - then checking optional per-member env vars such as `NEXUDUS_MEMBER_BOB_YOUNGER_EMAIL`
@@ -528,7 +581,7 @@ The password resolution order is:
 - `NEXUDUS_MEMBER_DEFAULT_PASSWORD` when set
 - otherwise the configured default member password from `NEXUDUS_MEMBER_PASSWORD` or `NEXUDUS_MP_PASSWORD`
 
-The booking outline currently supports:
+The utility supports these scenario outline parameters:
 
 - `Date`: `dd/mm/yyyy`, `today`, `tomorrow`, and `next <weekday>`
 - `Start time`: values such as `09:00`, `9am`, and `2:30pm`
@@ -562,7 +615,7 @@ For `Alternative=true`, the helper applies this fallback rule:
 
 If `Alternative=false`, the exact requested slot must be bookable or the scenario fails.
 
-Each booking scenario cleans up its own created booking ids after the assertions by calling the MP booking cancellation API in an `After` hook, so even a failing assertion should not leave the created bookings behind.
+Delete mode uses the MP booking cancellation API rather than UI clicks. Cancelled rows can remain visible in My Activity, so the utility treats "cancelled or removed" as a successful delete outcome. Delete mode prefers the stored booking ids created by the add run, and only falls back to matching active bookings when that stored state is unavailable.
 
 ### Gremlins exploratory testing
 

@@ -20,6 +20,7 @@ if (missingRequiredCredentialGroups.length > 0) {
 
 const isCI = !!process.env.CI
 const headless = shouldUseHeadlessBrowser()
+const grepInvert = isCI ? /@utility/ : undefined
 const reporter = isCI
   ? [['github'], ['junit', { outputFile: 'test-results/results.xml' }], ['html', { open: 'never' }]]
   : 'html'
@@ -46,6 +47,7 @@ const config: PlaywrightTestConfig = {
   retries: isCI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
   workers: isCI ? 1 : undefined,
+  grepInvert,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter,
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
