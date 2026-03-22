@@ -28,5 +28,5 @@ Feature: Meeting room seed utility
     Then the resource seed utility should finish successfully
 
     Examples:
-      | Business | Resource type         | Count | Theme                 | Base  | Seed | Visible | Requires confirmation | Allocation | Min booking length | Max booking length | Allow multiple bookings | Hide in calendar | Only for members | Amenities                                           |
-      |          | Large Meeting Room #1 | 25    | harry potter villains | RoomX | true | true    | false                 | 8          | 30                 | 120                | false                   | false            | true             | Internet, WhiteBoard, LargeDisplay, AirConditioning |
+      | Business | Resource type         | Count | Theme                 | Base | Seed | Visible | Requires confirmation | Allocation | Min booking length | Max booking length | Allow multiple bookings | Hide in calendar | Only for members | Amenities                                           |
+      |          | Large Meeting Room #1 | 5     | harry potter villains | Room | true | true    | false                 | 8          | 30                 | 120                | false                   | false            | true             | Internet, WhiteBoard, LargeDisplay, AirConditioning |

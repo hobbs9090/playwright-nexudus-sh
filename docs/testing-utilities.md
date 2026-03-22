@@ -168,14 +168,12 @@ The add-only utility feature and the cleanup script both log into AP, so they us
 Example commands:
 
 ```bash
-# Generate the Playwright spec from the feature file
-npm run test:bdd:gen
-
 # Run the add-only seed utility outline locally
-node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/ap/meeting-room-seed-utility.feature.spec.js --project "MP BDD Chromium" --workers=1
+# This regenerates the BDD spec first, so edits to the .feature file are picked up.
+npm run test:bdd:meeting-room-seed
 
 # Run the same utility in headed mode if you want to watch AP login and seeding
-node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/ap/meeting-room-seed-utility.feature.spec.js --project "MP BDD Chromium" --workers=1 --headed
+npm run test:bdd:meeting-room-seed:headed
 
 # Delete every tracked seeded resource from the bulk-cleanup ledger
 npm run test:bdd:resources:delete-all
@@ -183,10 +181,60 @@ npm run test:bdd:resources:delete-all
 
 Recommended local flow:
 
-1. Run `npm run test:bdd:gen` after editing the feature or step definitions.
-2. Run the generated meeting-room seed spec to create the resources.
+1. Edit the `.feature` file row or step definitions.
+2. Run `npm run test:bdd:meeting-room-seed` to regenerate and execute the utility.
 3. Inspect or use the seeded resources in AP or MP.
 4. Run `npm run test:bdd:resources:delete-all` when you want to clean them up.
+
+### What to edit
+
+The seed utility is driven entirely by the `Examples` row in the feature file. In normal use, you edit one or more rows in [meeting-room-seed-utility.feature](../tests/bdd/features/ap/meeting-room-seed-utility.feature) and then rerun the generated spec.
+
+The current outline columns mean:
+
+- `Business`: optional AP business name. Leave it blank to use the authenticated AP user's default business.
+- `Resource type`: exact Nexudus resource type name to resolve through the back-office API. This must already exist.
+- `Count`: how many resources one row should create.
+- `Theme`: optional naming theme such as `harry potter villains` or `great american novelists`.
+- `Base`: optional visible base label that appears after the themed part, such as `Meeting Room` or `RoomX`.
+- `Seed`: `true` or `false`. When `true`, the repo's standard CRUD seed suffix and a stable sequence are appended.
+- `Visible`: whether the created resources are visible.
+- `Requires confirmation`: whether the resource requires booking confirmation.
+- `Allocation`: numeric allocation value sent to the Nexudus resource payload.
+- `Min booking length`: minimum booking length in minutes. You can use `30` or `30 minutes`.
+- `Max booking length`: maximum booking length in minutes. You can use `120` or `2 hours`.
+- `Allow multiple bookings`: whether overlapping or multiple bookings are allowed.
+- `Hide in calendar`: whether the resource should be hidden from the calendar.
+- `Only for members`: whether the resource should be restricted to members.
+- `Amenities`: comma-separated amenities such as `Internet, WhiteBoard, LargeDisplay`.
+
+Practical notes:
+
+- If `Seed=true`, the utility can create multiple resources even when `Theme` is blank, because the CRUD seed and sequence keep the names unique.
+- If `Seed=false` and `Count` is greater than `1`, set a `Theme` so the generated names stay unique.
+- `Resource type` is matched by name through the Nexudus API. The utility does not create missing resource types.
+- Cleanup does not come from the feature row. Use `npm run test:bdd:resources:delete-all`.
+
+### Example row
+
+This is the current style of row used by the feature:
+
+```gherkin
+Examples:
+  | Business | Resource type         | Count | Theme                 | Base  | Seed | Visible | Requires confirmation | Allocation | Min booking length | Max booking length | Allow multiple bookings | Hide in calendar | Only for members | Amenities                                           |
+  |          | Large Meeting Room #1 | 25    | harry potter villains | RoomX | true | true    | false                 | 8          | 30                 | 120                | false                   | false            | true             | Internet, WhiteBoard, LargeDisplay, AirConditioning |
+```
+
+That row means:
+
+- use the authenticated AP user's default business
+- find the existing resource type `Large Meeting Room #1`
+- create 25 resources
+- generate the themed part from `harry potter villains`
+- append `RoomX`
+- append the repo's preferred CRUD seed suffix and sequence because `Seed=true`
+- set the booking and visibility flags in the payload
+- mark the listed amenities as `true`
 
 ### Naming inputs
 
@@ -203,6 +251,20 @@ That means generated names always follow the order `Theme`, then `Base`, then `S
 - `Twain RoomX 2203 1450 shabcde 01`
 
 The utility does not call a live AI service and does not require a local catalog. `Theme` values are generated on the fly from the text in the scenario row, using a deterministic offline generator so the same theme produces the same sequence of playful names on repeat runs. When a generated themed value contains a full name, the utility prefers the surname where that stays unique; if only a single name is available, it uses that. The generated names still keep the requested order of `Theme`, then `Base`, then `Seed`.
+
+More concrete examples:
+
+- `Theme=harry potter villains`, `Base=RoomX`, `Seed=true`, `Count=3`
+- produces names such as `Lestrange RoomX 2203 1450 shabcde 01`, `Lucius RoomX 2203 1450 shabcde 02`, and `Narcissa RoomX 2203 1450 shabcde 03`
+
+- `Theme=great american novelists`, `Base=Meeting Room`, `Seed=false`, `Count=3`
+- produces names such as `Lee Meeting Room`, `Twain Meeting Room`, and `Fitzgerald Meeting Room`
+
+- `Theme=` blank, `Base=Meeting Room`, `Seed=true`, `Count=2`
+- produces names such as `Meeting Room 2203 1450 shabcde 01` and `Meeting Room 2203 1450 shabcde 02`
+
+- `Theme=shakespearean character first names`, `Base=Focus Room`, `Seed=false`, `Count=3`
+- produces names such as `Viola Focus Room`, `Rosalind Focus Room`, and `Beatrice Focus Room`
 
 ### Add and cleanup behavior
 
@@ -228,5 +290,19 @@ The two local cache files involved are:
 
 - `playwright/.cache/resource-seed-state.json`: per-scenario generated names and created ids
 - `playwright/.cache/resource-seed-added-resources.json`: bulk cleanup ledger for the delete-all script
+
+### What to expect after a run
+
+After a successful run:
+
+- the created resource ids and names are written to `playwright/.cache/resource-seed-state.json`
+- each individual resource is also written to `playwright/.cache/resource-seed-added-resources.json`
+- rerunning the delete-all script removes the tracked resources by id instead of deleting broadly
+
+If something goes wrong:
+
+- the utility fails clearly when the requested `Resource type` does not exist
+- the utility fails if generated names would collide with existing resources of the same type in the same business
+- the delete-all script leaves failed deletions in the tracking file so they can be inspected and retried
 
 The utility maps the outline columns into the Nexudus resource payload, including business, resource type, visibility, confirmation, allocation, min/max booking lengths, calendar visibility, member-only access, and the supported meeting-room amenities (`Projector`, `Internet`, `ConferencePhone`, `WhiteBoard`, `LargeDisplay`, `VideoConferencing`, `AirConditioning`, `NaturalLight`, and `FlipChart`).

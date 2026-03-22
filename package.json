@@ -13,6 +13,8 @@
     "test:bdd:gen": "node scripts/run-with-dotenv.mjs -- npx bddgen test -c playwright.bdd.config.ts",
     "test:bdd": "npm run test:bdd:gen && node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts",
     "test:bdd:headed": "npm run test:bdd:gen && node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts --headed",
+    "test:bdd:meeting-room-seed": "npm run test:bdd:gen && node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/ap/meeting-room-seed-utility.feature.spec.js --project \"MP BDD Chromium\" --workers=1",
+    "test:bdd:meeting-room-seed:headed": "npm run test:bdd:gen && node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/ap/meeting-room-seed-utility.feature.spec.js --project \"MP BDD Chromium\" --workers=1 --headed",
     "test:bdd:report": "node scripts/run-with-dotenv.mjs -- npx playwright show-report playwright-report/bdd",
     "test:bdd:resources:delete-all": "node scripts/run-with-dotenv.mjs -- node scripts/delete-seeded-resources.mjs",
     "test:gremlins": "node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.gremlins.config.ts",
