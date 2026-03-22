@@ -1,6 +1,6 @@
 # Configuration
 
-[Repository README](../README.md) | [Docs index](README.md) | [Getting started](getting-started.md) | [Authoring tests](authoring-tests.md) | [Running tests](running-tests.md) | [Lighthouse, performance, and CI](lighthouse-performance-ci.md)
+[Repository README](../README.md) | [Docs index](README.md) | [Getting started](getting-started.md) | [Authoring tests](authoring-tests.md) | [Running tests](running-tests.md) | [BDD tests](bdd-tests.md) | [Testing utilities](testing-utilities.md) | [Lighthouse, performance, and CI](lighthouse-performance-ci.md)
 
 The suite supports the following environment variables:
 

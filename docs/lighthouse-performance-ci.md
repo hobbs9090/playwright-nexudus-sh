@@ -1,6 +1,6 @@
 # Lighthouse, performance, and CI
 
-[Repository README](../README.md) | [Docs index](README.md) | [Getting started](getting-started.md) | [Authoring tests](authoring-tests.md) | [Configuration](configuration.md) | [Running tests](running-tests.md)
+[Repository README](../README.md) | [Docs index](README.md) | [Getting started](getting-started.md) | [Configuration](configuration.md) | [Authoring tests](authoring-tests.md) | [Running tests](running-tests.md) | [BDD tests](bdd-tests.md) | [Testing utilities](testing-utilities.md)
 
 ## Running the Lighthouse audits
 

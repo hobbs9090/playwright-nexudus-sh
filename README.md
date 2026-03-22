@@ -27,11 +27,16 @@ The repo loads `.env.shared` first and `.env` second, so tracked shared defaults
 
 - [Documentation index](docs/README.md): entry point for the guides below
 - [Getting started](docs/getting-started.md): coverage summary, project structure, local setup, and useful tooling
-- [Authoring tests](docs/authoring-tests.md): AI-assisted test-writing guidance, prompt examples, and Nexudus documentation links
 - [Configuration reference](docs/configuration.md): environment variables, credential resolution, location defaults, and shared seed behavior
-- [Running tests](docs/running-tests.md): everyday Playwright commands, mobile projects, BDD, gremlins, and current AP/MP/API coverage
+- [Authoring tests](docs/authoring-tests.md): AI-assisted test-writing guidance, prompt examples, and Nexudus documentation links
+- [Running tests](docs/running-tests.md): everyday Playwright commands, mobile projects, gremlins, and current AP/MP/API coverage
 - [Lighthouse, performance, and CI](docs/lighthouse-performance-ci.md): Lighthouse runs, k6 smoke tests, reports, GitHub Actions, and repo notes
 - [Member Portal documentation-derived scenarios](docs/member-portal-documentation-scenarios.md): mapping between Nexudus MP docs and current automation coverage
+
+### Under Running tests
+
+- [BDD tests](docs/bdd-tests.md): `playwright-bdd` proof-of-concept setup, generation, execution, and extension
+- [Testing utilities](docs/testing-utilities.md): patterns for opt-in utility-style flows that create or clean up manual test data
 
 ## Common commands
 

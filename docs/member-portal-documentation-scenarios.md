@@ -1,6 +1,6 @@
 # Member Portal Documentation-Derived Scenarios
 
-[Repository README](../README.md) | [Docs index](README.md) | [Getting started](getting-started.md) | [Authoring tests](authoring-tests.md) | [Configuration](configuration.md) | [Running tests](running-tests.md) | [Lighthouse, performance, and CI](lighthouse-performance-ci.md)
+[Repository README](../README.md) | [Docs index](README.md) | [Getting started](getting-started.md) | [Configuration](configuration.md) | [Authoring tests](authoring-tests.md) | [Running tests](running-tests.md) | [BDD tests](bdd-tests.md) | [Testing utilities](testing-utilities.md) | [Lighthouse, performance, and CI](lighthouse-performance-ci.md)
 
 This inventory maps official Nexudus Members Portal documentation to the current `playwright-nexudus-sh` automation coverage.
 
