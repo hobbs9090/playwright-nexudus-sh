@@ -1,6 +1,6 @@
 # Documentation
 
-[Repository README](../README.md) | [Getting started](getting-started.md) | [Configuration](configuration.md) | [Authoring tests](authoring-tests.md) | [Running tests](running-tests.md) | [BDD tests](bdd-tests.md) | [Testing utilities](testing-utilities.md) | [Lighthouse, performance, and CI](lighthouse-performance-ci.md)
+[Repository README](../README.md) | [Getting started](getting-started.md) | [Configuration](configuration.md) | [CI](ci.md) | [Authoring tests](authoring-tests.md) | [Running tests](running-tests.md) | [BDD tests](bdd-tests.md) | [Testing utilities](testing-utilities.md) | [Lighthouse and performance](lighthouse-performance-ci.md)
 
 Use this index as the GitHub-friendly entry point for the longer project documentation.
 
@@ -8,6 +8,7 @@ Use this index as the GitHub-friendly entry point for the longer project documen
 
 - [Getting started](getting-started.md): what the suite covers, repo structure, local setup, and suggested tooling
 - [Configuration](configuration.md): environment variables, `.env.shared` and `.env` behavior, credential fallbacks, and seeded naming rules
+- [CI](ci.md): GitHub Actions workflow structure, required secrets and variables, sharding, and report publishing
 - [Authoring tests](authoring-tests.md): AI-assisted test-writing guidance, example prompts, and Nexudus documentation links
 
 ## Test guides
@@ -18,7 +19,7 @@ Use this index as the GitHub-friendly entry point for the longer project documen
 
 ## Reference
 
-- [Lighthouse, performance, and CI](lighthouse-performance-ci.md): Lighthouse audits, k6 smoke tests, report outputs, GitHub Actions, and project notes
+- [Lighthouse and performance](lighthouse-performance-ci.md): Lighthouse audits, k6 smoke tests, and report outputs
 - [Member Portal documentation-derived scenarios](member-portal-documentation-scenarios.md): documentation-to-test coverage mapping for MP scenarios
 
 ## Common entry points

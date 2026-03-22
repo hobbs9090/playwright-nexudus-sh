@@ -1,6 +1,6 @@
 # Getting started
 
-[Repository README](../README.md) | [Docs index](README.md) | [Configuration](configuration.md) | [Authoring tests](authoring-tests.md) | [Running tests](running-tests.md) | [BDD tests](bdd-tests.md) | [Testing utilities](testing-utilities.md) | [Lighthouse, performance, and CI](lighthouse-performance-ci.md)
+[Repository README](../README.md) | [Docs index](README.md) | [Configuration](configuration.md) | [CI](ci.md) | [Authoring tests](authoring-tests.md) | [Running tests](running-tests.md) | [BDD tests](bdd-tests.md) | [Testing utilities](testing-utilities.md) | [Lighthouse and performance](lighthouse-performance-ci.md)
 
 ## What the suite covers
 

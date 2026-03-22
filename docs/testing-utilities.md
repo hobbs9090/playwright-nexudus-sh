@@ -1,6 +1,6 @@
 # Testing utilities
 
-[Repository README](../README.md) | [Docs index](README.md) | [Getting started](getting-started.md) | [Configuration](configuration.md) | [Authoring tests](authoring-tests.md) | [Running tests](running-tests.md) | [BDD tests](bdd-tests.md) | [Lighthouse, performance, and CI](lighthouse-performance-ci.md)
+[Repository README](../README.md) | [Docs index](README.md) | [Getting started](getting-started.md) | [Configuration](configuration.md) | [CI](ci.md) | [Authoring tests](authoring-tests.md) | [Running tests](running-tests.md) | [BDD tests](bdd-tests.md) | [Lighthouse and performance](lighthouse-performance-ci.md)
 
 Use this page for utility-style test flows that help create or clean up manual test data without turning those scenarios into normal CI assertions. A good fit for this repo is a booking utility outline that can add realistic MP or AP booking data before a manual test session and remove it again afterwards.
 

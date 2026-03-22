@@ -6,7 +6,7 @@ The suite is written in TypeScript, uses `@playwright/test`, and follows a small
 
 ## What it is for
 
-This framework is for teams working with Nexudus spaces who want a small but practical automation base for regression coverage, exploratory checks, and test-data utilities.
+This framework is for teams working with Nexudus who want a small but practical automation base for regression coverage, exploratory checks, and test-data utilities.
 
 It is most useful for:
 
@@ -17,7 +17,8 @@ It is most useful for:
 
 ## Framework features
 
-- TypeScript Playwright suite covering AP, MP, and API flows in one repo
+- One TypeScript Playwright framework for AP, MP, and API coverage in a single repo
+- AI-friendly structure and prompt guidance that make it practical to draft, refine, and extend tests with Codex while still keeping the result maintainable
 - small page-object model to keep workflows readable and reusable
 - environment-driven configuration with shared defaults in `.env.shared` and local overrides in `.env`
 - deterministic UI tests backed by API helpers for setup, verification, and cleanup
@@ -25,6 +26,7 @@ It is most useful for:
 - opt-in testing utilities for repeatable manual test-data creation and cleanup
 - opt-in gremlins.js exploratory testing kept separate from normal regression runs
 - Lighthouse and k6 support for lightweight performance and CI visibility
+- CI-friendly separation between deterministic core coverage and opt-in utility or exploratory layers
 - GitHub-friendly docs under [`docs/`](docs/README.md) for setup, running, configuration, and extension guidance
 
 ## Quick start
@@ -40,15 +42,6 @@ npm test
 
 The repo loads `.env.shared` first and `.env` second, so tracked shared defaults stay available while local secrets override them.
 
-## Suite at a glance
-
-- One Playwright framework for AP, MP, and API coverage, so teams can keep UI and API automation in one place instead of splitting it across separate tools
-- AI-friendly structure and prompt guidance that make it practical to draft, refine, and extend tests with Codex while still keeping the end result maintainable
-- Optional BDD support through `playwright-bdd`, so business-readable Gherkin scenarios and scenario outlines can sit alongside normal Playwright specs
-- Testing utilities for repeatable manual data setup and cleanup, useful when QA, support, or implementation teams need bookings and other safe test data without clicking through the UI by hand
-- Performance and robustness tooling beyond basic regression checks, including Lighthouse audits, k6 smoke coverage, and opt-in gremlins exploratory runs
-- CI-friendly by default, with deterministic core coverage kept separate from opt-in utility and exploratory layers
-
 ## Documentation
 
 - [Documentation index](docs/README.md): entry point for the guides below
@@ -57,6 +50,7 @@ The repo loads `.env.shared` first and `.env` second, so tracked shared defaults
 
 - [Getting started](docs/getting-started.md): coverage summary, project structure, local setup, and useful tooling
 - [Configuration reference](docs/configuration.md): environment variables, credential resolution, location defaults, and shared seed behavior
+- [CI](docs/ci.md): GitHub Actions workflow, required secrets and variables, sharding, and report publishing
 - [Authoring tests](docs/authoring-tests.md): AI-assisted test-writing guidance, prompt examples, and Nexudus documentation links
 
 ### Test guides
@@ -67,7 +61,7 @@ The repo loads `.env.shared` first and `.env` second, so tracked shared defaults
 
 ### Reference
 
-- [Lighthouse, performance, and CI](docs/lighthouse-performance-ci.md): Lighthouse runs, k6 smoke tests, reports, GitHub Actions, and repo notes
+- [Lighthouse and performance](docs/lighthouse-performance-ci.md): Lighthouse runs, k6 smoke tests, and report outputs
 - [Member Portal documentation-derived scenarios](docs/member-portal-documentation-scenarios.md): mapping between Nexudus MP docs and current automation coverage
 
 ## Common commands
