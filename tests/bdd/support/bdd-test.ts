@@ -1,9 +1,14 @@
 import { test as base } from 'playwright-bdd'
 import type { MPBookableResource, MPBookingSelection } from '../../../page-objects/mp/MPBookingsPage'
-import type { NexudusBackofficeBookingResponse } from '../../support/backoffice-api'
+import type {
+  NexudusBackofficeBookingResponse,
+  NexudusBackofficeResourceResponse,
+  NexudusBackofficeResourceTypeResponse,
+} from '../../support/backoffice-api'
 import type { MPBookingWindow, MPRepeatPattern } from '../../support/mp-bookings'
 import type { BookingUtilityMode, MPBookingUtilityAction } from './booking-utility'
 import type { ResolvedMemberCredentials } from './member-resolver'
+import type { ResourceSeedUtilityRequest } from './resource-seed-utility'
 
 export type BookingUtilityRequest = {
   alternativePreference: string
@@ -40,9 +45,24 @@ export type BookingScenarioState = {
   usedAlternative: boolean
 }
 
-export const test = base.extend<{ bookingScenario: BookingScenarioState }>({
+export type ResourceSeedScenarioState = {
+  createdResources: NexudusBackofficeResourceResponse[]
+  fallbackThemeNameCount: number
+  plannedResourceNames: string[]
+  request: ResourceSeedUtilityRequest | null
+  resolvedBusinessId: number | null
+  resolvedBusinessName: string
+  resolvedResourceType: NexudusBackofficeResourceTypeResponse | null
+  seedStem: string | null
+  themedNames: string[]
+}
+
+export const test = base.extend<{ bookingScenario: BookingScenarioState; resourceSeedScenario: ResourceSeedScenarioState }>({
   bookingScenario: async ({}, use) => {
     await use(createBookingScenarioState())
+  },
+  resourceSeedScenario: async ({}, use) => {
+    await use(createResourceSeedScenarioState())
   },
 })
 
@@ -71,5 +91,19 @@ function createBookingScenarioState(): BookingScenarioState {
     utilityAction: null,
     utilityMode: null,
     usedAlternative: false,
+  }
+}
+
+function createResourceSeedScenarioState(): ResourceSeedScenarioState {
+  return {
+    createdResources: [],
+    fallbackThemeNameCount: 0,
+    plannedResourceNames: [],
+    request: null,
+    resolvedBusinessId: null,
+    resolvedBusinessName: '',
+    resolvedResourceType: null,
+    seedStem: null,
+    themedNames: [],
   }
 }

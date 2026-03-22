@@ -58,7 +58,7 @@ The repo loads `.env.shared` first and `.env` second, so tracked shared defaults
 
 - [Running tests](docs/running-tests.md): everyday Playwright commands, mobile projects, and current AP/MP/API coverage
 - [BDD tests](docs/bdd-tests.md): `playwright-bdd` proof-of-concept setup, generation, execution, and extension
-- [Testing utilities](docs/testing-utilities.md): patterns for opt-in utility-style flows that create or clean up manual test data
+- [Testing utilities](docs/testing-utilities.md): patterns for opt-in utility-style flows including booking utilities, AP meeting-room seeding, and cleanup scripts
 - [Gremlins](docs/gremlins.md): opt-in exploratory robustness runs, seed replay, and safe target guidance
 - [Lighthouse and performance](docs/lighthouse-performance-ci.md): Lighthouse runs, k6 smoke tests, and report outputs
 
@@ -74,6 +74,13 @@ npm test
 
 # BDD proof of concept
 npm run test:bdd
+
+# Add-only AP meeting-room seed utility
+npm run test:bdd:gen
+node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/ap/meeting-room-seed-utility.feature.spec.js --project "MP BDD Chromium" --workers=1
+
+# Delete all tracked seeded resources
+npm run test:bdd:resources:delete-all
 
 # Opt-in gremlins exploratory pack
 npm run test:gremlins

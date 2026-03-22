@@ -15,7 +15,7 @@ Utilities in this repo should be clearly opt-in:
 - tag them `@utility` so they stand out in reports
 - keep them serial when rows could compete for shared data
 - keep them out of CI by default; the BDD config excludes `@utility` scenarios when `CI=true`
-- prefer explicit add and delete modes so they can be used safely around manual verification sessions
+- prefer explicit add and delete modes when the utility really needs both paths, or a dedicated cleanup script when an add-only utility flow is simpler and safer
 
 A booking utility pattern is mainly controlled by one optional env var plus a `Mode` column in the outline. The env var is also documented in [`.env.example`](../.env.example):
 
@@ -140,3 +140,93 @@ For `Alternative=true`, the helper applies this fallback rule:
 If `Alternative=false`, the exact requested slot should be bookable or the scenario should fail.
 
 Delete mode should prefer API cancellation rather than UI clicks. Cancelled rows can remain visible in My Activity, so the utility should treat `cancelled or removed` as a successful delete outcome. Delete mode should prefer the stored booking ids created by the add run, and only fall back to matching active bookings when that stored state is unavailable.
+
+## Meeting-room seed utility
+
+The repo also includes an AP-focused resource seeding utility for meeting-room style resources. This utility is API-driven after authentication: it signs into AP to capture the back-office bearer token, then creates resources through the Nexudus back-office API instead of clicking through the UI.
+
+Use this utility when you want a serial outline that can:
+
+- create multiple realistic resources from one scenario row
+- keep the created ids and generated names in a cache file for exact cleanup later
+- support deterministic, on-the-fly theme naming plus an optional preferred CRUD seed without depending on live AI calls
+- pair with a standalone cleanup script that removes only the resources previously created by the utility
+
+The meeting-room seed feature lives at [tests/bdd/features/ap/meeting-room-seed-utility.feature](../tests/bdd/features/ap/meeting-room-seed-utility.feature). The generated spec is written to `tests/bdd/.features-gen/ap/meeting-room-seed-utility.feature.spec.js`.
+
+### Local setup
+
+To run the meeting-room seed utility locally, make sure your `.env` has AP credentials and a valid staging location label:
+
+- `NEXUDUS_AP_EMAIL`
+- `NEXUDUS_AP_PASSWORD`
+- `NEXUDUS_AP_LOCATION_SELECTOR_LABEL`
+- optionally `NEXUDUS_AP_BASE_URL` if you are not using the default staging dashboard
+
+The add-only utility feature and the cleanup script both log into AP, so they use the same AP credentials and location selection settings.
+
+Example commands:
+
+```bash
+# Generate the Playwright spec from the feature file
+npm run test:bdd:gen
+
+# Run the add-only seed utility outline locally
+node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/ap/meeting-room-seed-utility.feature.spec.js --project "MP BDD Chromium" --workers=1
+
+# Run the same utility in headed mode if you want to watch AP login and seeding
+node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/ap/meeting-room-seed-utility.feature.spec.js --project "MP BDD Chromium" --workers=1 --headed
+
+# Delete every tracked seeded resource from the bulk-cleanup ledger
+npm run test:bdd:resources:delete-all
+```
+
+Recommended local flow:
+
+1. Run `npm run test:bdd:gen` after editing the feature or step definitions.
+2. Run the generated meeting-room seed spec to create the resources.
+3. Inspect or use the seeded resources in AP or MP.
+4. Run `npm run test:bdd:resources:delete-all` when you want to clean them up.
+
+### Naming inputs
+
+The meeting-room utility now builds names from three inputs in a fixed order:
+
+- `Theme`: optional deterministic theme input, for example `harry potter villains`
+- `Base`: optional visible base label, for example `Meeting Room`
+- `Seed`: `true` or `false`; when `true`, the utility appends the repo's preferred CRUD seed suffix plus a stable sequence such as `2203 1450 shabcde 01`
+
+That means generated names always follow the order `Theme`, then `Base`, then `Seed` when seed is enabled:
+
+- `Lestrange Meeting Room 2203 1450 shabcde 01`
+- `Malfoy Meeting Room 2203 1450 shabcde 02`
+- `Twain RoomX 2203 1450 shabcde 01`
+
+The utility does not call a live AI service and does not require a local catalog. `Theme` values are generated on the fly from the text in the scenario row, using a deterministic offline generator so the same theme produces the same sequence of playful names on repeat runs. When a generated themed value contains a full name, the utility prefers the surname where that stays unique; if only a single name is available, it uses that. The generated names still keep the requested order of `Theme`, then `Base`, then `Seed`.
+
+### Add and cleanup behavior
+
+Running the seed utility feature does this:
+
+- resolves the requested AP business, defaulting to the authenticated AP business when `Business` is blank
+- resolves `Resource type` by exact name through the back-office API
+- generates the requested number of names from `Theme`, `Base`, and `Seed`
+- creates the resources through `POST /api/spaces/resources`
+- stores the created ids, generated names, resource type, and request row in `playwright/.cache/resource-seed-state.json`
+- also appends each created resource to `playwright/.cache/resource-seed-added-resources.json`, which is the bulk-cleanup ledger for the standalone delete-all script
+
+Cleanup is intentionally separate from the BDD feature. Use `npm run test:bdd:resources:delete-all` when you want to remove the resources created by earlier utility runs. That script does this:
+
+- reads the tracked resource ids from `playwright/.cache/resource-seed-added-resources.json`
+- deletes resources through `DELETE /api/spaces/resources/{id}`
+- prunes matching entries from both `playwright/.cache/resource-seed-added-resources.json` and `playwright/.cache/resource-seed-state.json`
+- leaves only failed deletions behind for inspection rather than deleting broadly
+
+The BDD meeting-room seed feature itself is add-only, so testers do not need to choose an action in the outline. Seeding happens automatically when the feature runs, and cleanup is handled by the standalone script.
+
+The two local cache files involved are:
+
+- `playwright/.cache/resource-seed-state.json`: per-scenario generated names and created ids
+- `playwright/.cache/resource-seed-added-resources.json`: bulk cleanup ledger for the delete-all script
+
+The utility maps the outline columns into the Nexudus resource payload, including business, resource type, visibility, confirmation, allocation, min/max booking lengths, calendar visibility, member-only access, and the supported meeting-room amenities (`Projector`, `Internet`, `ConferencePhone`, `WhiteBoard`, `LargeDisplay`, `VideoConferencing`, `AirConditioning`, `NaturalLight`, and `FlipChart`).

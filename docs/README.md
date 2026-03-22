@@ -15,7 +15,7 @@ Use this index as the GitHub-friendly entry point for the longer project documen
 
 - [Running tests](running-tests.md): Playwright commands, mobile browser projects, and current AP/MP/API test coverage
 - [BDD tests](bdd-tests.md): `playwright-bdd` proof of concept, feature generation, execution, and extension
-- [Testing utilities](testing-utilities.md): opt-in BDD booking utility flows used to create or clean up manual test data
+- [Testing utilities](testing-utilities.md): opt-in booking utilities, the AP meeting-room seed utility, and local cleanup commands
 - [Gremlins](gremlins.md): opt-in exploratory robustness runs, horde tuning, and safe target guidance
 - [Lighthouse and performance](lighthouse-performance-ci.md): Lighthouse audits, k6 smoke tests, and report outputs
 
@@ -31,6 +31,13 @@ npm test
 
 # BDD proof of concept
 npm run test:bdd
+
+# Add-only AP meeting-room seed utility
+npm run test:bdd:gen
+node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/ap/meeting-room-seed-utility.feature.spec.js --project "MP BDD Chromium" --workers=1
+
+# Delete all tracked seeded resources
+npm run test:bdd:resources:delete-all
 
 # Gremlins exploratory pack
 npm run test:gremlins

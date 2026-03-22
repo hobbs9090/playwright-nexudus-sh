@@ -1,5 +1,6 @@
 import { APIRequestContext, APIResponse, expect, Page, request as playwrightRequest } from '@playwright/test'
 import type {
+  NexudusBusinessResponse,
   NexudusBusinessSettingResponse,
   NexudusCourseLessonResponse,
   NexudusCourseMemberResponse,
@@ -18,6 +19,7 @@ type BackofficeBusinessSettingIdentifier = {
 }
 
 export type NexudusBackofficeAuthResponse = {
+  Businesses?: Array<number | string> | null
   DefaultBusinessId: number
   DefaultBusinessName?: string | null
   DefaultSimpleTimeZoneNameIana?: string | null
@@ -27,20 +29,51 @@ export type NexudusBackofficeAuthResponse = {
   [key: string]: unknown
 }
 
-export type NexudusBackofficeResourceResponse = {
-  Allocation?: number | null
+export type NexudusBackofficeResourceTypeResponse = {
   BusinessId: number
-  BusinessName?: string | null
-  HideInCalendar?: boolean
   Id: number
   Name: string
+  [key: string]: unknown
+}
+
+export type NexudusBackofficeResourceResponse = {
+  Allocation?: number | null
+  AirConditioning?: boolean
+  AllowMultipleBookings?: boolean
+  Archived?: boolean
+  BusinessId: number
+  BusinessName?: string | null
+  ConferencePhone?: boolean
+  Description?: string | null
+  DisplayOrder?: number | null
+  FlipChart?: boolean
+  GroupName?: string | null
+  HideInCalendar?: boolean
+  Id: number
+  Internet?: boolean
+  LargeDisplay?: boolean
+  MaxBookingLength?: number | null
+  MinBookingLength?: number | null
+  Name: string
+  NaturalLight?: boolean
   NoReturnPolicy?: number | null
   NoReturnPolicyAllResources?: boolean | null
   NoReturnPolicyAllUsers?: boolean | null
+  OnlyForMembers?: boolean
+  Projector?: boolean
   ResourceTypeId?: number | null
   ResourceTypeName?: string | null
+  RequiresConfirmation?: boolean
+  VideoConferencing?: boolean
+  Visible?: boolean
+  WhiteBoard?: boolean
   [key: string]: unknown
 }
+
+export type NexudusBackofficeResourceMutationInput = Omit<NexudusBackofficeResourceResponse, 'Id'> &
+  Partial<Pick<NexudusBackofficeResourceResponse, 'Id'>> & {
+    TypeName?: 'resource'
+  }
 
 export type NexudusBackofficeBookingResponse = {
   BookingNumber?: number | null
@@ -95,6 +128,8 @@ export type NexudusBackofficeBookingAvailabilityResponse = {
 const backofficeApiOrigin = 'https://spacesstaging.nexudus.com'
 const backofficeAcceptHeader = 'application/json, text/plain, */*'
 const businessSettingsPageSize = 500
+const resourcePageSize = 500
+const resourceTypePageSize = 500
 
 export class NexudusBackofficeApiClient {
   constructor(private readonly request: APIRequestContext) {}
@@ -227,6 +262,14 @@ export class NexudusBackofficeApiClient {
     return (await response.json()) as NexudusBackofficeAuthResponse
   }
 
+  async getBusiness(businessId: number) {
+    const response = await this.request.get(`/api/sys/businesses/${businessId}`)
+
+    await expectOk(response, `fetch business ${businessId}`)
+
+    return (await response.json()) as NexudusBusinessResponse
+  }
+
   async listCoworkers(pageSize: number = 5000) {
     const response = await this.request.get('/api/spaces/coworkers', {
       params: {
@@ -241,20 +284,77 @@ export class NexudusBackofficeApiClient {
     return pagedCoworkers.Records
   }
 
-  async listResources(pageSize: number = 5000) {
-    const response = await this.request.get('/api/spaces/resources', {
-      params: {
-        page: '1',
-        size: String(pageSize),
-        orderBy: 'Name',
-        dir: '0',
-      },
-    })
+  async listResourceTypes(pageSize: number = resourceTypePageSize) {
+    let page = 1
+    const resourceTypes: NexudusBackofficeResourceTypeResponse[] = []
 
-    await expectOk(response, 'fetch resources')
+    while (true) {
+      const response = await this.request.get('/api/spaces/resourcetypes', {
+        params: {
+          page: String(page),
+          size: String(pageSize),
+          orderBy: 'Name',
+          dir: '0',
+        },
+      })
 
-    const pagedResources = (await response.json()) as NexudusPagedResponse<NexudusBackofficeResourceResponse>
-    return pagedResources.Records
+      await expectOk(response, `fetch resource types page ${page}`)
+
+      const pagedResourceTypes = (await response.json()) as NexudusPagedResponse<NexudusBackofficeResourceTypeResponse>
+      resourceTypes.push(...pagedResourceTypes.Records)
+
+      if (!pagedResourceTypes.HasNextPage) {
+        break
+      }
+
+      page += 1
+    }
+
+    return resourceTypes
+  }
+
+  async findResourceTypeByName(resourceTypeName: string, businessId: number) {
+    const normalizedResourceTypeName = normalizeBackofficeName(resourceTypeName)
+    const resourceTypes = await this.listResourceTypes()
+    const matchingResourceType = resourceTypes.find(
+      (resourceType) =>
+        resourceType.BusinessId === businessId && normalizeBackofficeName(String(resourceType.Name || '')) === normalizedResourceTypeName,
+    )
+
+    if (!matchingResourceType) {
+      throw new Error(`Could not find AP resource type "${resourceTypeName}" for business ${businessId}.`)
+    }
+
+    return matchingResourceType
+  }
+
+  async listResources(pageSize: number = resourcePageSize) {
+    let page = 1
+    const resources: NexudusBackofficeResourceResponse[] = []
+
+    while (true) {
+      const response = await this.request.get('/api/spaces/resources', {
+        params: {
+          page: String(page),
+          size: String(pageSize),
+          orderBy: 'Name',
+          dir: '0',
+        },
+      })
+
+      await expectOk(response, `fetch resources page ${page}`)
+
+      const pagedResources = (await response.json()) as NexudusPagedResponse<NexudusBackofficeResourceResponse>
+      resources.push(...pagedResources.Records)
+
+      if (!pagedResources.HasNextPage) {
+        break
+      }
+
+      page += 1
+    }
+
+    return resources
   }
 
   async findResourceByName(resourceName: string, businessId: number) {
@@ -269,6 +369,57 @@ export class NexudusBackofficeApiClient {
     }
 
     return matchingResource
+  }
+
+  async getResource(resourceId: number) {
+    const response = await this.request.get(`/api/spaces/resources/${resourceId}`)
+
+    await expectOk(response, `fetch resource ${resourceId}`)
+
+    return (await response.json()) as NexudusBackofficeResourceResponse
+  }
+
+  async getResourceIfExists(resourceId: number) {
+    const response = await this.request.get(`/api/spaces/resources/${resourceId}`)
+
+    if (response.status() === 404) {
+      return null
+    }
+
+    await expectOk(response, `fetch resource ${resourceId}`)
+
+    return (await response.json()) as NexudusBackofficeResourceResponse
+  }
+
+  async createResource(resource: NexudusBackofficeResourceMutationInput) {
+    const response = await this.request.post('/api/spaces/resources', {
+      data: {
+        TypeName: 'resource',
+        ...resource,
+      },
+      headers: {
+        'content-type': 'application/json',
+      },
+    })
+
+    await expectOk(response, `create resource "${resource.Name}"`)
+
+    const createResponse = (await response.json()) as NexudusMutationResponse<NexudusBackofficeResourceResponse>
+    expectSuccessfulMutation(createResponse, `create resource "${resource.Name}"`)
+    expect(createResponse.Value, `Expected Nexudus to return the created resource for "${resource.Name}".`).toBeTruthy()
+
+    return createResponse.Value as NexudusBackofficeResourceResponse
+  }
+
+  async deleteResource(resourceId: number) {
+    const response = await this.request.delete(`/api/spaces/resources/${resourceId}`)
+
+    await expectOk(response, `delete resource ${resourceId}`)
+
+    const deleteResponse = (await response.json()) as NexudusMutationResponse
+    expectSuccessfulMutation(deleteResponse, `delete resource ${resourceId}`)
+
+    return deleteResponse
   }
 
   async getBooking(bookingId: number) {

@@ -71,9 +71,29 @@ In practice, a good first step is a small MP mobile smoke pack that checks the p
 ## Related guides
 
 - [BDD tests](bdd-tests.md): `playwright-bdd` proof-of-concept setup, commands, example Gherkin, and extension guidance
-- [Testing utilities](testing-utilities.md): booking utility flows that use BDD rows to add or delete manual test data
+- [Testing utilities](testing-utilities.md): booking utilities plus the add-only meeting-room seed utility and bulk cleanup script
 - [Gremlins](gremlins.md): opt-in exploratory `gremlins.js` runs, replay seeds, tuning, and safe target guidance
 - [Lighthouse and performance](lighthouse-performance-ci.md): authenticated Lighthouse audits, k6 smoke tests, and report outputs
+
+## Local utility runs
+
+For opt-in manual-data utilities, the most useful local commands are:
+
+```bash
+# Generate the Playwright specs for BDD features before running a direct generated spec
+npm run test:bdd:gen
+
+# Run the add-only meeting-room seed utility
+node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/ap/meeting-room-seed-utility.feature.spec.js --project "MP BDD Chromium" --workers=1
+
+# Run the same seed utility in headed mode
+node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/ap/meeting-room-seed-utility.feature.spec.js --project "MP BDD Chromium" --workers=1 --headed
+
+# Remove every resource previously created by the seed utility
+npm run test:bdd:resources:delete-all
+```
+
+These meeting-room utility commands require valid AP credentials in `.env`, especially `NEXUDUS_AP_EMAIL`, `NEXUDUS_AP_PASSWORD`, and `NEXUDUS_AP_LOCATION_SELECTOR_LABEL`.
 
 ## Reports and outputs
 

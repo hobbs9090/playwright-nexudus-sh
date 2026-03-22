@@ -7,9 +7,9 @@ The repo includes a small `playwright-bdd` proof of concept that sits alongside 
 - hero sign-in from the public home page reaches `/login`
 - footer `FAQ` from the public home page reaches `/faq`
 
-The generated Playwright specs are written to `tests/bdd/.features-gen/` and are ignored by git.
+The generated Playwright specs are written to `tests/bdd/.features-gen/` and are ignored by git. That same generated-spec path is also how the opt-in utility features are run locally, including the AP meeting-room seed utility.
 
-For BDD-driven utilities that are meant to support manual testing rather than normal CI assertions, see [Testing utilities](testing-utilities.md).
+For BDD-driven utilities that are meant to support manual testing rather than normal CI assertions, see [Testing utilities](testing-utilities.md). The main current example is the add-only AP meeting-room seed utility plus its standalone cleanup script.
 
 ## Example Gherkin
 
@@ -40,6 +40,10 @@ npm run test:bdd:headed
 
 # Open the dedicated BDD HTML report
 npm run test:bdd:report
+
+# Generate and run the AP meeting-room seed utility
+npm run test:bdd:gen
+node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/ap/meeting-room-seed-utility.feature.spec.js --project "MP BDD Chromium" --workers=1
 ```
 
 ## Extending the proof of concept
