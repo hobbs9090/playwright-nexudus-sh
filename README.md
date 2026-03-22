@@ -4,6 +4,29 @@ End-to-end Playwright test suite for the Nexudus Admin Panel (AP), Nexudus Membe
 
 The suite is written in TypeScript, uses `@playwright/test`, and follows a small page-object structure so the main workflows stay readable. The detailed runbooks and reference material now live under [`docs/`](docs/README.md) so the landing page stays short and the guidance is easier to navigate on GitHub.
 
+## What it is for
+
+This framework is for teams working with Nexudus spaces who want a small but practical automation base for regression coverage, exploratory checks, and test-data utilities.
+
+It is most useful for:
+
+- QA engineers building and maintaining staged end-to-end coverage
+- developers who want fast feedback on AP, MP, and API changes
+- consultants, support, and implementation teams who need repeatable ways to create or clean up test data
+- teams experimenting with AI-assisted test authoring without losing a conventional Playwright structure
+
+## Framework features
+
+- TypeScript Playwright suite covering AP, MP, and API flows in one repo
+- small page-object model to keep workflows readable and reusable
+- environment-driven configuration with shared defaults in `.env.shared` and local overrides in `.env`
+- deterministic UI tests backed by API helpers for setup, verification, and cleanup
+- optional `playwright-bdd` layer for Gherkin-driven scenarios and scenario outlines
+- opt-in testing utilities for repeatable manual test-data creation and cleanup
+- opt-in gremlins.js exploratory testing kept separate from normal regression runs
+- Lighthouse and k6 support for lightweight performance and CI visibility
+- GitHub-friendly docs under [`docs/`](docs/README.md) for setup, running, configuration, and extension guidance
+
 ## Quick start
 
 ```bash
@@ -20,7 +43,7 @@ The repo loads `.env.shared` first and `.env` second, so tracked shared defaults
 ## Suite at a glance
 
 - AP: login, admin overview, deliveries, products, events, and course workflows
-- MP: login, signup, help requests, tour requests, public home content, and documentation-derived public navigation flows
+- MP: login, bookings, signup, help requests, tour requests, public home content, and documentation-derived public navigation flows
 - API: bearer-token auth, user profile reads, and selected business-setting mutations
 
 ## Documentation
