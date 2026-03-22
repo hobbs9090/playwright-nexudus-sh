@@ -15,7 +15,7 @@ const testDir = defineBddConfig({
   features: 'tests/bdd/features/**/*.feature',
   featuresRoot: 'tests/bdd/features',
   outputDir: 'tests/bdd/.features-gen',
-  steps: 'tests/bdd/steps/**/*.ts',
+  steps: ['tests/bdd/steps/**/*.ts', 'tests/bdd/support/**/*.ts'],
 })
 const reporter = [
   ['html', { open: 'never', outputFolder: 'playwright-report/bdd' }],

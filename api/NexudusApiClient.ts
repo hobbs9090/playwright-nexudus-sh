@@ -148,6 +148,10 @@ export class NexudusApiClient {
 
   async createBearerToken() {
     const credentials = getConfiguredApiCredentials()
+    return this.createBearerTokenForCredentials(credentials.username, credentials.password)
+  }
+
+  async createBearerTokenForCredentials(username: string, password: string) {
     const response = await this.request.post('/api/token', {
       headers: {
         accept: 'application/json',
@@ -155,8 +159,8 @@ export class NexudusApiClient {
       },
       form: {
         grant_type: 'password',
-        username: credentials.username,
-        password: credentials.password,
+        username,
+        password,
       },
     })
 

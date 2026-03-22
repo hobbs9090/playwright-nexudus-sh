@@ -158,6 +158,8 @@ with lessons, images, and enrolments, following the existing patterns.
 
 That said, more detail will usually produce output that is much closer to what you actually want.
 
+The most effective workflow I have found is to ask Codex in a separate window to help draft the test instructions first, then refine the suggested prompt before using it for the actual implementation work. In practice that usually leads to clearer requirements and less back-and-forth.
+
 When asking AI to add a test, it helps to specify:
 
 - which area the test belongs to: `AP`, `MP`, or `API`
@@ -276,6 +278,7 @@ The suite supports the following environment variables:
 | `NEXUDUS_MP_LOCATION_SELECTOR_LABEL` | No                      | `Coworking Soho (STEVEN)` via `.env.shared`                 | MP location label used to derive the default MP host for public, authenticated, and API-linked flows |
 | `NEXUDUS_MEMBER_EMAIL`          | No                            | `NEXUDUS_MP_EMAIL`                                          | Optional dedicated member-user email override for role-based tests              |
 | `NEXUDUS_MEMBER_PASSWORD`       | No                            | `NEXUDUS_MP_PASSWORD`                                       | Optional dedicated member-user password override for role-based tests           |
+| `NEXUDUS_MEMBER_DEFAULT_PASSWORD` | No                          | `NEXUDUS_MEMBER_PASSWORD`, then `NEXUDUS_MP_PASSWORD`       | Optional shared default password for BDD member-name resolution                 |
 | `NEXUDUS_CONTACT_EMAIL`         | No                            | None                                                        | Optional dedicated contact-user email for role-based tests                      |
 | `NEXUDUS_CONTACT_PASSWORD`      | No                            | None                                                        | Optional dedicated contact-user password for role-based tests                   |
 | `NEXUDUS_API_BASE_URL`          | No                            | Derived from the resolved MP host origin                    | Optional explicit custom base URL override for API tests, for example `https://your-space.spacesstaging.nexudus.com` |
@@ -317,6 +320,14 @@ Use `NEXUDUS_MP_EMAIL` and `NEXUDUS_MP_PASSWORD` for the default MP member or
 coworker account. If you also need contact coverage, keep that separate in
 `NEXUDUS_CONTACT_EMAIL` and `NEXUDUS_CONTACT_PASSWORD` rather than reusing the
 default MP pair.
+
+For the BDD booking outline, optional member-specific overrides use the
+uppercase snake-case pattern
+`NEXUDUS_MEMBER_<FULL_NAME>_EMAIL` and
+`NEXUDUS_MEMBER_<FULL_NAME>_PASSWORD`, for example
+`NEXUDUS_MEMBER_BOB_YOUNGER_EMAIL`. If only the email is resolved, the booking
+steps fall back to `NEXUDUS_MEMBER_DEFAULT_PASSWORD`, then
+`NEXUDUS_MEMBER_PASSWORD`, then `NEXUDUS_MP_PASSWORD`.
 
 For role-based test helpers, the repo now exposes
 `getConfiguredUserCredentials('admin' | 'member' | 'contact')` from
@@ -364,7 +375,7 @@ Contributor initials are resolved in this order:
 
 If initials cannot be resolved, the CRUD flows still get the standard random seed without initials.
 
-## Running the tests
+## Running and debugging the tests
 
 ```bash
 # Run the suite
@@ -391,6 +402,9 @@ npx playwright test --project "MP iPhone Safari"
 # Run in headed mode
 npm run test:headed
 
+# Run a test with the Playwright Inspector so you can step through it manually
+node scripts/run-with-dotenv.mjs -- npx playwright test tests/mp/mp-bookings.spec.ts --project "MP Staging Chromium" --debug
+
 # Run the gremlins pack in headed mode
 npm run test:gremlins:headed
 
@@ -403,6 +417,8 @@ npx playwright test --headed -g @3093
 # Open the latest HTML report
 npm run test:report
 ```
+
+Use Playwright's `--debug` mode when you want the Inspector window with pause, step, and resume controls. In this repo the usual pattern is to keep the existing dotenv loader and add `--debug` to the Playwright command, as shown in the MP booking example above.
 
 By default the suite runs three projects: `AP Chromium`, `MP Staging Chromium`, and `API`. `AP Chromium` includes the admin overview, admin workflow, AP login, and AP course-creation specs against the dashboard application. `MP Staging Chromium` covers the member-portal login flow, public signup coverage, signed-in help-request coverage, public request-a-tour coverage, and public home-content checks against the spaces staging application. `API` uses the configured MP host origin by default, authenticates against `/api/token`, and runs API-only coverage under `tests/api`, including business-setting mutation checks and MP footer verification. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "API"`.
 
@@ -440,10 +456,11 @@ In practice, a good first step is a small MP mobile smoke pack that checks the p
 
 ### BDD proof of concept
 
-The repo now includes a small `playwright-bdd` proof of concept that sits alongside the existing `@playwright/test` suite rather than replacing it. It lives under [tests/bdd](tests/bdd), uses its own config in [playwright.bdd.config.ts](playwright.bdd.config.ts), and currently covers two public MP documentation flows:
+The repo has a small `playwright-bdd` proof of concept that sits alongside the existing `@playwright/test` suite rather than replacing it. It lives under [tests/bdd](tests/bdd), uses its own config in [playwright.bdd.config.ts](playwright.bdd.config.ts), and currently covers two public MP documentation flows:
 
 - hero sign-in from the public home page reaches `/login`
 - footer `FAQ` from the public home page reaches `/faq`
+- serial MP booking coverage in [tests/bdd/features/mp/member-bookings.feature](tests/bdd/features/mp/member-bookings.feature) using a `Scenario Outline` and `Examples` table
 
 The generated Playwright specs are written to `tests/bdd/.features-gen/` and are ignored by git.
 
@@ -471,6 +488,9 @@ npm run test:bdd:gen
 # Generate and run the BDD examples
 npm run test:bdd
 
+# Run just the serial MP booking outline
+node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/mp/member-bookings.feature.spec.js --project "MP BDD Chromium" --workers=1
+
 # Generate and run the BDD examples in headed mode
 npm run test:bdd:headed
 
@@ -485,9 +505,70 @@ To extend the proof of concept:
 - keep the step definitions thin and reuse existing page objects from `page-objects/mp`
 - rerun `npm run test:bdd`
 
+The MP booking outline in [tests/bdd/features/mp/member-bookings.feature](tests/bdd/features/mp/member-bookings.feature) is tagged `@mode:serial` so the example rows run one at a time and do not compete with each other for the same booking data.
+
+In practice, these booking BDD scenarios are better treated as simple utilities for manual testing than as a normal CI gate. They are useful when you want to create realistic member-portal booking data quickly, verify a path, and clean it up again without spending time manually setting up the same bookings through the UI.
+
+The current outline is a good example of that utility style. It covers:
+
+- an exact non-repeating booking
+- an alternative-enabled booking where the requested slot can move to a nearby acceptable fallback
+- a workday recurrence
+- a weekly weekday recurrence
+
+The booking outline resolves `Member Name` by:
+
+- matching the configured default MP member if the requested full name is the same user
+- then checking optional per-member env vars such as `NEXUDUS_MEMBER_BOB_YOUNGER_EMAIL`
+- then falling back to a coworkers API lookup by full display name
+
+The password resolution order is:
+
+- `NEXUDUS_MEMBER_<DISPLAY_NAME>_PASSWORD` when a per-member override is configured
+- `NEXUDUS_MEMBER_DEFAULT_PASSWORD` when set
+- otherwise the configured default member password from `NEXUDUS_MEMBER_PASSWORD` or `NEXUDUS_MP_PASSWORD`
+
+The booking outline currently supports:
+
+- `Date`: `dd/mm/yyyy`, `today`, `tomorrow`, and `next <weekday>`
+- `Start time`: values such as `09:00`, `9am`, and `2:30pm`
+- `Length`: values such as `30 minutes`, `1 hour`, `2 hours`, and `90 minutes`
+- `Repeat options`: `Does not repeat`, `Every workday`, and `Every day on <weekday>`
+- `Alternative`: `true/false` or `yes/no`
+
+The scenario outline parameters mean:
+
+- `Member Name`: full member display name as it appears in Nexudus, for example `Bob Younger`
+- `Resource name`: exact MP resource label, for example `Large Meeting Room #1`
+- `Date`: the requested booking date in exact or natural-language form
+- `Start time`: the requested start time for the booking window
+- `Length`: the requested booking duration
+- `Repeat options`: how the booking should recur in the MP repeat control
+- `Alternative`: whether the scenario may accept a sensible fallback instead of failing on the exact requested slot
+
+The current feature file uses rows like these:
+
+- `Bob Younger | Large Meeting Room #1 | next Tuesday | 9am | 30 minutes | Does not repeat | true`
+- `Bob Younger | Large Meeting Room #1 | tomorrow | 7pm | 30 minutes | Does not repeat | false`
+- `Bob Younger | Large Meeting Room #1 | next Wednesday | 7pm | 30 minutes | Every workday | false`
+- `Bob Younger | Large Meeting Room #1 | 23/03/2026 | 7:30pm | 30 minutes | Every day on Monday | false`
+
+For `Every day on <weekday>`, the helper maps that input to the portal's built-in weekly repeat option for the selected weekday, for example `Every week on Monday`. The requested booking date must already fall on that weekday.
+
+For `Alternative=true`, the helper applies this fallback rule:
+
+- first keep the same resource and same date, then choose the nearest available start time that still fits the requested duration
+- if that day has no acceptable slot, keep the same resource and same requested start time, then search the next few future dates for the first bookable alternative
+
+If `Alternative=false`, the exact requested slot must be bookable or the scenario fails.
+
+Each booking scenario cleans up its own created booking ids after the assertions by calling the MP booking cancellation API in an `After` hook, so even a failing assertion should not leave the created bookings behind.
+
 ### Gremlins exploratory testing
 
-The repo now includes a small opt-in `gremlins.js` layer for exploratory MP robustness checks. This sits alongside the deterministic `@playwright/test` suite and does not run as part of `npm test`.
+The repo has a small opt-in `gremlins.js` layer for exploratory MP robustness checks. This sits alongside the deterministic `@playwright/test` suite and does not run as part of `npm test`.
+
+Official gremlins.js docs: [marmelab/gremlins.js](https://github.com/marmelab/gremlins.js)
 
 The gremlins coverage lives under [tests/gremlins](tests/gremlins), uses its own config in [playwright.gremlins.config.ts](playwright.gremlins.config.ts), and injects `node_modules/gremlins.js/dist/gremlins.min.js` with `page.addInitScript(...)` before starting each horde.
 
