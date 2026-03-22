@@ -14,7 +14,7 @@ Utilities in this repo should be clearly opt-in:
 
 - tag them `@utility` so they stand out in reports
 - keep them serial when rows could compete for shared data
-- skip them in CI unless there is a very strong reason to run them there
+- keep them out of CI by default; the BDD config excludes `@utility` scenarios when `CI=true`
 - prefer explicit add and delete modes so they can be used safely around manual verification sessions
 
 A booking utility pattern is mainly controlled by one optional env var plus a `Mode` column in the outline. The env var is also documented in [`.env.example`](../.env.example):
@@ -73,7 +73,7 @@ Feature: Booking utility
 The example rows cover:
 
 - an exact non-repeating booking
-- an alternative-enabled booking where the requested slot can move to a nearby acceptable fallback
+- an alternative-enabled booking where the requested slot can move to a nearby available time slot
 - a workday recurrence
 - a weekly weekday recurrence
 
@@ -115,7 +115,7 @@ The scenario outline parameters mean:
 - `Start time`: the requested start time for the booking window
 - `Length`: the requested booking duration
 - `Repeat options`: how the booking should recur in the MP repeat control
-- `Alternative`: whether the scenario may accept a sensible fallback instead of failing on the exact requested slot
+- `Alternative`: whether the scenario may accept a nearby available time slot instead of failing when the exact requested slot is unavailable
 
 An example `Examples` table can look like this:
 
@@ -134,8 +134,8 @@ In `ap` mode, the same repeat rule can be expanded into explicit one-time occurr
 
 For `Alternative=true`, the helper applies this fallback rule:
 
-- first keep the same resource and same date, then choose the nearest available start time that still fits the requested duration
-- if that day has no acceptable slot, keep the same resource and same requested start time, then search the next few future dates for the first bookable alternative
+- first keep the same resource and same date, then choose the next available time slot on that day that still fits the requested duration
+- if no suitable time slot is available on that day, keep the same resource and then look for the next available day with a bookable slot
 
 If `Alternative=false`, the exact requested slot should be bookable or the scenario should fail.
 

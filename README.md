@@ -64,3 +64,9 @@ npm run test:report
 ```
 
 For setup details, configuration, CI expectations, and the full command catalogue, use the linked pages in [`docs/`](docs/README.md).
+
+## Notes
+
+- This project should be judged more on the quality of the implementation than the breadth of coverage, because it is intended as a proof of concept for AI-enabled automation test development
+- The suite is intentionally small and focused on demonstrating Playwright structure and workflow integration
+- The product creation flow currently depends on UI timing and may require maintenance if the Nexudus product screens change
