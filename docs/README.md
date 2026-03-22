@@ -1,6 +1,6 @@
 # Documentation
 
-[Repository README](../README.md) | [Getting started](getting-started.md) | [Configuration](configuration.md) | [CI](ci.md) | [Authoring tests](authoring-tests.md) | [Running tests](running-tests.md) | [BDD tests](bdd-tests.md) | [Testing utilities](testing-utilities.md) | [Lighthouse and performance](lighthouse-performance-ci.md)
+[Repository README](../README.md) | [Getting started](getting-started.md) | [Configuration](configuration.md) | [CI](ci.md) | [Authoring tests](authoring-tests.md) | [Running tests](running-tests.md) | [BDD tests](bdd-tests.md) | [Testing utilities](testing-utilities.md) | [Gremlins](gremlins.md) | [Lighthouse and performance](lighthouse-performance-ci.md)
 
 Use this index as the GitHub-friendly entry point for the longer project documentation.
 
@@ -13,13 +13,14 @@ Use this index as the GitHub-friendly entry point for the longer project documen
 
 ## Test guides
 
-- [Running tests](running-tests.md): Playwright commands, mobile browser projects, gremlins, and current AP/MP/API test coverage
+- [Running tests](running-tests.md): Playwright commands, mobile browser projects, and current AP/MP/API test coverage
 - [BDD tests](bdd-tests.md): `playwright-bdd` proof of concept, feature generation, execution, and extension
 - [Testing utilities](testing-utilities.md): opt-in BDD booking utility flows used to create or clean up manual test data
+- [Gremlins](gremlins.md): opt-in exploratory robustness runs, horde tuning, and safe target guidance
+- [Lighthouse and performance](lighthouse-performance-ci.md): Lighthouse audits, k6 smoke tests, and report outputs
 
 ## Reference
 
-- [Lighthouse and performance](lighthouse-performance-ci.md): Lighthouse audits, k6 smoke tests, and report outputs
 - [Member Portal documentation-derived scenarios](member-portal-documentation-scenarios.md): documentation-to-test coverage mapping for MP scenarios
 
 ## Common entry points
