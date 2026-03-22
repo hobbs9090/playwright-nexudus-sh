@@ -4,6 +4,12 @@
 
 This inventory maps official Nexudus Members Portal documentation to the current `playwright-nexudus-sh` automation coverage.
 
+## Note
+
+This area started as an experiment to test the automatic creation of tests directly from the Nexudus Knowledge Base. It was an interesting experiment, but a better long-term approach may be to first derive a clear list of scenarios in a spreadsheet and then use that to drive the automated creation of tests.
+
+That same spreadsheet could also be reused to document regression and smoke coverage before a major release, which would make the scenario list useful for both automation planning and release readiness.
+
 ## Sources
 
 - Members Portal: https://help.nexudus.com/v3/docs/members-portal
