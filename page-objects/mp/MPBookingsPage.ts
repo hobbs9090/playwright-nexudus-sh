@@ -453,14 +453,26 @@ export class MPBookingsPage extends AbstractPage {
 
   async getNewActivityBookingLinks(previousBookingIds: number[], resourceName: string) {
     const previousBookingIdSet = new Set(previousBookingIds)
+    await expect
+      .poll(
+        async () => {
+          const bookingLinks = await this.loadActivityBookingLinks(true)
+
+          return bookingLinks
+            .filter((bookingLink) => !previousBookingIdSet.has(bookingLink.id) && bookingLink.text.includes(resourceName))
+            .sort((leftBookingLink, rightBookingLink) => leftBookingLink.id - rightBookingLink.id)
+        },
+        {
+          message: `Expected MP my activity to show new bookings for "${resourceName}" after checkout.`,
+          timeout: 15000,
+        },
+      )
+      .not.toHaveLength(0)
+
     const bookingLinks = await this.loadActivityBookingLinks(true)
-    const newBookingLinks = bookingLinks
+    return bookingLinks
       .filter((bookingLink) => !previousBookingIdSet.has(bookingLink.id) && bookingLink.text.includes(resourceName))
       .sort((leftBookingLink, rightBookingLink) => leftBookingLink.id - rightBookingLink.id)
-
-    expect(newBookingLinks.length, `Expected MP my activity to show new bookings for "${resourceName}" after checkout.`).toBeGreaterThan(0)
-
-    return newBookingLinks
   }
 
   async findActivityBookingLinksMatching(resourceName: string, bookingWindows: MPBookingWindow[]) {

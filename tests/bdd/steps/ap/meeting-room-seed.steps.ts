@@ -1,14 +1,14 @@
 import { expect } from '@playwright/test'
 import { createBdd } from 'playwright-bdd'
 import {
-  createBackofficeApiClientWithAPLogin,
+  createBackofficeApiClientWithApiCredentials,
   type NexudusBackofficeApiClient,
   type NexudusBackofficeAuthResponse,
   type NexudusBackofficeResourceMutationInput,
   type NexudusBackofficeResourceResponse,
   type NexudusBackofficeResourceTypeResponse,
-} from '../../support/backoffice-api'
-import { test, type ResourceSeedScenarioState } from '../support/bdd-test'
+} from '../../../support/backoffice-api'
+import { test, type ResourceSeedScenarioState } from '../../support/bdd-test'
 import {
   buildResourceSeedNames,
   createResourceSeedScenarioKey,
@@ -16,7 +16,7 @@ import {
   readResourceSeedRecord,
   writeResourceSeedRecord,
   type ResourceSeedUtilityRequest,
-} from '../support/resource-seed-utility'
+} from '../../support/resource-seed-utility'
 
 type ResourceAmenityFlags = {
   AirConditioning: boolean
@@ -35,7 +35,6 @@ type ParsedResourceSeedRequest = {
   allowMultipleBookings: boolean
   amenities: ResourceAmenityFlags
   base: string
-  business: string
   count: number
   hideInCalendar: boolean
   maxBookingLength: number | null
@@ -53,7 +52,6 @@ const defaultResourceSeedRequest: ResourceSeedUtilityRequest = {
   allowMultipleBookings: 'false',
   amenities: '',
   base: '',
-  business: '',
   count: '1',
   hideInCalendar: 'false',
   maxBookingLength: '',
@@ -89,10 +87,6 @@ When('they prepare a resource seed utility request', async ({ resourceSeedScenar
   resourceSeedScenario.request = {
     ...defaultResourceSeedRequest,
   }
-})
-
-When('resource seed business is {string}', async ({ resourceSeedScenario }, business: string) => {
-  updateResourceSeedRequest(resourceSeedScenario, { business })
 })
 
 When('resource seed resource type is {string}', async ({ resourceSeedScenario }, resourceType: string) => {
@@ -151,15 +145,14 @@ When('resource seed amenities are {string}', async ({ resourceSeedScenario }, am
   updateResourceSeedRequest(resourceSeedScenario, { amenities })
 })
 
-When('they run the resource seed utility', async ({ page, resourceSeedScenario }) => {
+When('they run the resource seed utility', async ({ resourceSeedScenario }) => {
   const request = readPreparedResourceSeedRequest(resourceSeedScenario)
   const parsedRequest = parseResourceSeedRequest(request)
-
-  const backofficeApi = await createBackofficeApiClientWithAPLogin(page)
+  const backofficeApi = await createBackofficeApiClientWithApiCredentials()
 
   try {
     const authenticatedApUser = await backofficeApi.getAuthenticatedUser()
-    const resolvedBusiness = await resolveResourceSeedBusiness(backofficeApi, authenticatedApUser, parsedRequest.business)
+    const resolvedBusiness = resolveResourceSeedBusiness(authenticatedApUser)
     const resolvedResourceType = await backofficeApi.findResourceTypeByName(parsedRequest.resourceType, resolvedBusiness.id)
 
     resourceSeedScenario.resolvedBusinessId = resolvedBusiness.id
@@ -350,11 +343,8 @@ function buildSeededResourceDescription(parsedRequest: ParsedResourceSeedRequest
 }
 
 async function resolveResourceSeedBusiness(
-  backofficeApi: NexudusBackofficeApiClient,
   authenticatedApUser: NexudusBackofficeAuthResponse,
-  requestedBusiness: string,
 ) {
-  const normalizedRequestedBusiness = normalizeSeedValue(requestedBusiness)
   const defaultBusinessId = Number(authenticatedApUser.DefaultBusinessId)
   const defaultBusinessName = String(authenticatedApUser.DefaultBusinessName || '').trim()
 
@@ -364,34 +354,9 @@ async function resolveResourceSeedBusiness(
   ).toBeTruthy()
   expect(defaultBusinessName, 'Expected the authenticated AP user to expose a default business name.').toBeTruthy()
 
-  if (!normalizedRequestedBusiness || normalizeSeedValue(defaultBusinessName) === normalizedRequestedBusiness) {
-    return {
-      id: defaultBusinessId,
-      name: defaultBusinessName,
-    }
-  }
-
-  const accessibleBusinessIds = Array.from(
-    new Set(
-      (authenticatedApUser.Businesses || [])
-        .map((businessId) => Number(businessId))
-        .filter((businessId) => Number.isInteger(businessId) && businessId > 0)
-        .concat(defaultBusinessId),
-    ),
-  )
-  const accessibleBusinesses = await Promise.all(accessibleBusinessIds.map((businessId) => backofficeApi.getBusiness(businessId)))
-  const matchingBusiness = accessibleBusinesses.find(
-    (business) => normalizeSeedValue(String(business.Name || '')) === normalizedRequestedBusiness,
-  )
-
-  expect(
-    matchingBusiness?.Id,
-    `Expected the authenticated AP user to have access to business "${requestedBusiness}".`,
-  ).toBeTruthy()
-
   return {
-    id: matchingBusiness!.Id,
-    name: String(matchingBusiness!.Name || '').trim(),
+    id: defaultBusinessId,
+    name: defaultBusinessName,
   }
 }
 
@@ -443,7 +408,6 @@ function parseResourceSeedRequest(request: ResourceSeedUtilityRequest): ParsedRe
     allowMultipleBookings: parseBooleanInput(request.allowMultipleBookings, 'Allow multiple bookings', false),
     amenities: parseAmenityFlags(request.amenities),
     base: request.base.trim(),
-    business: request.business.trim(),
     count,
     hideInCalendar: parseBooleanInput(request.hideInCalendar, 'Hide in calendar', false),
     maxBookingLength,

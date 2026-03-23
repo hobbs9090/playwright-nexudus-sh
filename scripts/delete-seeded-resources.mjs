@@ -3,11 +3,9 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import * as dotenv from 'dotenv'
-import { chromium, request as playwrightRequest } from 'playwright'
+import { request as playwrightRequest } from 'playwright'
 
 const defaultEnvFileNames = ['.env.shared', '.env']
-const defaultApBaseUrl = 'https://dashboard-staging.nexudus.com/'
-const defaultApLocationLabel = 'Coworking Soho (STEVEN)'
 const backofficeApiOrigin = 'https://spacesstaging.nexudus.com'
 const backofficeAcceptHeader = 'application/json, text/plain, */*'
 const trackedSeededResourcesFilePath = path.resolve(process.cwd(), 'playwright/.cache/resource-seed-added-resources.json')
@@ -28,12 +26,10 @@ if (trackedResources.length === 0) {
   process.exit(0)
 }
 
-const browser = await chromium.launch({ headless: true })
-const page = await browser.newPage()
 let requestContext = null
 
 try {
-  const accessToken = await loginAndCaptureBackofficeAccessToken(page)
+  const accessToken = await createBackofficeAccessTokenWithApiCredentials()
   requestContext = await playwrightRequest.newContext({
     baseURL: backofficeApiOrigin,
     extraHTTPHeaders: {
@@ -93,79 +89,41 @@ try {
   }
 } finally {
   await requestContext?.dispose()
-  await browser.close()
 }
 
-async function loginAndCaptureBackofficeAccessToken(page) {
-  const apBaseUrl = process.env.NEXUDUS_AP_BASE_URL?.trim() || defaultApBaseUrl
-  const apEmail = process.env.NEXUDUS_AP_EMAIL?.trim()
-  const apPassword = process.env.NEXUDUS_AP_PASSWORD?.trim()
-
-  if (!apEmail || !apPassword) {
-    throw new Error('Missing NEXUDUS_AP_EMAIL or NEXUDUS_AP_PASSWORD.')
-  }
-
-  page.on('dialog', async (dialog) => {
-    await dialog.dismiss().catch(() => {})
+async function createBackofficeAccessTokenWithApiCredentials() {
+  const credentials = resolveBackofficeApiCredentials()
+  const authRequestContext = await playwrightRequest.newContext({
+    baseURL: backofficeApiOrigin,
   })
 
-  await page.goto(apBaseUrl)
-  await page.getByLabel('Email').fill(apEmail)
-  await page.getByLabel('Password').fill(apPassword)
-  await page.getByRole('button', { name: 'Sign in' }).click()
+  try {
+    const response = await authRequestContext.post('/api/token', {
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      form: {
+        grant_type: 'password',
+        password: credentials.password,
+        username: credentials.username,
+      },
+    })
 
-  await Promise.race([
-    page.getByRole('link', { name: 'Dashboard' }).first().waitFor({ timeout: 30000 }),
-    page.getByRole('textbox', { name: /Search everywhere for/i }).waitFor({ timeout: 30000 }),
-  ])
+    if (!response.ok()) {
+      throw new Error(`Expected Nexudus API token creation to succeed, but it returned HTTP ${response.status()}.`)
+    }
 
-  await ensureConfiguredLocationSelected(page)
+    const token = await response.json()
 
-  const tokenCaptureUrl = new URL('/content/courses', apBaseUrl)
-  tokenCaptureUrl.searchParams.set('playwright_backoffice_token', Date.now().toString())
+    if (!token?.access_token || String(token.token_type || '').toLowerCase() !== 'bearer') {
+      throw new Error('Expected Nexudus API token creation to return a bearer access token.')
+    }
 
-  const apiRequestPromise = page.waitForRequest(
-    (request) =>
-      request.url().startsWith(`${backofficeApiOrigin}/api/`) && /^Bearer\s+\S+/i.test(request.headers().authorization || ''),
-    { timeout: 30000 },
-  )
-
-  await page.goto(tokenCaptureUrl.toString())
-
-  const apiRequest = await apiRequestPromise
-  const authorizationHeader = apiRequest.headers().authorization || ''
-
-  if (!/^Bearer\s+\S+/i.test(authorizationHeader)) {
-    throw new Error('Expected authenticated AP navigation to issue a back-office API request with a bearer token.')
+    return token.access_token
+  } finally {
+    await authRequestContext.dispose()
   }
-
-  return authorizationHeader.replace(/^Bearer\s+/i, '')
-}
-
-async function ensureConfiguredLocationSelected(page) {
-  const locationLabel = process.env.NEXUDUS_AP_LOCATION_SELECTOR_LABEL?.trim() || defaultApLocationLabel
-  const locationMenu = page.locator('[aria-label="Locations menu"]').first()
-
-  await locationMenu.waitFor({ state: 'visible', timeout: 30000 })
-
-  if ((await locationMenu.innerText()).trim() === locationLabel) {
-    return
-  }
-
-  await locationMenu.dispatchEvent('click')
-
-  const targetLocationOption = page.getByRole('option').filter({ hasText: locationLabel }).first()
-
-  await targetLocationOption.waitFor({ state: 'visible', timeout: 10000 })
-  await targetLocationOption.dispatchEvent('click')
-  await page.waitForFunction(
-    ([selector, expectedLabel]) => {
-      const element = document.querySelector(selector)
-      return element != null && element.textContent != null && element.textContent.includes(expectedLabel)
-    },
-    ['[aria-label="Locations menu"]', locationLabel],
-    { timeout: 30000 },
-  )
 }
 
 async function parseJsonOrText(response) {
@@ -250,6 +208,36 @@ function deduplicateTrackedResources(resources) {
   return Array.from(new Map(resources.map((resource) => [resource.resourceId, resource])).values()).sort(
     (leftResource, rightResource) => leftResource.resourceId - rightResource.resourceId,
   )
+}
+
+function resolveBackofficeApiCredentials() {
+  const apiUsername = process.env.NEXUDUS_API_USERNAME?.trim()
+  const apiPassword = process.env.NEXUDUS_API_PASSWORD?.trim()
+
+  if (apiUsername || apiPassword) {
+    if (!apiUsername || !apiPassword) {
+      throw new Error('Set both NEXUDUS_API_USERNAME and NEXUDUS_API_PASSWORD, or leave both unset.')
+    }
+
+    return {
+      password: apiPassword,
+      username: apiUsername,
+    }
+  }
+
+  const username = process.env.NEXUDUS_ADMIN_EMAIL?.trim() || process.env.NEXUDUS_AP_EMAIL?.trim()
+  const password = process.env.NEXUDUS_ADMIN_PASSWORD?.trim() || process.env.NEXUDUS_AP_PASSWORD?.trim()
+
+  if (!username || !password) {
+    throw new Error(
+      'Missing direct API credentials. Set NEXUDUS_API_USERNAME and NEXUDUS_API_PASSWORD, or configure NEXUDUS_ADMIN_* or NEXUDUS_AP_* credentials.',
+    )
+  }
+
+  return {
+    password,
+    username,
+  }
 }
 
 function isMissingFileError(error) {

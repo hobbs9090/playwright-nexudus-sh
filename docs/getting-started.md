@@ -77,11 +77,21 @@
 |   |   `-- user-info.spec.ts
 |   |-- bdd/
 |   |   |-- features/
+|   |   |   |-- ap/
+|   |   |   |   |-- meeting-room-seed-utility.feature
+|   |   |   |   `-- member-bookings.feature
+|   |   |   |-- api/
+|   |   |   |   `-- member-bookings.feature
 |   |   |   `-- mp/
-|   |   |       |-- public-footer-faq.feature
-|   |   |       `-- public-home-hero-sign-in.feature
+|   |   |       |-- member-bookings.feature
+|   |   |       `-- member-login.feature
 |   |   `-- steps/
-|   |       `-- mp-public-navigation.steps.ts
+|   |       |-- ap/
+|   |       |   `-- meeting-room-seed.steps.ts
+|   |       |-- mp/
+|   |       |   `-- member-login.steps.ts
+|   |       `-- utility/
+|   |           `-- booking-utility.steps.ts
 |   |-- fixtures/
 |   |   |-- ap-course-cake-decorations-large.png
 |   |   |-- ap-course-cake-decorations-small.png

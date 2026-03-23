@@ -7,7 +7,6 @@ export type ResourceSeedUtilityRequest = {
   allowMultipleBookings: string
   amenities: string
   base: string
-  business: string
   count: string
   hideInCalendar: string
   maxBookingLength: string
@@ -104,7 +103,6 @@ export function getTrackedSeededResourcesFilePath() {
 
 export function createResourceSeedScenarioKey(request: ResourceSeedUtilityRequest) {
   return [
-    normalizeScenarioField(request.business),
     normalizeScenarioField(request.resourceType),
     normalizeScenarioField(request.count),
     normalizeScenarioField(request.theme),

@@ -1,7 +1,7 @@
 @bdd @ap @resources @utility @mode:serial
 Feature: Meeting room seed utility
   As a tester
-  I want to seed meeting-room style resources through the AP API
+  I want to seed meeting-room style resources through the Nexudus API
   So that I can prepare realistic manual-test data quickly
 
   Background:
@@ -9,7 +9,6 @@ Feature: Meeting room seed utility
 
   Scenario Outline: resource seed utility creates <Count> "<Resource type>" resources with theme "<Theme>", base "<Base>", and seed "<Seed>"
     When they prepare a resource seed utility request
-    And resource seed business is "<Business>"
     And resource seed resource type is "<Resource type>"
     And resource seed count is "<Count>"
     And resource seed theme is "<Theme>"
@@ -28,5 +27,5 @@ Feature: Meeting room seed utility
     Then the resource seed utility should finish successfully
 
     Examples:
-      | Business | Resource type         | Count | Theme                 | Base | Seed | Visible | Requires confirmation | Allocation | Min booking length | Max booking length | Allow multiple bookings | Hide in calendar | Only for members | Amenities                                           |
-      |          | Large Meeting Room #1 | 5     | harry potter villains | Room | true | true    | false                 | 8          | 30                 | 120                | false                   | false            | true             | Internet, WhiteBoard, LargeDisplay, AirConditioning |
+      | Resource type         | Count | Theme                 | Base | Seed | Visible | Requires confirmation | Allocation | Min booking length | Max booking length | Allow multiple bookings | Hide in calendar | Only for members | Amenities                                           |
+      | Large Meeting Room #1 | 5     | harry potter villains | Room | true | true    | false                 | 8          | 30                 | 120                | false                   | false            | true             | Internet, WhiteBoard, LargeDisplay, AirConditioning |

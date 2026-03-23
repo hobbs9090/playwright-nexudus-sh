@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 export type MPBookingUtilityAction = 'add' | 'delete'
-export type BookingUtilityMode = 'ap' | 'mp'
+export type BookingUtilityMode = 'ap' | 'api' | 'mp'
 
 const bookingUtilityEnvVarName = 'NEXUDUS_BDD_BOOKING_ACTION'
 const bookingUtilityModeEnvVarName = 'NEXUDUS_BDD_BOOKING_MODE'
@@ -66,11 +66,11 @@ export function getBookingUtilityModeEnvVarName() {
 export function parseBookingUtilityMode(rawBookingUtilityMode: string, sourceLabel = 'booking utility mode'): BookingUtilityMode {
   const normalizedBookingUtilityMode = rawBookingUtilityMode.trim().toLowerCase()
 
-  if (normalizedBookingUtilityMode === 'ap' || normalizedBookingUtilityMode === 'mp') {
+  if (normalizedBookingUtilityMode === 'ap' || normalizedBookingUtilityMode === 'api' || normalizedBookingUtilityMode === 'mp') {
     return normalizedBookingUtilityMode
   }
 
-  throw new Error(`Unsupported ${sourceLabel} value "${rawBookingUtilityMode}". Use "mp" or "ap".`)
+  throw new Error(`Unsupported ${sourceLabel} value "${rawBookingUtilityMode}". Use "mp", "ap", or "api".`)
 }
 
 export function getBookingUtilityStateFilePath() {

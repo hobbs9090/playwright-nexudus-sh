@@ -65,6 +65,8 @@ Use `NEXUDUS_MP_EMAIL` and `NEXUDUS_MP_PASSWORD` for the default MP member or co
 
 For role-based test helpers, the repo now exposes `getConfiguredUserCredentials('admin' | 'member' | 'contact')` from [test-environments.ts](../test-environments.ts). `admin` falls back to the AP credential pair, `member` falls back to the default MP member credential pair, and `contact` must be configured explicitly when a test needs it.
 
+For direct back-office resource seeding, the repo also exposes `getConfiguredBackofficeApiCredentials()` from [test-environments.ts](../test-environments.ts). That helper prefers `NEXUDUS_API_USERNAME` and `NEXUDUS_API_PASSWORD` when they are set, then falls back to the admin credential pair, and finally to the AP credential pair through the admin fallback.
+
 For location-selector helpers, the repo now exposes `getConfiguredLocationSelectorLabel('ap' | 'mp')` from [test-environments.ts](../test-environments.ts). These values are intended for shared test bootstrapping. The AP login flow now switches to the configured AP location after sign-in, and the MP project/API host default to the MP location label for the shared staging spaces. Use `NEXUDUS_MP_BASE_URL` or `NEXUDUS_API_BASE_URL` only when you need a non-standard custom host. The API business-setting tests that verify MP content resolve the matching business for that configured MP location rather than assuming the API user's default business matches the active site. The shared staging defaults currently use `Coworking Soho (STEVEN)`, and the common staging labels are `Coworking Network (STEVEN)`, `Coworking Central Street (STEVEN)`, and `Coworking Soho (STEVEN)`.
 
 The committed [`.env.shared`](../.env.shared) currently provides:

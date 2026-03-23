@@ -1,4 +1,5 @@
 import { APIRequestContext, APIResponse, expect, Page, request as playwrightRequest } from '@playwright/test'
+import { NexudusApiClient } from '../../api/NexudusApiClient'
 import type {
   NexudusBusinessResponse,
   NexudusBusinessSettingResponse,
@@ -12,6 +13,7 @@ import type {
 } from '../../api/NexudusApiClient'
 import { getConfiguredBaseURL } from '../../nexudus-config'
 import { APLoginPage } from '../../page-objects/ap/APLoginPage'
+import { getConfiguredBackofficeApiCredentials } from '../../test-environments'
 
 type BackofficeBusinessSettingIdentifier = {
   businessId: number
@@ -619,15 +621,7 @@ export class NexudusBackofficeApiClient {
 
 export async function createBackofficeApiClientFromAuthenticatedAP(page: Page) {
   const accessToken = await captureBackofficeAccessTokenFromAuthenticatedAP(page)
-  const requestContext = await playwrightRequest.newContext({
-    baseURL: backofficeApiOrigin,
-    extraHTTPHeaders: {
-      accept: backofficeAcceptHeader,
-      authorization: `Bearer ${accessToken}`,
-    },
-  })
-
-  return new NexudusBackofficeApiClient(requestContext)
+  return createBackofficeApiClientForAccessToken(accessToken)
 }
 
 export async function createBackofficeApiClientWithAPLogin(page: Page) {
@@ -636,6 +630,22 @@ export async function createBackofficeApiClientWithAPLogin(page: Page) {
   await loginPage.login(undefined, undefined, true, getConfiguredBaseURL('NEXUDUS_AP_BASE_URL'))
 
   return createBackofficeApiClientFromAuthenticatedAP(page)
+}
+
+export async function createBackofficeApiClientWithApiCredentials() {
+  const credentials = getConfiguredBackofficeApiCredentials()
+  const authRequestContext = await playwrightRequest.newContext({
+    baseURL: backofficeApiOrigin,
+  })
+
+  try {
+    const nexudusApi = new NexudusApiClient(authRequestContext)
+    const token = await nexudusApi.createBearerTokenForCredentials(credentials.username, credentials.password)
+
+    return createBackofficeApiClientForAccessToken(token.access_token)
+  } finally {
+    await authRequestContext.dispose()
+  }
 }
 
 async function captureBackofficeAccessTokenFromAuthenticatedAP(page: Page) {
@@ -660,6 +670,18 @@ async function captureBackofficeAccessTokenFromAuthenticatedAP(page: Page) {
   ).toMatch(/^Bearer\s+\S+/i)
 
   return authorizationHeader.replace(/^Bearer\s+/i, '')
+}
+
+async function createBackofficeApiClientForAccessToken(accessToken: string) {
+  const requestContext = await playwrightRequest.newContext({
+    baseURL: backofficeApiOrigin,
+    extraHTTPHeaders: {
+      accept: backofficeAcceptHeader,
+      authorization: `Bearer ${accessToken}`,
+    },
+  })
+
+  return new NexudusBackofficeApiClient(requestContext)
 }
 
 async function expectOk(response: APIResponse, actionDescription: string) {

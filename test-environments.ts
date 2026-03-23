@@ -153,6 +153,24 @@ export function getConfiguredApiCredentials() {
   }
 }
 
+export function getConfiguredBackofficeApiCredentials() {
+  if (process.env.NEXUDUS_API_USERNAME?.trim() || process.env.NEXUDUS_API_PASSWORD?.trim()) {
+    const credentials = getCredentials('NEXUDUS_API_USERNAME', 'NEXUDUS_API_PASSWORD')
+
+    return {
+      username: credentials.email,
+      password: credentials.password,
+    }
+  }
+
+  const credentials = getConfiguredUserCredentials('admin')
+
+  return {
+    username: credentials.email,
+    password: credentials.password,
+  }
+}
+
 export function getConfiguredMemberName(memberEnvVar: string) {
   return requireEnvVar(memberEnvVar)
 }

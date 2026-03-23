@@ -34,16 +34,34 @@ npx playwright test --headed -g @3093
 
 # Open the latest HTML report
 npm run test:report
+
+# Run a Playwright command with the debug window open
+node scripts/run-with-dotenv.mjs -- npx playwright test tests/mp/mp-login.spec.ts --project "MP Staging Chromium" --debug
 ```
 
+## Relevant code
+
+- [package.json](../package.json): npm scripts for the main Playwright suite, BDD runs, utilities, gremlins, Lighthouse, and `k6`
+- [playwright.config.ts](../playwright.config.ts): default Playwright config, desktop and mobile browser projects, retries, reporters, and CI tag exclusions
+- [test-environments.ts](../test-environments.ts) and [helpers.ts](../helpers.ts): environment selection, base-URL resolution, dotenv loading, and shared seed helpers
+- [scripts/build-playwright-ci-matrix.mjs](../scripts/build-playwright-ci-matrix.mjs): CI project selection and sharding for the standard GitHub Actions Playwright run
+- [tests/ap](../tests/ap), [tests/mp](../tests/mp), and [tests/api](../tests/api): the main AP, MP, and API test suites
+- [page-objects/ap](../page-objects/ap), [page-objects/mp](../page-objects/mp), and [page-objects/shared](../page-objects/shared): the page-object layer used by the browser tests
+- [playwright.bdd.config.ts](../playwright.bdd.config.ts), [tests/bdd/features](../tests/bdd/features), [tests/bdd/steps](../tests/bdd/steps), and [tests/bdd/support](../tests/bdd/support): the `playwright-bdd` setup, Gherkin features, step definitions, and shared BDD helpers
+- [playwright.gremlins.config.ts](../playwright.gremlins.config.ts): config for the opt-in exploratory gremlins pack
+- [playwright.lighthouse.config.ts](../playwright.lighthouse.config.ts): config for the Lighthouse Playwright runs
+- [performance](../performance): local-only `k6` smoke scripts
+
 By default the suite runs three projects: `AP Chromium`, `MP Staging Chromium`, and `API`. `AP Chromium` includes the admin overview, admin workflow, AP login, and AP course-creation specs against the dashboard application. `MP Staging Chromium` covers the member-portal login flow, resource-booking coverage, public signup coverage, signed-in help-request coverage, public request-a-tour coverage, and public home-content checks against the spaces staging application. `API` uses the configured MP host origin by default, authenticates against `/api/token`, and runs API-only coverage under [tests/api](../tests/api), including business-setting mutation checks and MP footer verification. The repo also includes MP mobile browser coverage for Android Chrome-style and iPhone Safari-style runs. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "API"`.
+
+In practice, AP is the hardest surface in this repo to automate well. The admin UI is heavier, more stateful, and more interaction-dense than the MP or direct API paths, so AP scenarios tend to cost more to build and maintain and are worth choosing carefully.
 
 The repo also includes two MP mobile browser projects:
 
 - `MP Android Chrome` uses Playwright's `Pixel 5` device profile with Chromium to exercise MP flows in an Android Chrome-style mobile view
 - `MP iPhone Safari` uses Playwright's `iPhone 12` device profile with WebKit to exercise MP flows in an iPhone Safari-style mobile view
 
-These projects are intended for responsive browser coverage of the member portal. They are useful for checking layout, navigation, and core journeys in mobile-sized Chrome and Safari browser contexts without changing the default desktop-first suite.
+These projects are intended for responsive browser coverage of the member portal. They are useful for checking layout, navigation, and core journeys in mobile-sized Chrome and Safari browser contexts without changing the default desktop-first suite. Their project definitions live in [playwright.config.ts](../playwright.config.ts).
 
 The environment split is explicit in code:
 
@@ -71,7 +89,7 @@ In practice, a good first step is a small MP mobile smoke pack that checks the p
 ## Related guides
 
 - [BDD tests](bdd-tests.md): `playwright-bdd` proof-of-concept setup, commands, example Gherkin, and extension guidance
-- [Testing utilities](testing-utilities.md): booking utilities plus the add-only meeting-room seed utility and bulk cleanup script
+- [Testing utilities](testing-utilities.md): booking utilities plus the add-only API-first meeting-room seed utility and bulk cleanup script
 - [Gremlins](gremlins.md): opt-in exploratory `gremlins.js` runs, replay seeds, tuning, and safe target guidance
 - [Lighthouse and performance](lighthouse-performance-ci.md): authenticated Lighthouse audits, k6 smoke tests, and report outputs
 
@@ -83,17 +101,34 @@ For opt-in manual-data utilities, the most useful local commands are:
 # Generate the Playwright specs for BDD features before running a direct generated spec
 npm run test:bdd:gen
 
-# Run the add-only meeting-room seed utility
-node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/ap/meeting-room-seed-utility.feature.spec.js --project "MP BDD Chromium" --workers=1
+# Run the MP booking utility feature
+node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/mp/member-bookings.feature.spec.js --project "MP BDD Chromium" --workers=1
 
-# Run the same seed utility in headed mode
-node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/ap/meeting-room-seed-utility.feature.spec.js --project "MP BDD Chromium" --workers=1 --headed
+# Run the AP booking utility feature
+node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/ap/member-bookings.feature.spec.js --project "MP BDD Chromium" --workers=1
+
+# Run the API booking utility feature
+node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/api/member-bookings.feature.spec.js --project "MP BDD Chromium" --workers=1
+
+# Run the booking utility delete path for one of those rows
+NEXUDUS_BDD_BOOKING_ACTION=delete node scripts/run-with-dotenv.mjs -- npx playwright test -c playwright.bdd.config.ts tests/bdd/.features-gen/ap/member-bookings.feature.spec.js --project "MP BDD Chromium" --workers=1
+
+# Remove every tracked booking previously created by the booking utility
+npm run test:bdd:bookings:delete-all
+
+# Run the add-only meeting-room seed utility
+npm run test:bdd:meeting-room-seed
 
 # Remove every resource previously created by the seed utility
 npm run test:bdd:resources:delete-all
 ```
 
-These meeting-room utility commands require valid AP credentials in `.env`, especially `NEXUDUS_AP_EMAIL`, `NEXUDUS_AP_PASSWORD`, and `NEXUDUS_AP_LOCATION_SELECTOR_LABEL`.
+These utility commands require valid direct API or admin-capable credentials in `.env`, typically `NEXUDUS_API_USERNAME` and `NEXUDUS_API_PASSWORD`, `NEXUDUS_ADMIN_EMAIL` and `NEXUDUS_ADMIN_PASSWORD`, or the AP credential pair as a fallback.
+The meeting-room seed utility is API-only, so it does not have a browser flow to inspect in headed or debug mode.
+
+The booking utility cleanup command reads the tracked ids from [booking-utility-state.json](../playwright/.cache/booking-utility-state.json), cancels them through the back-office API, and prunes both current and legacy booking-utility cache files so old tracked rows do not linger.
+
+The utility flow is implemented in [member-bookings.feature](../tests/bdd/features/mp/member-bookings.feature), [member-bookings.feature](../tests/bdd/features/ap/member-bookings.feature), [member-bookings.feature](../tests/bdd/features/api/member-bookings.feature), [booking-utility.steps.ts](../tests/bdd/steps/utility/booking-utility.steps.ts), [booking-utility.ts](../tests/bdd/support/booking-utility.ts), [delete-booking-utility-bookings.mjs](../scripts/delete-booking-utility-bookings.mjs), [meeting-room-seed-utility.feature](../tests/bdd/features/ap/meeting-room-seed-utility.feature), [meeting-room-seed.steps.ts](../tests/bdd/steps/ap/meeting-room-seed.steps.ts), [resource-seed-utility.ts](../tests/bdd/support/resource-seed-utility.ts), and [delete-seeded-resources.mjs](../scripts/delete-seeded-resources.mjs).
 
 ## Reports and outputs
 
@@ -114,6 +149,8 @@ For GitHub Pages publishing, PR artifacts, and the combined Pages bundle, see [C
 - [admin-panel-overview.spec.ts](../tests/ap/admin-panel-overview.spec.ts) checks the main AP sections and capability groups
 - [admin-panel-workflows.spec.ts](../tests/ap/admin-panel-workflows.spec.ts) covers members, bookings, invoices, events, help-desk, deliveries, products, and event creation
 - [course-workflows.spec.ts](../tests/ap/course-workflows.spec.ts) creates a public AP course titled `Six million four hundred and fifty-three thousand five hundred and sixty-eight Hundreds and Thousands: A History of Cake Decorations` with a random seed, uses the UI for the main course creation and image upload, then falls back to the API for some steps such as sections, lessons, richer configuration, discussion-board setup, home-page featuring, and three randomly enrolled participants
+
+AP coverage is intentionally selective. It is particularly difficult to automate compared with MP and API coverage, so the AP tests here focus on workflows where the signal is worth the extra maintenance cost.
 
 ### MP tests
 

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 import { createBdd } from 'playwright-bdd'
-import { MPLoginPage } from '../../../page-objects/mp/MPLoginPage'
-import { test } from '../support/bdd-test'
+import { MPLoginPage } from '../../../../page-objects/mp/MPLoginPage'
+import { test } from '../../support/bdd-test'
 
 const { Given, Then, When } = createBdd(test)
 

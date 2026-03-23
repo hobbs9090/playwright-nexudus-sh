@@ -33,6 +33,10 @@ When asking AI to add a test, it helps to specify:
 - how the flow should be verified locally
 - whether the work should be split into logical commits and pushed
 
+It also helps to say whether the flow really needs AP UI coverage. In this repo, AP is particularly difficult to automate compared with MP and API paths, so a prompt that explicitly allows API-assisted setup or a different surface can save a lot of churn.
+
+One practical caution with AI-assisted authoring is that the model will often be highly persistent about finding some way to produce a valid, passing, working test. If a pure UI approach proves difficult, it may naturally drift toward API-assisted setup or verification unless the prompt and review process keep that boundary explicit. Because of that, careful human review and local validation should always be part of the process, so the final test still matches the intended behaviour rather than merely reaching a technically passing result.
+
 The current AP course-creation workflow in [course-workflows.spec.ts](../tests/ap/course-workflows.spec.ts) was created from a more detailed prompt. The requirements below are the example instructions that were used to create that last test:
 
 ```text
