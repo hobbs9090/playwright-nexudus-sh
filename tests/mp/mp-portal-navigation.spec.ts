@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { MPHomePage } from '../../page-objects/mp/MPHomePage'
 import { MPLoginPage } from '../../page-objects/mp/MPLoginPage'
 import { MPPortalPage } from '../../page-objects/mp/MPPortalPage'
@@ -192,21 +192,13 @@ test.describe('MP authenticated portal navigation', () => {
 
   test('sign out returns to an anonymous MP page with public entry points back into the portal @dg', async ({ page }) => {
     await portalPage.clickProfileMenuEntry(currentUserFullName, 'Log out')
+    const loggedOutSurface = await waitForAnonymousPortalSurface({
+      homePage,
+      loginPage,
+      page,
+    })
 
-    await expect
-      .poll(
-        async () => {
-          const url = page.url()
-
-          return /\/login(?:\?.*)?$/.test(url) || /\/home(?:\?.*)?$/.test(url)
-        },
-        {
-          message: 'Expected logout to return the user to an anonymous MP page.',
-        },
-      )
-      .toBe(true)
-
-    if (/\/login(?:\?.*)?$/.test(page.url())) {
+    if (loggedOutSurface === 'login') {
       await expect
         .poll(async () => decodeURIComponent(page.url()), {
           message: 'Expected the logged-out login page to preserve a returnUrl back to the public MP home page.',
@@ -228,14 +220,13 @@ test.describe('MP authenticated portal navigation', () => {
 
   test('access marketing uses the anonymous brand link to reach or keep the public member home page @dg', async ({ page }) => {
     await portalPage.clickProfileMenuEntry(currentUserFullName, 'Log out')
+    const loggedOutSurface = await waitForAnonymousPortalSurface({
+      homePage,
+      loginPage,
+      page,
+    })
 
-    await expect
-      .poll(async () => /\/login(?:\?.*)?$/.test(page.url()) || /\/home(?:\?.*)?$/.test(page.url()), {
-        message: 'Expected logout to land on an anonymous MP route before using the brand link.',
-      })
-      .toBe(true)
-
-    if (/\/login(?:\?.*)?$/.test(page.url())) {
+    if (loggedOutSurface === 'login') {
       await loginPage.assertAnonymousEntryPointsVisible(currentBusinessName)
       await loginPage.goToMarketingHomeFromBrandLink(currentBusinessName)
     } else {
@@ -253,3 +244,42 @@ test.describe('MP authenticated portal navigation', () => {
     await homePage.assertFooterBrandingVisible(currentBusinessName)
   })
 })
+
+async function waitForAnonymousPortalSurface({
+  homePage,
+  loginPage,
+  page,
+}: {
+  homePage: MPHomePage
+  loginPage: MPLoginPage
+  page: Page
+}): Promise<'home' | 'login'> {
+  const timeoutAt = Date.now() + 20_000
+  let lastUrl = ''
+
+  while (Date.now() < timeoutAt) {
+    lastUrl = page.url()
+
+    const loginFormVisible = await loginPage.emailInput.isVisible().catch(() => false)
+    const signInVisible = await loginPage.signInButton.isVisible().catch(() => false)
+
+    if (/\/login(?:\?.*)?$/.test(lastUrl) && (loginFormVisible || signInVisible)) {
+      return 'login'
+    }
+
+    if (/\/home(?:\?.*)?$/.test(lastUrl)) {
+      await homePage.dismissStartupNoticeIfPresent()
+
+      const headerSignInVisible = await homePage.headerSignInLink.isVisible().catch(() => false)
+      const heroSignInVisible = await homePage.heroSignInLink.isVisible().catch(() => false)
+
+      if (headerSignInVisible || heroSignInVisible) {
+        return 'home'
+      }
+    }
+
+    await page.waitForTimeout(250)
+  }
+
+  throw new Error(`Expected logout to return the user to a stable anonymous MP page. Last URL: ${lastUrl || page.url()}.`)
+}

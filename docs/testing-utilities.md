@@ -88,6 +88,15 @@ Feature: MP booking utility
     And they run the browser booking utility
     Then the booking utility should finish successfully
 
+@bdd @ap @bookings @utility @mode:serial
+Feature: AP booking utility
+  ...
+  Scenario Outline: AP utility manages "<Resource name>" for "<Member Name>" on "<Date>" at "<Start time>" with "<Repeat options>" and alternative "<Alternative>"
+    Given member "<Member Name>" can access the member portal
+    And the booking utility mode is "ap"
+    ...
+    And they run the browser booking utility
+
 @bdd @api @bookings @utility @mode:serial
 Feature: API booking utility
   ...
@@ -259,7 +268,7 @@ The current outline columns mean:
 - `Resource type`: exact Nexudus resource type name to resolve through the back-office API. This must already exist.
 - `Count`: how many resources one row should create.
 - `Theme`: optional naming theme such as `harry potter villains` or `great american novelists`.
-- `Base`: optional visible base label that appears after the themed part, such as `Meeting Room` or `RoomX`.
+- `Base`: optional visible base label that appears after the themed part, such as `Meeting Room` or `Room`.
 - `Seed`: `true` or `false`. When `true`, the repo's standard CRUD seed suffix and a stable sequence are appended.
 - `Visible`: whether the created resources are visible.
 - `Requires confirmation`: whether the resource requires booking confirmation.
@@ -285,7 +294,7 @@ This is the current style of row used by the feature:
 ```gherkin
 Examples:
   | Resource type         | Count | Theme                 | Base  | Seed | Visible | Requires confirmation | Allocation | Min booking length | Max booking length | Allow multiple bookings | Hide in calendar | Only for members | Amenities                                           |
-  | Large Meeting Room #1 | 25    | harry potter villains | RoomX | true | true    | false                 | 8          | 30                 | 120                | false                   | false            | true             | Internet, WhiteBoard, LargeDisplay, AirConditioning |
+  | Large Meeting Room #1 | 25    | harry potter villains | Room  | true | true    | false                 | 8          | 30                 | 120                | false                   | false            | true             | Internet, WhiteBoard, LargeDisplay, AirConditioning |
 ```
 
 That row means:
@@ -293,7 +302,7 @@ That row means:
 - find the existing resource type `Large Meeting Room #1`
 - create 25 resources
 - generate the themed part from `harry potter villains`
-- append `RoomX`
+- append `Room`
 - append the repo's preferred CRUD seed suffix and sequence because `Seed=true`
 - set the booking and visibility flags in the payload
 - mark the listed amenities as `true`
@@ -310,14 +319,14 @@ That means generated names always follow the order `Theme`, then `Base`, then `S
 
 - `Lestrange Meeting Room 2203 1450 shabcde 01`
 - `Malfoy Meeting Room 2203 1450 shabcde 02`
-- `Twain RoomX 2203 1450 shabcde 01`
+- `Twain Room 2203 1450 shabcde 01`
 
 The utility does not call a live AI service and does not require a local catalog. `Theme` values are generated on the fly from the text in the scenario row, using a deterministic offline generator so the same theme produces the same sequence of playful names on repeat runs. When a generated themed value contains a full name, the utility prefers the surname where that stays unique; if only a single name is available, it uses that. The generated names still keep the requested order of `Theme`, then `Base`, then `Seed`.
 
 More concrete examples:
 
-- `Theme=harry potter villains`, `Base=RoomX`, `Seed=true`, `Count=3`
-- produces names such as `Lestrange RoomX 2203 1450 shabcde 01`, `Lucius RoomX 2203 1450 shabcde 02`, and `Narcissa RoomX 2203 1450 shabcde 03`
+- `Theme=harry potter villains`, `Base=Room`, `Seed=true`, `Count=3`
+- produces names such as `Lestrange Room 2203 1450 shabcde 01`, `Lucius Room 2203 1450 shabcde 02`, and `Narcissa Room 2203 1450 shabcde 03`
 
 - `Theme=great american novelists`, `Base=Meeting Room`, `Seed=false`, `Count=3`
 - produces names such as `Lee Meeting Room`, `Twain Meeting Room`, and `Fitzgerald Meeting Room`
