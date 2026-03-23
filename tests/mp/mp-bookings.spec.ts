@@ -12,7 +12,7 @@ const bookingWindowSearchDays = 7
 const hasDedicatedMemberCredentials =
   Boolean(process.env.NEXUDUS_MEMBER_EMAIL?.trim()) && Boolean(process.env.NEXUDUS_MEMBER_PASSWORD?.trim())
 
-test.describe('MP bookings', () => {
+test.describe('MP bookings @flaky', () => {
   let accessToken: string
   let bookingsPage: MPBookingsPage
   let currentMemberId: number

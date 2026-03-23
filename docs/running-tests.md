@@ -36,9 +36,9 @@ npx playwright test --headed -g @3093
 npm run test:report
 ```
 
-By default the suite runs three projects: `AP Chromium`, `MP Staging Chromium`, and `API`. `AP Chromium` includes the admin overview, admin workflow, AP login, and AP course-creation specs against the dashboard application. `MP Staging Chromium` covers the member-portal login flow, resource-booking coverage, public signup coverage, signed-in help-request coverage, public request-a-tour coverage, and public home-content checks against the spaces staging application. `API` uses the configured MP host origin by default, authenticates against `/api/token`, and runs API-only coverage under [tests/api](../tests/api), including business-setting mutation checks and MP footer verification. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "API"`.
+By default the suite runs three projects: `AP Chromium`, `MP Staging Chromium`, and `API`. `AP Chromium` includes the admin overview, admin workflow, AP login, and AP course-creation specs against the dashboard application. `MP Staging Chromium` covers the member-portal login flow, resource-booking coverage, public signup coverage, signed-in help-request coverage, public request-a-tour coverage, and public home-content checks against the spaces staging application. `API` uses the configured MP host origin by default, authenticates against `/api/token`, and runs API-only coverage under [tests/api](../tests/api), including business-setting mutation checks and MP footer verification. The repo also includes MP mobile browser coverage for Android Chrome-style and iPhone Safari-style runs. If you only want one target, use Playwright's project filter, for example `npx playwright test --project "API"`.
 
-The repo also includes two opt-in MP mobile browser projects:
+The repo also includes two MP mobile browser projects:
 
 - `MP Android Chrome` uses Playwright's `Pixel 5` device profile with Chromium to exercise MP flows in an Android Chrome-style mobile view
 - `MP iPhone Safari` uses Playwright's `iPhone 12` device profile with WebKit to exercise MP flows in an iPhone Safari-style mobile view
@@ -113,7 +113,7 @@ For GitHub Pages publishing, PR artifacts, and the combined Pages bundle, see [C
 - [ap-login.spec.ts](../tests/ap/ap-login.spec.ts) covers invalid and valid AP login
 - [admin-panel-overview.spec.ts](../tests/ap/admin-panel-overview.spec.ts) checks the main AP sections and capability groups
 - [admin-panel-workflows.spec.ts](../tests/ap/admin-panel-workflows.spec.ts) covers members, bookings, invoices, events, help-desk, deliveries, products, and event creation
-- [course-workflows.spec.ts](../tests/ap/course-workflows.spec.ts) creates a public AP course titled `Six million four hundred and fifty-three thousand five hundred and sixty-eight Hundreds and Thousands: A History of Cake Decorations` with a random seed, three sections, eight lessons, uploaded large and small fixture images, discussion-board setup, home-page featuring, and three randomly enrolled participants
+- [course-workflows.spec.ts](../tests/ap/course-workflows.spec.ts) creates a public AP course titled `Six million four hundred and fifty-three thousand five hundred and sixty-eight Hundreds and Thousands: A History of Cake Decorations` with a random seed, uses the UI for the main course creation and image upload, then falls back to the API for some steps such as sections, lessons, richer configuration, discussion-board setup, home-page featuring, and three randomly enrolled participants
 
 ### MP tests
 
@@ -123,6 +123,11 @@ For GitHub Pages publishing, PR artifacts, and the combined Pages bundle, see [C
 - [mp-help-requests.spec.ts](../tests/mp/mp-help-requests.spec.ts) signs into MP, opens the support area, creates a help request, and verifies it appears in the member's request list
 - [mp-home-content.spec.ts](../tests/mp/mp-home-content.spec.ts) verifies the configured public footer branding, plans, add-ons, featured articles, and locations on the MP home page
 - [mp-tour.spec.ts](../tests/mp/mp-tour.spec.ts) opens the public `request a tour` journey from the MP login page, submits a uniquely seeded request, and verifies the completion screen
+
+### MP mobile browser coverage
+
+- `MP Android Chrome` runs MP flows with Playwright's `Pixel 5` device profile in a Chromium-based Android Chrome-style viewport
+- `MP iPhone Safari` runs MP flows with Playwright's `iPhone 12` device profile in a WebKit-based iPhone Safari-style viewport
 
 ### API tests
 

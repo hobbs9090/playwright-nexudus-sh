@@ -88,14 +88,9 @@ In practice, those requirements asked the AI to build all of the following:
 
 Detailed prompts are especially helpful when a test mixes UI automation, API setup, generated fixtures, seeded names, repo conventions, and local verification. You do not always need this much detail, but in practice it reduces back-and-forth and usually gives a result that is closer to ready for review.
 
-## Nexudus documentation
+## Nexudus reference
 
-- Knowledge Base: https://help.nexudus.com/
-- Developers Hub: https://developers.nexudus.com/reference/getting-started-with-your-api-1
-
-The Developers Hub is the main place to find details about the Nexudus APIs.
-
-The API test infrastructure in this repository uses the public Nexudus API pattern documented there. The current API coverage authenticates with `POST /api/token`, reads the current user profile from `GET /en/user/me`, updates selected `BusinessSetting` records through the REST API, verifies the footer saying in MP, restores the calendar-setting mutation, and exposes reusable helpers for AP course setup such as creating sections, lessons, and members.
+For official product and API documentation links, see [Nexudus reference](nexudus-reference.md).
 
 When adding tests, follow the existing split:
 

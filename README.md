@@ -18,6 +18,7 @@ It is most useful for:
 ## Framework features
 
 - One TypeScript Playwright framework for AP, MP, and API coverage in a single repo
+- MP mobile browser coverage for Android Chrome-style and iPhone Safari-style journeys
 - AI-friendly structure and prompt guidance that make it practical to draft, refine, and extend tests with Codex while still keeping the result maintainable
 - Explicit separation between AP, MP, API, and shared layers so page objects, helpers, and tests stay organised by concern
 - small page-object model to keep workflows readable and reusable
@@ -52,17 +53,21 @@ The repo loads `.env.shared` first and `.env` second, so tracked shared defaults
 - [Getting started](docs/getting-started.md): coverage summary, project structure, local setup, and useful tooling
 - [Configuration reference](docs/configuration.md): environment variables, credential resolution, location defaults, and shared seed behavior
 - [CI](docs/ci.md): GitHub Actions workflow, required secrets and variables, sharding, and report publishing
-- [Authoring tests](docs/authoring-tests.md): AI-assisted test-writing guidance, prompt examples, and Nexudus documentation links
+- [Authoring tests](docs/authoring-tests.md): AI-assisted test-writing guidance, prompt examples, and authoring workflow
 
 ### Test guides
 
-- [Running tests](docs/running-tests.md): everyday Playwright commands, mobile projects, and current AP/MP/API coverage
+- [Running tests](docs/running-tests.md): everyday Playwright commands, Android and iOS mobile projects, and current AP/MP/API coverage
 - [BDD tests](docs/bdd-tests.md): `playwright-bdd` proof-of-concept setup, generation, execution, and extension
 - [Testing utilities](docs/testing-utilities.md): patterns for opt-in utility-style flows including booking utilities, AP meeting-room seeding, and cleanup scripts
 - [Gremlins](docs/gremlins.md): opt-in exploratory robustness runs, seed replay, and safe target guidance
 - [Lighthouse and performance](docs/lighthouse-performance-ci.md): Lighthouse runs, k6 smoke tests, and report outputs
 
 ### Reference
+
+- [Nexudus reference](docs/nexudus-reference.md): official Nexudus product and API documentation links used when extending the repo
+
+### Experimental
 
 - [Member Portal documentation-derived scenarios](docs/member-portal-documentation-scenarios.md): mapping between Nexudus MP docs and current automation coverage
 

@@ -20,7 +20,7 @@ if (missingRequiredCredentialGroups.length > 0) {
 
 const isCI = !!process.env.CI
 const headless = shouldUseHeadlessBrowser()
-const grepInvert = isCI ? /@utility/ : undefined
+const grepInvert = isCI ? /@utility|@flaky/ : undefined
 const reporter = isCI
   ? [['github'], ['junit', { outputFile: 'test-results/results.xml' }], ['html', { open: 'never' }]]
   : 'html'

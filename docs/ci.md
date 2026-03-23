@@ -63,6 +63,8 @@ The branch policy is:
 - non-`main` branches also run the full functional Playwright suite and the full Lighthouse suite
 - branch runs still publish the Pages report site
 
+The functional Playwright CI run excludes tests tagged `@utility` and `@flaky`. Utility flows are intended for manual use, and flaky-tagged tests stay available for targeted local runs until they are stabilised.
+
 ## Published reports and artifacts
 
 The CI publishing flow is responsible for the combined report outputs rather than the local test commands.
@@ -82,4 +84,4 @@ The current published GitHub Pages URLs for this repository are:
 
 Pull request runs do not publish to GitHub Pages. For PR runs, open the GitHub Actions run and download the uploaded report artifacts instead.
 
-The `k6` smoke tests are local-only and are not executed by the GitHub Actions workflow.
+The `k6` smoke tests are local-only and are not executed by the GitHub Actions workflow. Opt-in utility flows such as the BDD booking utilities and meeting-room seed utility are also excluded from the normal CI run by default.

@@ -9,7 +9,7 @@
 - AP login shows a clear error message when invalid credentials are provided
 - AP login succeeds with the configured AP credentials
 - Admin overview sections render expected capability groupings
-- A public cake-decoration history course can be created in AP with seeded titles, images, sections, lessons, discussion-board creation, home-page featuring, and random participant enrolment
+- A public cake-decoration history course can be created in AP with seeded titles and image upload in the UI, then falls back to the API for some setup steps such as sections, lessons, richer configuration, discussion-board creation, home-page featuring, and random participant enrolment
 - A product can be created and then removed from the products area
 - A delivery can be registered, assigned to a user, uploaded with a PDF label, and then removed
 - A delivery can be signed for on collection and marked as collected
@@ -18,6 +18,7 @@
 ### MP
 
 - MP staging member-portal login succeeds with the configured MP credentials
+- MP mobile browser coverage exercises key member-portal journeys in Android Chrome-style and iPhone Safari-style viewports
 - MP staging account creation succeeds for new individual accounts
 - MP staging account creation succeeds for new company accounts
 - MP signed-in members can create help requests from the support area

@@ -9,17 +9,21 @@ Use this index as the GitHub-friendly entry point for the longer project documen
 - [Getting started](getting-started.md): what the suite covers, repo structure, local setup, and suggested tooling
 - [Configuration](configuration.md): environment variables, `.env.shared` and `.env` behavior, credential fallbacks, and seeded naming rules
 - [CI](ci.md): GitHub Actions workflow structure, required secrets and variables, sharding, and report publishing
-- [Authoring tests](authoring-tests.md): AI-assisted test-writing guidance, example prompts, and Nexudus documentation links
+- [Authoring tests](authoring-tests.md): AI-assisted test-writing guidance, example prompts, and test-authoring workflow
 
 ## Test guides
 
-- [Running tests](running-tests.md): Playwright commands, mobile browser projects, and current AP/MP/API test coverage
+- [Running tests](running-tests.md): Playwright commands, Android and iOS mobile browser projects, and current AP/MP/API test coverage
 - [BDD tests](bdd-tests.md): `playwright-bdd` proof of concept, feature generation, execution, and extension
 - [Testing utilities](testing-utilities.md): opt-in booking utilities, the AP meeting-room seed utility, and local cleanup commands
 - [Gremlins](gremlins.md): opt-in exploratory robustness runs, horde tuning, and safe target guidance
 - [Lighthouse and performance](lighthouse-performance-ci.md): Lighthouse audits, k6 smoke tests, and report outputs
 
 ## Reference
+
+- [Nexudus reference](nexudus-reference.md): official Nexudus product and API documentation links used when extending the repo
+
+## Experimental
 
 - [Member Portal documentation-derived scenarios](member-portal-documentation-scenarios.md): documentation-to-test coverage mapping for MP scenarios
 
